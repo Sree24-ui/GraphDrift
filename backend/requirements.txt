@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+python-louvain
+networkx
+numpy
+scipy
+faker
+websockets
+python-dotenv
+pydantic
+pandas
+datasets
+huggingface_hub
+pytest
