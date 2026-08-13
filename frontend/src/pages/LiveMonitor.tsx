@@ -6,6 +6,7 @@ import { useLiveFeed } from '../hooks/useLiveFeed'
 import AlertFeedPanel from '../components/AlertFeedPanel'
 import ErrorBanner from '../components/ErrorBanner'
 import GraphView from '../components/GraphView'
+import MaterialIcon from '../components/MaterialIcon'
 import TimelineScrubber, {
   type TimelineMode,
 } from '../components/TimelineScrubber'
@@ -13,13 +14,66 @@ import TimelineScrubber, {
 interface MetricCardProps {
   label: string
   value: string | number
+  icon: string
+  accent?: 'primary' | 'tertiary' | 'error'
+  trend?: string
+  trendUp?: boolean
 }
 
-function MetricCard({ label, value }: MetricCardProps) {
+function MetricCard({
+  label,
+  value,
+  icon,
+  accent = 'primary',
+  trend,
+  trendUp = true,
+}: MetricCardProps) {
+  const iconColor =
+    accent === 'error'
+      ? 'text-error/80'
+      : accent === 'tertiary'
+        ? 'text-tertiary/70'
+        : 'text-primary/70'
+
+  const gradientClass =
+    accent === 'error'
+      ? 'from-error/10'
+      : accent === 'tertiary'
+        ? 'from-tertiary/10'
+        : 'from-primary/10'
+
+  const cardBorder =
+    accent === 'error'
+      ? 'border-error/20 shadow-[0_0_15px_rgba(255,107,107,0.08)]'
+      : ''
+
+  const trendColor = trendUp ? 'text-emerald-400 bg-emerald-400/10' : 'text-error bg-error/10'
+
   return (
-    <div className="rounded-lg border border-charcoal-lighter bg-charcoal-light px-4 py-3">
-      <p className="text-2xl font-semibold tabular-nums text-gray-100">{value}</p>
-      <p className="mt-1 text-xs text-gray-500">{label}</p>
+    <div className={`kpi-card ${cardBorder}`}>
+      <div
+        className={`kpi-card-gradient absolute inset-0 bg-gradient-to-br ${gradientClass} to-transparent`}
+      />
+      <div className="relative z-10 flex items-start justify-between">
+        <h3 className="text-sm font-medium text-on-surface-variant">{label}</h3>
+        <MaterialIcon name={icon} className={iconColor} size={20} />
+      </div>
+      <div className="relative z-10 mt-2 flex items-baseline gap-2">
+        <span className="font-display text-3xl font-bold tabular-nums tracking-tight text-on-surface">
+          {value}
+        </span>
+        {trend && (
+          <span
+            className={`flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${trendColor}`}
+          >
+            <MaterialIcon
+              name={trendUp ? 'arrow_upward' : 'arrow_downward'}
+              size={14}
+            />
+            {trend}
+          </span>
+        )}
+      </div>
     </div>
   )
 }
@@ -79,6 +133,11 @@ export default function LiveMonitor() {
     return fallbackMetricsFromGraph(initialGraph)
   }, [timelineMode, replaySnapshot, metrics, initialGraph])
 
+  const newAlertCount = useMemo(
+    () => alerts.filter((a) => a.data.action === 'CREATE').length,
+    [alerts],
+  )
+
   const handleNodeClick = useCallback(
     (accountId: string) => {
       navigate(`/accounts/${encodeURIComponent(accountId)}`)
@@ -128,78 +187,122 @@ export default function LiveMonitor() {
     }
   }, [])
 
+  const statusLabel =
+    timelineMode === 'replay' ? 'replay' : connectionStatus
+
   return (
-    <div className="flex h-[calc(100vh-3rem)] flex-col gap-4">
-      <div className="flex items-center justify-between">
+    <div className="flex h-[calc(100vh-5rem)] flex-col gap-5 overflow-hidden md:h-[calc(100vh-3rem)]">
+      <div className="flex shrink-0 items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-100">Live Monitor</h1>
-          <p className="text-xs text-gray-500">
+          <h1 className="page-title glacier-text-glow">Live Monitor</h1>
+          <p className="page-subtitle mt-1">
             Real-time UPI transaction graph and fraud alerts
           </p>
         </div>
         <span
           className={[
-            'rounded border px-2 py-1 text-[10px] font-medium uppercase tracking-wide',
+            'flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-wide',
             timelineMode === 'replay'
-              ? 'border-amber-soft/40 text-amber-soft'
+              ? 'border-tertiary/40 bg-tertiary/10 text-tertiary'
               : connectionStatus === 'connected'
-                ? 'border-teal-muted/40 text-teal-accent'
+                ? 'border-primary/40 bg-primary/10 text-primary'
                 : connectionStatus === 'connecting'
-                  ? 'border-amber-soft/40 text-amber-soft'
-                  : 'border-red-800/50 text-red-300',
+                  ? 'border-tertiary/40 bg-tertiary/10 text-tertiary'
+                  : 'border-error/40 bg-error/10 text-error',
           ].join(' ')}
         >
-          {timelineMode === 'replay' ? 'replay' : connectionStatus}
+          {connectionStatus === 'connected' && timelineMode === 'live' && (
+            <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+          )}
+          {statusLabel}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid shrink-0 grid-cols-1 gap-4 md:grid-cols-3">
         <MetricCard
           label="Active Nodes"
           value={displayMetrics.active_node_count.toLocaleString()}
+          icon="grain"
         />
         <MetricCard
           label="Live Edges"
           value={displayMetrics.live_edge_count.toLocaleString()}
+          icon="timeline"
+          accent="tertiary"
         />
         <MetricCard
-          label="Peak Risk Score"
-          value={displayMetrics.peak_fused_score.toFixed(2)}
-        />
-        <MetricCard
-          label="Active Alerts"
+          label="Anomalies Detected"
           value={displayMetrics.active_alert_count.toLocaleString()}
+          icon="gpp_maybe"
+          accent="error"
+          trend={newAlertCount > 0 ? `${newAlertCount} new` : undefined}
+          trendUp
         />
       </div>
 
       {timelineMode === 'live' && connectionStatus === 'disconnected' && (
-        <ErrorBanner
-          message="Live feed disconnected — graph may be stale. Reconnecting automatically…"
-        />
+        <ErrorBanner message="Live feed disconnected — graph may be stale. Reconnecting automatically…" />
       )}
 
-      <div className="relative grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,280px)]">
+      <div className="relative grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]">
         {!graphLoaded && timelineMode === 'live' && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg border border-charcoal-lighter bg-charcoal/90 lg:right-[calc(280px+1rem)]">
+          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl glass-panel-elevated xl:right-[calc(320px+1.25rem)]">
             <div className="text-center">
-              <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-charcoal-lighter border-t-teal-accent" />
-              <p className="text-sm text-gray-400">Loading graph snapshot...</p>
+              <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+              <p className="text-sm text-on-surface-variant">
+                Loading graph snapshot…
+              </p>
             </div>
           </div>
         )}
 
         <div className="flex min-h-0 min-w-0 flex-col gap-3">
-          <GraphView
-            mode={timelineMode}
-            staticSnapshot={timelineMode === 'replay' ? replaySnapshot : null}
-            pulsingNodeIds={pulsingNodeIds}
-            replayLoading={replayLoading}
-            transactions={transactions}
-            alerts={alerts}
-            focusNodeId={focusAccountId}
-            onNodeClick={handleNodeClick}
-            onInitialLoad={handleInitialLoad}
-          />
+          <div className="glass-panel-elevated flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
+            <div className="z-20 flex items-center justify-between border-b border-primary/10 bg-surface/40 px-4 py-3">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-on-surface">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+                Network Topology
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="rounded-md border border-transparent p-1.5 text-on-surface-variant transition-colors hover:border-primary/20 hover:bg-surface-bright/50"
+                  aria-label="Zoom in"
+                >
+                  <MaterialIcon name="zoom_in" size={20} />
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md border border-transparent p-1.5 text-on-surface-variant transition-colors hover:border-primary/20 hover:bg-surface-bright/50"
+                  aria-label="Zoom out"
+                >
+                  <MaterialIcon name="zoom_out" size={20} />
+                </button>
+                <button
+                  type="button"
+                  className="ml-2 rounded-md border border-transparent p-1.5 text-on-surface-variant transition-colors hover:border-primary/20 hover:bg-surface-bright/50"
+                  aria-label="Filter graph"
+                >
+                  <MaterialIcon name="filter_list" size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="relative min-h-[360px] flex-1 bg-[radial-gradient(circle_at_center,rgba(125,211,252,0.05)_0%,transparent_70%)]">
+              <GraphView
+                mode={timelineMode}
+                staticSnapshot={
+                  timelineMode === 'replay' ? replaySnapshot : null
+                }
+                pulsingNodeIds={pulsingNodeIds}
+                replayLoading={replayLoading}
+                transactions={transactions}
+                alerts={alerts}
+                focusNodeId={focusAccountId}
+                onNodeClick={handleNodeClick}
+                onInitialLoad={handleInitialLoad}
+              />
+            </div>
+          </div>
           <TimelineScrubber
             mode={timelineMode}
             onModeChange={handleTimelineModeChange}
@@ -208,7 +311,7 @@ export default function LiveMonitor() {
           />
         </div>
 
-        <div className="min-h-[280px] min-w-0 lg:min-h-0">
+        <div className="min-h-[320px] min-w-0 xl:min-h-0">
           <AlertFeedPanel alerts={alerts} />
         </div>
       </div>

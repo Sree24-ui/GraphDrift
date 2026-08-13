@@ -13,7 +13,7 @@ export default function TableSkeleton({
         {Array.from({ length: columns }).map((_, i) => (
           <div
             key={`head-${i}`}
-            className="h-3 flex-1 rounded bg-charcoal-lighter"
+            className="h-3 flex-1 rounded bg-surface-bright"
           />
         ))}
       </div>
@@ -22,7 +22,7 @@ export default function TableSkeleton({
           {Array.from({ length: columns }).map((_, col) => (
             <div
               key={`cell-${row}-${col}`}
-              className="h-8 flex-1 rounded bg-charcoal-lighter/70"
+              className="h-8 flex-1 rounded bg-surface-bright/70"
             />
           ))}
         </div>

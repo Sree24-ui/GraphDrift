@@ -87,11 +87,11 @@ export default function AlertExplainability({
   }, [alertId, loadDetail])
 
   if (alertId === null) {
-    return <p className={`text-xs text-gray-500 ${className}`}>{emptyMessage}</p>
+    return <p className={`text-xs text-on-surface-variant ${className}`}>{emptyMessage}</p>
   }
 
   if (loading) {
-    return <p className={`text-xs text-gray-400 ${className}`}>Loading explanation...</p>
+    return <p className={`text-xs text-on-surface-variant ${className}`}>Loading explanation...</p>
   }
 
   if (error) {
@@ -106,7 +106,7 @@ export default function AlertExplainability({
 
   if (!detail?.feature_breakdown) {
     return (
-      <p className={`text-xs text-gray-500 ${className}`}>No explanation available.</p>
+      <p className={`text-xs text-on-surface-variant ${className}`}>No explanation available.</p>
     )
   }
 
@@ -130,30 +130,30 @@ export default function AlertExplainability({
   return (
     <div className={`space-y-3 ${className}`}>
       {isStructural && (
-        <p className="rounded border border-violet-400/30 bg-violet-400/10 px-2 py-1.5 text-[11px] text-violet-200">
+        <p className="rounded-lg border border-tertiary/30 bg-tertiary/10 px-2 py-1.5 text-[11px] text-tertiary">
           Low-confidence structural association — flagged for 1-hop leg pattern
           near a fusion hub, not full Mahalanobis + ring scoring.
         </p>
       )}
 
       {primaryReason && (
-        <p className="text-xs leading-relaxed text-gray-300">{primaryReason}</p>
+        <p className="text-xs leading-relaxed text-on-surface">{primaryReason}</p>
       )}
 
       {layer1.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-500">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">
             Layer 1 factors
           </p>
           {layer1.map((factor) => (
             <div key={factor.feature} className="space-y-1">
-              <div className="flex justify-between text-[11px] text-gray-400">
+              <div className="flex justify-between text-[11px] text-on-surface-variant">
                 <span>{factor.feature.replace(/_/g, ' ')}</span>
                 <span>{factor.contribution_pct.toFixed(1)}%</span>
               </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-charcoal-lighter">
+              <div className="h-1.5 overflow-hidden rounded-full bg-surface-bright">
                 <div
-                  className="h-full rounded-full bg-teal-muted transition-all duration-300"
+                  className="h-full rounded-full bg-primary transition-all duration-300"
                   style={{
                     width: `${Math.min(100, Math.max(0, factor.contribution_pct))}%`,
                   }}
@@ -165,8 +165,8 @@ export default function AlertExplainability({
       )}
 
       {peripheral && (
-        <div className="space-y-1 border-t border-charcoal-lighter pt-3 text-[11px] text-gray-400">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-500">
+        <div className="space-y-1 border-t border-primary/10 pt-3 text-[11px] text-on-surface-variant">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">
             Structural association
           </p>
           <p>
@@ -181,8 +181,8 @@ export default function AlertExplainability({
       )}
 
       {layer2 && (
-        <div className="space-y-1 border-t border-charcoal-lighter pt-3 text-[11px] text-gray-400">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-500">
+        <div className="space-y-1 border-t border-primary/10 pt-3 text-[11px] text-on-surface-variant">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">
             Layer 2 — community ring
           </p>
           <p>{layer2.reason}</p>

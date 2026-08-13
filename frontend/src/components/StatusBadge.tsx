@@ -6,12 +6,12 @@ interface StatusBadgeProps {
 }
 
 const styles: Record<AlertStatus, string> = {
-  new: 'border-teal-muted/60 bg-teal-muted/10 text-teal-accent',
-  reviewing: 'border-amber-soft/60 bg-amber-soft/10 text-amber-soft',
-  confirmed: 'border-red-400/50 bg-red-400/10 text-red-300',
-  false_positive: 'border-gray-600 bg-gray-700/30 text-gray-400',
+  new: 'border-primary/40 bg-primary/10 text-primary',
+  reviewing: 'border-tertiary/40 bg-tertiary/10 text-tertiary',
+  confirmed: 'border-error/40 bg-error/10 text-error',
+  false_positive: 'border-outline/40 bg-surface-bright/50 text-on-surface-variant',
   auto_closed:
-    'border-slate-500/50 bg-slate-600/15 text-slate-300 italic',
+    'border-outline-variant/50 bg-surface-bright/30 text-on-surface-variant italic',
 }
 
 const labels: Record<AlertStatus, string> = {
@@ -33,7 +33,7 @@ export default function StatusBadge({ status, className = '' }: StatusBadgeProps
     <span
       title={titles[status]}
       className={[
-        'inline-flex rounded border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide',
+        'inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
         styles[status],
         className,
       ].join(' ')}

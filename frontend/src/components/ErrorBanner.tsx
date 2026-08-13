@@ -13,7 +13,7 @@ export default function ErrorBanner({
 }: ErrorBannerProps) {
   return (
     <div
-      className={`flex flex-wrap items-center justify-between gap-3 rounded border border-red-400/30 bg-red-400/10 px-3 py-2 text-xs text-red-300 ${className}`}
+      className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-xs text-error ${className}`}
       role="alert"
     >
       <span>{message}</span>
@@ -21,7 +21,7 @@ export default function ErrorBanner({
         <button
           type="button"
           onClick={onRetry}
-          className="shrink-0 rounded border border-red-400/40 px-2.5 py-1 font-medium text-red-200 hover:bg-red-400/10"
+          className="shrink-0 rounded-lg border border-error/40 px-2.5 py-1 font-medium text-error hover:bg-error/10"
         >
           {retryLabel}
         </button>

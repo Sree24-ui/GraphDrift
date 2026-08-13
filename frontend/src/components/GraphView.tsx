@@ -13,8 +13,9 @@ import type {
 import { isReplayFlagged } from '../utils/replayFlagged'
 
 const RESYNC_INTERVAL_MS = 60_000
-const TEAL_MUTED = '#4a8f8f'
-const AMBER_SOFT = '#d4a574'
+const PRIMARY = '#7dd3fc'
+const TERTIARY = '#c8a0f0'
+const ERROR = '#ff6b6b'
 const PULSE_DURATION_MS = 900
 
 export interface GraphNodeObject {
@@ -203,13 +204,13 @@ export default function GraphView({
     setGraphVersion((v) => v + 1)
   }, [])
 
-  const liveGraphData = useMemo(
-    () => ({
+  const liveGraphData = useMemo(() => {
+    void graphVersion
+    return {
       nodes: Array.from(nodesMapRef.current.values()),
       links: Array.from(linksMapRef.current.values()),
-    }),
-    [graphVersion],
-  )
+    }
+  }, [graphVersion])
 
   const replayGraphData = useMemo(() => {
     if (!staticSnapshot) {
@@ -486,13 +487,13 @@ export default function GraphView({
       ctx.arc(x, y, radius, 0, 2 * Math.PI)
 
       if (alertConf === 'high') {
-        ctx.fillStyle = AMBER_SOFT
+        ctx.fillStyle = ERROR
         ctx.fill()
       } else {
-        ctx.fillStyle = TEAL_MUTED
+        ctx.fillStyle = PRIMARY
         ctx.fill()
         if (alertConf === 'medium' || alertConf === 'low') {
-          ctx.strokeStyle = AMBER_SOFT
+          ctx.strokeStyle = TERTIARY
           ctx.lineWidth = 1.5 / globalScale
           ctx.stroke()
         }
@@ -504,32 +505,32 @@ export default function GraphView({
   return (
     <div
       ref={containerRef}
-      className="relative h-full min-h-[420px] w-full overflow-hidden rounded-lg border border-charcoal-lighter bg-charcoal"
+      className="relative h-full min-h-[360px] w-full overflow-hidden bg-[radial-gradient(circle_at_center,rgba(125,211,252,0.05)_0%,transparent_70%)]"
     >
-      <div className="absolute left-3 top-3 z-10 flex flex-wrap items-center gap-3 rounded-md border border-charcoal-lighter bg-charcoal-light/95 px-3 py-2 backdrop-blur-sm">
-        <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-300">
+      <div className="absolute left-3 top-3 z-10 flex flex-wrap items-center gap-3 rounded-lg glass-panel px-3 py-2">
+        <label className="flex cursor-pointer items-center gap-2 text-xs text-on-surface">
           <input
             type="checkbox"
             checked={showFlaggedOnly}
             onChange={(e) => setShowFlaggedOnly(e.target.checked)}
-            className="accent-teal-accent"
+            className="accent-primary"
           />
           Show flagged network only
         </label>
-        <span className="text-[11px] tabular-nums text-gray-500">
+        <span className="text-[11px] tabular-nums text-on-surface-variant">
           Showing {visibleNodeCount.toLocaleString()} of{' '}
           {totalNodeCount.toLocaleString()} nodes
         </span>
         {isReplay && (
-          <span className="rounded border border-amber-soft/40 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-soft">
+          <span className="rounded border border-tertiary/40 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-tertiary">
             Replay
           </span>
         )}
       </div>
 
       {isReplay && replayLoading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-charcoal/50">
-          <div className="h-7 w-7 animate-spin rounded-full border-2 border-charcoal-lighter border-t-teal-accent" />
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/50">
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
         </div>
       )}
 

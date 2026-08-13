@@ -127,7 +127,7 @@ export default function TimelineScrubber({
         }
       }
     },
-    [dataFloorMs, earliestEndMs, onLoadingChange, onSnapshotChange],
+    [dataFloorMs, onLoadingChange, onSnapshotChange],
   )
 
   const stopPlayback = useCallback(() => {
@@ -229,19 +229,21 @@ export default function TimelineScrubber({
     REPLAY_STEPS === 0 ? 0 : (minStep / REPLAY_STEPS) * 100
 
   return (
-    <div className="rounded-lg border border-charcoal-lighter bg-charcoal-light px-4 py-3">
+    <div className="glass-panel rounded-xl px-4 py-3">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-400">Graph mode</span>
-          <div className="flex overflow-hidden rounded-md border border-charcoal-lighter">
+          <span className="text-xs font-medium text-on-surface-variant">
+            Graph mode
+          </span>
+          <div className="flex overflow-hidden rounded-lg border border-primary/20">
             <button
               type="button"
               onClick={() => void handleModeChange('live')}
               className={[
                 'px-3 py-1.5 text-xs font-medium transition-colors',
                 mode === 'live'
-                  ? 'bg-teal-muted/25 text-teal-accent'
-                  : 'bg-charcoal text-gray-500 hover:text-gray-300',
+                  ? 'bg-primary/20 text-primary'
+                  : 'bg-surface text-on-surface-variant hover:text-on-surface',
               ].join(' ')}
             >
               Live
@@ -252,8 +254,8 @@ export default function TimelineScrubber({
               className={[
                 'px-3 py-1.5 text-xs font-medium transition-colors',
                 mode === 'replay'
-                  ? 'bg-amber-soft/20 text-amber-soft'
-                  : 'bg-charcoal text-gray-500 hover:text-gray-300',
+                  ? 'bg-tertiary/20 text-tertiary'
+                  : 'bg-surface text-on-surface-variant hover:text-on-surface',
               ].join(' ')}
             >
               Replay
@@ -267,7 +269,7 @@ export default function TimelineScrubber({
               type="button"
               onClick={handlePlay}
               disabled={isPlaying || isLoading}
-              className="rounded border border-teal-muted/40 px-3 py-1 text-xs text-teal-accent disabled:opacity-40"
+              className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary disabled:opacity-40"
             >
               Play
             </button>
@@ -275,7 +277,7 @@ export default function TimelineScrubber({
               type="button"
               onClick={stopPlayback}
               disabled={!isPlaying}
-              className="rounded border border-charcoal-lighter px-3 py-1 text-xs text-gray-400 disabled:opacity-40"
+              className="rounded-lg border border-primary/10 px-3 py-1 text-xs text-on-surface-variant disabled:opacity-40"
             >
               Pause
             </button>
@@ -283,7 +285,7 @@ export default function TimelineScrubber({
               type="button"
               onClick={handleStop}
               disabled={isLoading}
-              className="rounded border border-charcoal-lighter px-3 py-1 text-xs text-gray-400 disabled:opacity-40"
+              className="rounded-lg border border-primary/10 px-3 py-1 text-xs text-on-surface-variant disabled:opacity-40"
             >
               Stop
             </button>
@@ -293,17 +295,19 @@ export default function TimelineScrubber({
 
       {mode === 'replay' ? (
         <>
-          <p className="mb-2 text-center text-xs tabular-nums text-gray-300">
+          <p className="mb-2 text-center text-xs tabular-nums text-on-surface">
             {formatTimelineTimestamp(displayEndMs)}
             {isLoading && (
-              <span className="ml-2 text-gray-500">Loading snapshot…</span>
+              <span className="ml-2 text-on-surface-variant">
+                Loading snapshot…
+              </span>
             )}
           </p>
 
           <div className="relative px-1">
             {minStep > 0 && (
               <div
-                className="absolute left-1 top-1/2 h-1.5 -translate-y-1/2 rounded-l-full bg-charcoal-lighter/80"
+                className="absolute left-1 top-1/2 h-1.5 -translate-y-1/2 rounded-l-full bg-outline-variant/80"
                 style={{ width: `${boundaryProgress}%` }}
                 title="No transaction data before this point"
               />
@@ -319,11 +323,11 @@ export default function TimelineScrubber({
               onChange={(e) => handleSliderChange(Number(e.target.value))}
               className="timeline-slider w-full"
               style={{
-                background: `linear-gradient(to right, var(--tw-gradient-from, #4a8f8f) ${sliderProgress}%, #2d363f ${sliderProgress}%)`,
+                background: `linear-gradient(to right, #7dd3fc ${sliderProgress}%, #1a2438 ${sliderProgress}%)`,
               }}
             />
 
-            <div className="mt-1 flex justify-between text-[10px] text-gray-600">
+            <div className="mt-1 flex justify-between text-[10px] text-on-surface-variant">
               <span>
                 {earliestEndMs
                   ? formatTimelineTimestamp(earliestEndMs)
@@ -335,7 +339,7 @@ export default function TimelineScrubber({
           </div>
         </>
       ) : (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-on-surface-variant">
           Live mode — graph updates in real time from the WebSocket feed.
           Switch to Replay to scrub through the last 15 minutes.
         </p>

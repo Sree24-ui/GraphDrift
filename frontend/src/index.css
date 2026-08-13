@@ -3,12 +3,125 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    color-scheme: dark;
+  }
+
   body {
-    @apply m-0 min-h-screen bg-charcoal font-sans text-gray-200 antialiased;
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-family: theme('fontFamily.body');
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: theme('colors.background');
+    color: theme('colors.on-background');
   }
 
   #root {
     @apply min-h-screen;
+  }
+
+  ::selection {
+    background-color: rgb(125 211 252 / 0.3);
+    color: #7dd3fc;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(10, 14, 26, 0.5);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(125, 211, 252, 0.2);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(125, 211, 252, 0.4);
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background: rgba(15, 21, 36, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(125, 211, 252, 0.1);
+  }
+
+  .glass-panel-elevated {
+    background: rgba(15, 21, 36, 0.75);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(125, 211, 252, 0.15);
+    box-shadow: 0 0 30px rgba(125, 211, 252, 0.05);
+  }
+
+  .filter-chip {
+    @apply rounded-lg border px-2.5 py-1 text-xs font-medium transition-all duration-200;
+  }
+
+  .filter-chip-active {
+    @apply border-primary/60 bg-primary/15 text-primary shadow-primary-glow;
+  }
+
+  .filter-chip-inactive {
+    @apply border-primary/10 text-on-surface-variant hover:border-primary/30 hover:bg-primary/5 hover:text-on-surface;
+  }
+
+  .nav-link {
+    @apply mx-2 flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium tracking-wide transition-all duration-300 ease-in-out active:scale-95;
+  }
+
+  .nav-link-active {
+    @apply bg-primary/10 text-primary shadow-[0_0_15px_rgba(125,211,252,0.1)];
+  }
+
+  .nav-link-inactive {
+    @apply text-on-surface-variant hover:bg-primary/5 hover:text-on-surface;
+  }
+
+  .page-title {
+    @apply text-xl font-semibold tracking-tight text-on-surface md:text-2xl;
+  }
+
+  .page-subtitle {
+    @apply text-xs text-on-surface-variant md:text-sm;
+  }
+
+  .glacier-text-glow {
+    text-shadow: 0 0 10px rgba(125, 211, 252, 0.3);
+  }
+
+  .kpi-card {
+    @apply glass-panel relative overflow-hidden rounded-xl p-5 transition-all duration-300 hover:bg-surface/70;
+  }
+
+  .kpi-card-gradient::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-500;
+    background: linear-gradient(
+      to bottom right,
+      rgba(125, 211, 252, 0.1),
+      transparent
+    );
+  }
+
+  .kpi-card:hover .kpi-card-gradient::before {
+    @apply opacity-100;
+  }
+
+  .data-table-head {
+    @apply border-b border-primary/10 bg-surface/30 text-xs font-semibold uppercase tracking-wider text-on-surface-variant;
+  }
+
+  .data-table-row {
+    @apply border-b border-primary/5 transition-colors hover:bg-primary/5;
   }
 }
 
@@ -23,12 +136,43 @@
   }
 }
 
+@keyframes bubbleFloat {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(125, 211, 252, 0.12),
+    rgba(125, 211, 252, 0.02)
+  );
+  border: 1px solid rgba(125, 211, 252, 0.06);
+  animation: bubbleFloat linear infinite;
+  pointer-events: none;
+}
+
 .timeline-slider {
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
   border-radius: 9999px;
   outline: none;
+  background: rgba(125, 211, 252, 0.15);
 }
 
 .timeline-slider::-webkit-slider-thumb {
@@ -37,9 +181,10 @@
   height: 14px;
   width: 14px;
   border-radius: 9999px;
-  background: #5fa8a8;
-  border: 2px solid #1a1f24;
+  background: #7dd3fc;
+  border: 2px solid #0f1524;
   cursor: pointer;
+  box-shadow: 0 0 8px rgba(125, 211, 252, 0.5);
 }
 
 .timeline-slider:disabled::-webkit-slider-thumb {
@@ -51,7 +196,7 @@
   height: 14px;
   width: 14px;
   border-radius: 9999px;
-  background: #5fa8a8;
-  border: 2px solid #1a1f24;
+  background: #7dd3fc;
+  border: 2px solid #0f1524;
   cursor: pointer;
 }

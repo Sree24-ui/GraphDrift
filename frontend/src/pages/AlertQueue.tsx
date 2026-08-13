@@ -13,7 +13,9 @@ import AlertExplainability from '../components/AlertExplainability'
 import ConfidenceBadge from '../components/ConfidenceBadge'
 import ErrorBanner from '../components/ErrorBanner'
 import LoadingSpinner from '../components/LoadingSpinner'
+import MaterialIcon from '../components/MaterialIcon'
 import PeripheralStructuralBadge from '../components/PeripheralStructuralBadge'
+import RiskScorePill from '../components/RiskScorePill'
 import StatusBadge from '../components/StatusBadge'
 import TableSkeleton from '../components/TableSkeleton'
 import {
@@ -64,24 +66,21 @@ const PAGE_SIZE = 25
 
 function actionButtonClass(variant: 'primary' | 'danger' | 'neutral'): string {
   const base =
-    'rounded border px-2.5 py-1 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40'
+    'rounded-lg border px-3 py-1.5 text-xs font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40'
   switch (variant) {
     case 'primary':
-      return `${base} border-teal-muted/50 text-teal-accent hover:bg-teal-muted/10`
+      return `${base} border-primary/20 bg-primary/10 text-primary hover:bg-primary/20 hover:shadow-[0_0_15px_rgba(125,211,252,0.15)]`
     case 'danger':
-      return `${base} border-red-400/40 text-red-300 hover:bg-red-400/10`
+      return `${base} border-error/40 bg-error/10 text-error hover:bg-error/20`
     default:
-      return `${base} border-gray-600 text-gray-400 hover:bg-charcoal-lighter`
+      return `${base} border-primary/10 text-on-surface hover:border-primary/30 hover:text-primary`
   }
 }
 
 function filterChipClass(active: boolean): string {
-  return [
-    'rounded border px-2.5 py-1 text-xs font-medium transition-colors',
-    active
-      ? 'border-teal-muted/60 bg-teal-muted/15 text-teal-accent'
-      : 'border-charcoal-lighter text-gray-500 hover:border-gray-600 hover:text-gray-300',
-  ].join(' ')
+  return ['filter-chip', active ? 'filter-chip-active' : 'filter-chip-inactive'].join(
+    ' ',
+  )
 }
 
 interface AlertRowDetailProps {
@@ -168,10 +167,10 @@ function AlertRowDetail({
   }
 
   return (
-    <div className="space-y-4 border-t border-charcoal-lighter bg-charcoal/60 px-4 py-4">
+    <div className="space-y-4 border-t border-primary/10 bg-surface/40 px-4 py-4">
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
-          <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-gray-500">
+          <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">
             Explainability
           </p>
           <AlertExplainability
@@ -210,7 +209,7 @@ function AlertRowDetail({
           <div>
             <label
               htmlFor={`notes-${alert.id}`}
-              className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-gray-500"
+              className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-on-surface-variant"
             >
               Analyst notes
             </label>
@@ -223,7 +222,7 @@ function AlertRowDetail({
               }}
               rows={3}
               placeholder="Add investigation notes..."
-              className="w-full resize-y rounded border border-charcoal-lighter bg-charcoal px-3 py-2 text-xs text-gray-200 placeholder:text-gray-600 focus:border-teal-muted/50 focus:outline-none"
+              className="w-full resize-y rounded border border-primary/10 bg-surface px-3 py-2 text-xs text-on-surface placeholder:text-on-surface-variant focus:border-primary/40 focus:outline-none"
             />
             {notesError && (
               <p className="mt-1 text-[11px] text-red-300">{notesError}</p>
@@ -232,7 +231,7 @@ function AlertRowDetail({
               type="button"
               onClick={handleSaveNotes}
               disabled={!notesDirty || savingNotes}
-              className="mt-2 rounded border border-teal-muted/50 px-3 py-1 text-xs font-medium text-teal-accent hover:bg-teal-muted/10 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-2 rounded border border-teal-muted/50 px-3 py-1 text-xs font-medium text-teal-accent hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {savingNotes ? 'Saving...' : 'Save notes'}
             </button>
@@ -284,6 +283,7 @@ export default function AlertQueue() {
   const [actionBusyIds, setActionBusyIds] = useState<Set<number>>(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const queryParams = useMemo((): GetAlertsParams => {
     const params: GetAlertsParams = {
@@ -530,41 +530,81 @@ export default function AlertQueue() {
     statusFilter.has('reviewing') &&
     statusFilter.size === 2
 
+  const criticalCount = useMemo(
+    () =>
+      items.filter(
+        (a) => a.confidence === 'high' && (a.status === 'new' || a.status === 'reviewing'),
+      ).length,
+    [items],
+  )
+
+  const visibleItems = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return items
+    return items.filter((a) =>
+      a.account.account_id.toLowerCase().includes(q),
+    )
+  }, [items, searchQuery])
+
   return (
-    <div className="flex h-full flex-col gap-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-100">Alert Queue</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {loading
-              ? 'Loading alerts...'
-              : `${total.toLocaleString()} alert${total === 1 ? '' : 's'} matching filters`}
-            {showingNeedsAttention && !loading && (
-              <span className="text-teal-accent">
-                {' '}
-                · needs-attention view (new + reviewing)
-              </span>
-            )}
-          </p>
+    <div className="flex h-full flex-col gap-4 overflow-hidden">
+      <header className="glass-panel sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 rounded-xl px-4 py-3 md:px-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <div>
+            <h1 className="font-headline text-lg font-bold tracking-wide text-primary">
+              Alert Queue
+            </h1>
+            <p className="text-xs text-on-surface-variant">
+              {loading
+                ? 'Loading alerts…'
+                : `${total.toLocaleString()} alert${total === 1 ? '' : 's'} matching filters`}
+              {showingNeedsAttention && !loading && (
+                <span className="text-primary"> · needs-attention view</span>
+              )}
+            </p>
+          </div>
+          {criticalCount > 0 && (
+            <div className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-error" />
+              {criticalCount} Critical
+            </div>
+          )}
         </div>
 
-        {selectedIds.size > 0 && (
-          <button
-            type="button"
-            onClick={handleBulkFalsePositive}
-            disabled={bulkBusy}
-            className="shrink-0 rounded border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-charcoal-lighter disabled:opacity-40"
-          >
-            {bulkBusy
-              ? 'Updating...'
-              : `Mark ${selectedIds.size} False Positive`}
-          </button>
-        )}
-      </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative hidden md:block">
+            <MaterialIcon
+              name="search"
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
+            />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search alerts…"
+              className="glass-panel w-64 rounded-full border-primary/10 bg-surface/50 py-1.5 pl-9 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary/30 focus:outline-none focus:ring-1 focus:ring-primary/30"
+            />
+          </div>
 
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-charcoal-lighter bg-charcoal-light p-3">
+          {selectedIds.size > 0 && (
+            <button
+              type="button"
+              onClick={handleBulkFalsePositive}
+              disabled={bulkBusy}
+              className="shrink-0 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-40"
+            >
+              {bulkBusy
+                ? 'Updating…'
+                : `Mark ${selectedIds.size} False Positive`}
+            </button>
+          )}
+        </div>
+      </header>
+
+      <div className="glass-panel flex flex-wrap items-center gap-3 rounded-xl p-3">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[10px] font-medium uppercase tracking-wide text-gray-500">
+          <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
             Status
           </span>
           {STATUS_OPTIONS.map((opt) => (
@@ -579,10 +619,10 @@ export default function AlertQueue() {
           ))}
         </div>
 
-        <div className="h-4 w-px bg-charcoal-lighter" />
+        <div className="h-4 w-px bg-primary/10" />
 
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[10px] font-medium uppercase tracking-wide text-gray-500">
+          <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
             Confidence
           </span>
           {CONFIDENCE_OPTIONS.map((opt) => (
@@ -600,10 +640,10 @@ export default function AlertQueue() {
           ))}
         </div>
 
-        <div className="h-4 w-px bg-charcoal-lighter" />
+        <div className="h-4 w-px bg-primary/10" />
 
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[10px] font-medium uppercase tracking-wide text-gray-500">
+          <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
             Detected
           </span>
           {DATE_OPTIONS.map((opt) => (
@@ -624,7 +664,7 @@ export default function AlertQueue() {
         <button
           type="button"
           onClick={clearFilters}
-          className="ml-auto text-xs text-gray-500 hover:text-gray-300"
+          className="ml-auto text-xs text-on-surface-variant hover:text-on-surface"
         >
           Clear filters
         </button>
@@ -640,13 +680,13 @@ export default function AlertQueue() {
         <ErrorBanner message={error} onRetry={fetchAlerts} />
       )}
 
-      <div className="min-h-[320px] flex-1 overflow-hidden rounded-lg border border-charcoal-lighter bg-charcoal-light">
+      <div className="glass-panel min-h-[320px] flex-1 overflow-hidden rounded-xl shadow-[0_0_40px_rgba(125,211,252,0.03)]">
         {loading ? (
           <TableSkeleton rows={8} columns={7} />
-        ) : items.length === 0 && !error ? (
+        ) : visibleItems.length === 0 && !error ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <p className="text-lg font-medium text-gray-300">All caught up</p>
-            <p className="mt-2 max-w-sm text-sm text-gray-500">
+            <p className="text-lg font-medium text-on-surface">All caught up</p>
+            <p className="mt-2 max-w-sm text-sm text-on-surface-variant">
               No alerts match your current filters. Try widening the status or
               date range, or check back after the next detection cycle.
             </p>
@@ -655,43 +695,43 @@ export default function AlertQueue() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead>
-                <tr className="border-b border-charcoal-lighter text-[10px] uppercase tracking-wide text-gray-500">
-                  <th className="w-10 px-3 py-3">
+                <tr className="data-table-head">
+                  <th className="w-10 px-6 py-4">
                     <input
                       type="checkbox"
                       checked={allOnPageSelected}
                       onChange={toggleSelectAll}
                       aria-label="Select all on page"
-                      className="rounded border-gray-600 bg-charcoal"
+                      className="rounded border-primary/20 bg-surface"
                     />
                   </th>
-                  <th className="px-3 py-3 font-medium">Account</th>
-                  <th className="px-3 py-3 font-medium">
+                  <th className="px-6 py-4 font-medium">Account</th>
+                  <th className="px-6 py-4 font-medium">
                     <button
                       type="button"
                       onClick={() => toggleSort('risk_score')}
-                      className="hover:text-gray-300"
+                      className="hover:text-on-surface"
                     >
                       Risk{sortIndicator('risk_score')}
                     </button>
                   </th>
-                  <th className="px-3 py-3 font-medium">Confidence</th>
-                  <th className="px-3 py-3 font-medium">Pattern</th>
-                  <th className="px-3 py-3 font-medium">
+                  <th className="px-6 py-4 font-medium">Confidence</th>
+                  <th className="px-6 py-4 font-medium">Pattern</th>
+                  <th className="px-6 py-4 font-medium">
                     <button
                       type="button"
                       onClick={() => toggleSort('detected_at')}
-                      className="hover:text-gray-300"
+                      className="hover:text-on-surface"
                     >
                       Detected{sortIndicator('detected_at')}
                     </button>
                   </th>
-                  <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-3 py-3 font-medium">Actions</th>
+                  <th className="px-6 py-4 font-medium">Status</th>
+                  <th className="px-6 py-4 text-right font-medium">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {items.map((alert) => {
+              <tbody className="divide-y divide-primary/5">
+                {visibleItems.map((alert) => {
                   const isExpanded = expandedId === alert.id
                   const quickActions = getQuickActions(alert.status)
                   const isBusy = actionBusyIds.has(alert.id)
@@ -715,8 +755,8 @@ export default function AlertQueue() {
                           }
                         }}
                         className={[
-                          'cursor-pointer border-b border-charcoal-lighter/60 transition-colors hover:bg-charcoal-lighter/40',
-                          isExpanded ? 'bg-charcoal-lighter/30' : '',
+                          'data-table-row cursor-pointer',
+                          isExpanded ? 'bg-primary/5' : '',
                         ].join(' ')}
                       >
                         <td
@@ -730,7 +770,7 @@ export default function AlertQueue() {
                             disabled={!canSelect}
                             onChange={() => toggleSelect(alert.id)}
                             aria-label={`Select alert ${alert.id}`}
-                            className="rounded border-gray-600 bg-charcoal disabled:opacity-30"
+                            className="rounded border-primary/20 bg-surface disabled:opacity-30"
                           />
                         </td>
 
@@ -739,7 +779,7 @@ export default function AlertQueue() {
                             <Link
                               to={`/accounts/${encodeURIComponent(alert.account.account_id)}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="truncate font-medium text-teal-accent hover:underline"
+                              className="truncate font-medium text-primary hover:underline"
                             >
                               {alert.account.account_id}
                             </Link>
@@ -751,8 +791,12 @@ export default function AlertQueue() {
                           </div>
                         </td>
 
-                        <td className="px-3 py-3 text-gray-300">
-                          {alert.risk_score.toFixed(2)}
+                        <td className="px-6 py-4 text-on-surface">
+                          <RiskScorePill
+                            score={alert.risk_score}
+                            confidence={alert.confidence}
+                            compact
+                          />
                         </td>
 
                         <td className="px-3 py-3">
@@ -764,11 +808,11 @@ export default function AlertQueue() {
                           </div>
                         </td>
 
-                        <td className="max-w-[160px] truncate px-3 py-3 text-gray-400">
+                        <td className="max-w-[160px] truncate px-3 py-3 text-on-surface-variant">
                           {formatPatternType(alert.pattern_type)}
                         </td>
 
-                        <td className="px-3 py-3 text-gray-500">
+                        <td className="px-3 py-3 text-on-surface-variant">
                           {formatRelativeTime(alert.detected_at)}
                         </td>
 
@@ -800,7 +844,7 @@ export default function AlertQueue() {
                       </tr>
 
                       {isExpanded && (
-                        <tr className="border-b border-charcoal-lighter/60">
+                        <tr className="border-b border-primary/5">
                           <td colSpan={8} className="p-0">
                             <AlertRowDetail
                               alert={alert}
@@ -818,33 +862,36 @@ export default function AlertQueue() {
             </table>
           </div>
         )}
-      </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>
-            Page {page} of {totalPages} · {PAGE_SIZE} per page
-          </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="rounded border border-charcoal-lighter px-3 py-1 hover:bg-charcoal-lighter disabled:opacity-40"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="rounded border border-charcoal-lighter px-3 py-1 hover:bg-charcoal-lighter disabled:opacity-40"
-            >
-              Next
-            </button>
+        {totalPages > 1 && !loading && (
+          <div className="flex items-center justify-between border-t border-primary/10 bg-surface/20 px-6 py-4 text-xs text-on-surface-variant">
+            <span>
+              Showing {(page - 1) * PAGE_SIZE + 1} to{' '}
+              {Math.min(page * PAGE_SIZE, total)} of {total} alerts
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/10 text-on-surface-variant transition-all hover:border-primary/30 hover:text-primary disabled:opacity-40"
+                aria-label="Previous page"
+              >
+                <MaterialIcon name="chevron_left" size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/10 text-on-surface-variant transition-all hover:border-primary/30 hover:text-primary disabled:opacity-40"
+                aria-label="Next page"
+              >
+                <MaterialIcon name="chevron_right" size={16} />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

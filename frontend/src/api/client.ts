@@ -15,12 +15,30 @@ import type {
   ScoreHistoryResponse,
 } from './types'
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+function resolveApiBaseUrl(): string {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+  // In dev, use same-origin requests so Vite proxies to the backend (no CORS issues).
+  if (import.meta.env.DEV) {
+    return ''
+  }
+  return 'http://localhost:8000'
+}
 
-export const WS_BASE_URL =
-  import.meta.env.VITE_WS_BASE_URL ??
-  API_BASE_URL.replace(/^http/, 'ws')
+function resolveWsBaseUrl(apiBaseUrl: string): string {
+  if (import.meta.env.VITE_WS_BASE_URL) {
+    return import.meta.env.VITE_WS_BASE_URL
+  }
+  if (import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL) {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${protocol}//${window.location.host}`
+  }
+  return apiBaseUrl.replace(/^http/, 'ws')
+}
+
+export const API_BASE_URL = resolveApiBaseUrl()
+export const WS_BASE_URL = resolveWsBaseUrl(API_BASE_URL)
 
 const api = axios.create({
   baseURL: API_BASE_URL,

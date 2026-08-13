@@ -10,6 +10,7 @@ import {
 import type { AlertStatus, ConfidenceLevel } from '../api/types'
 import ErrorBanner from '../components/ErrorBanner'
 import LoadingSpinner from '../components/LoadingSpinner'
+import MaterialIcon from '../components/MaterialIcon'
 import {
   loadDefaultConfidenceFilter,
   loadDefaultStatusFilter,
@@ -34,17 +35,16 @@ const CONFIDENCE_OPTIONS: { value: ConfidenceLevel | 'all'; label: string }[] =
     { value: 'low', label: 'Low' },
   ]
 
-function sectionClass(): string {
-  return 'rounded-lg border border-charcoal-lighter bg-charcoal-light p-4'
+function sectionClass(elevated = false): string {
+  return elevated
+    ? 'glass-panel-elevated rounded-xl p-6'
+    : 'glass-panel rounded-xl p-6'
 }
 
 function filterChipClass(active: boolean): string {
-  return [
-    'rounded border px-2.5 py-1 text-xs font-medium transition-colors',
-    active
-      ? 'border-teal-muted/60 bg-teal-muted/15 text-teal-accent'
-      : 'border-charcoal-lighter text-gray-500 hover:border-gray-600 hover:text-gray-300',
-  ].join(' ')
+  return ['filter-chip', active ? 'filter-chip-active' : 'filter-chip-inactive'].join(
+    ' ',
+  )
 }
 
 type WsStatus = 'connecting' | 'connected' | 'disconnected'
@@ -168,35 +168,33 @@ export default function Settings() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-6 overflow-y-auto">
-      <div>
-        <h1 className="text-xl font-semibold text-gray-100">Settings</h1>
-        <p className="mt-1 text-xs text-gray-500">
-          Detection tuning and Alert Queue defaults.
+    <div className="mx-auto flex h-full max-w-6xl flex-col gap-8 overflow-y-auto">
+      <header>
+        <h1 className="font-headline text-3xl font-semibold tracking-tight text-on-surface glacier-text-glow">
+          System Configuration
+        </h1>
+        <p className="mt-2 text-on-surface-variant">
+          Manage detection parameters and operational preferences.
         </p>
-      </div>
+      </header>
 
-      {error && (
-        <ErrorBanner message={error} onRetry={fetchSettings} />
-      )}
+      {error && <ErrorBanner message={error} onRetry={fetchSettings} />}
 
-      <section className={sectionClass()}>
-        <h2 className="text-sm font-medium text-gray-200">
-          Detection sensitivity
-        </h2>
-        <p className="mt-1 text-xs text-gray-500">
-          Alerts are raised for the top {topPercent}% most anomalous accounts
-          each detection cycle.
-        </p>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <section className={`${sectionClass(true)} lg:col-span-2`}>
+          <h2 className="mb-6 flex items-center gap-3 text-xl font-semibold text-on-surface">
+            <MaterialIcon name="tune" className="text-primary" size={22} />
+            Detection Sensitivity
+          </h2>
 
         {loading ? (
           <LoadingSpinner size="sm" label="Loading settings…" className="mt-6 py-8" />
         ) : (
           <div className="mt-4 space-y-4">
             <div>
-              <div className="flex items-center justify-between text-xs text-gray-400">
+              <div className="flex items-center justify-between text-xs text-on-surface-variant">
                 <span>Top anomaly share</span>
-                <span className="tabular-nums text-gray-200">{topPercent}%</span>
+                <span className="tabular-nums text-on-surface">{topPercent}%</span>
               </div>
               <input
                 type="range"
@@ -205,11 +203,11 @@ export default function Settings() {
                 step={1}
                 value={topPercent}
                 onChange={(e) => setTopPercent(Number(e.target.value))}
-                className="mt-2 w-full accent-teal-accent"
+                className="mt-2 w-full accent-primary"
               />
-              <p className="mt-2 text-[11px] text-gray-600">
+              <p className="mt-2 text-[11px] text-on-surface-variant">
                 Effective percentile cutoff:{' '}
-                <span className="tabular-nums text-gray-400">
+                <span className="tabular-nums text-on-surface">
                   {percentile.toFixed(3)}
                 </span>{' '}
                 (higher = fewer alerts)
@@ -220,116 +218,105 @@ export default function Settings() {
               type="button"
               onClick={handleSaveSensitivity}
               disabled={saving}
-              className="rounded border border-teal-muted/50 px-3 py-1.5 text-xs font-medium text-teal-accent hover:bg-teal-muted/10 disabled:opacity-40"
+              className="rounded-lg border border-primary/30 bg-primary/20 px-6 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/30 disabled:opacity-40"
             >
-              {saving ? 'Saving…' : 'Apply sensitivity'}
+              {saving ? 'Saving…' : 'Apply Calibrations'}
             </button>
 
             {saveMessage && (
-              <p className="text-xs text-teal-accent">{saveMessage}</p>
+              <p className="text-xs text-primary">{saveMessage}</p>
             )}
           </div>
         )}
-      </section>
+        </section>
 
-      <section className={sectionClass()}>
-        <h2 className="text-sm font-medium text-gray-200">
-          Simulation (read-only)
-        </h2>
-        <p className="mt-1 text-xs text-gray-500">
-          Demo injection rates from the backend simulator — not adjustable at
-          runtime.
-        </p>
-        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-xs text-gray-600">Mule attack probability</dt>
-            <dd className="tabular-nums text-gray-200">
-              {(simMule * 100).toFixed(2)}%
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-gray-600">Slow-drip attack probability</dt>
-            <dd className="tabular-nums text-gray-200">
-              {(simSlow * 100).toFixed(2)}%
-            </dd>
-          </div>
-        </dl>
-      </section>
-
-      <section className={sectionClass()}>
-        <h2 className="text-sm font-medium text-gray-200">
-          Alert Queue defaults
-        </h2>
-        <p className="mt-1 text-xs text-gray-500">
-          Stored in this browser only. Applied when you open or refresh the
-          Alert Queue.
-        </p>
-
-        <div className="mt-4 space-y-4">
-          <div>
-            <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-gray-500">
-              Default status filter
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {STATUS_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => toggleStatusDefault(opt.value)}
-                  className={filterChipClass(statusDefaults.has(opt.value))}
-                >
-                  {opt.label}
-                </button>
-              ))}
+        <section className={`${sectionClass()} relative overflow-hidden`}>
+          <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
+          <h2 className="relative z-10 mb-6 flex items-center gap-3 text-xl font-semibold text-on-surface">
+            <MaterialIcon name="dns" className="text-primary" size={22} />
+            System Status
+          </h2>
+          <dl className="relative z-10 space-y-4 text-sm">
+            <div className="flex items-center justify-between">
+              <dt className="text-on-surface-variant">Backend health</dt>
+              <dd className="flex items-center gap-2 text-on-surface">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-primary shadow-[0_0_8px_rgba(125,211,252,0.8)]" />
+                {healthStatus}
+              </dd>
             </div>
-          </div>
-
-          <div>
-            <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-gray-500">
-              Default confidence filter
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {CONFIDENCE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => handleConfidenceDefault(opt.value)}
-                  className={filterChipClass(confidenceDefault === opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            <div className="flex items-center justify-between">
+              <dt className="text-on-surface-variant">WebSocket feed</dt>
+              <dd className="capitalize text-on-surface">{wsStatus}</dd>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <footer className={`${sectionClass()} text-xs text-gray-500`}>
-        <h2 className="text-sm font-medium text-gray-300">System</h2>
-        <dl className="mt-3 grid gap-2 sm:grid-cols-2">
-          <div>
-            <dt>Backend health</dt>
-            <dd className="text-gray-300">{healthStatus}</dd>
-          </div>
-          <div>
-            <dt>WebSocket feed</dt>
-            <dd className="text-gray-300">{wsStatus}</dd>
-          </div>
-          <div className="sm:col-span-2">
-            <dt>API docs</dt>
-            <dd>
+            <div className="flex items-center justify-between">
+              <dt className="text-on-surface-variant">Mule attack rate</dt>
+              <dd className="tabular-nums text-on-surface">
+                {(simMule * 100).toFixed(2)}%
+              </dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="text-on-surface-variant">Slow-drip rate</dt>
+              <dd className="tabular-nums text-on-surface">
+                {(simSlow * 100).toFixed(2)}%
+              </dd>
+            </div>
+            <div className="pt-2">
               <a
                 href={`${API_BASE_URL}/docs`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-teal-accent hover:underline"
+                className="text-xs text-primary hover:underline"
               >
                 {API_BASE_URL}/docs
               </a>
-            </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className={`${sectionClass()} lg:col-span-3`}>
+          <h2 className="mb-6 flex items-center gap-3 text-xl font-semibold text-on-surface">
+            <MaterialIcon name="dynamic_feed" className="text-primary" size={22} />
+            Queue Preferences
+          </h2>
+          <div className="grid gap-8 md:grid-cols-2">
+            <div>
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                Default status filter
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {STATUS_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => toggleStatusDefault(opt.value)}
+                    className={filterChipClass(statusDefaults.has(opt.value))}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                Default confidence filter
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {CONFIDENCE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleConfidenceDefault(opt.value)}
+                    className={filterChipClass(confidenceDefault === opt.value)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-        </dl>
-      </footer>
+        </section>
+      </div>
     </div>
   )
 }

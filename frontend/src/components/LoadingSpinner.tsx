@@ -14,11 +14,11 @@ export default function LoadingSpinner({
   return (
     <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
       <div
-        className={`${dim} animate-spin rounded-full border-2 border-charcoal-lighter border-t-teal-accent`}
+        className={`${dim} animate-spin rounded-full border-2 border-primary/20 border-t-primary`}
         role="status"
         aria-label={label ?? 'Loading'}
       />
-      {label && <p className="text-sm text-gray-500">{label}</p>}
+      {label && <p className="text-sm text-on-surface-variant">{label}</p>}
     </div>
   )
 }

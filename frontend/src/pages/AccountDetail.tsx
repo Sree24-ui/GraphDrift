@@ -34,6 +34,7 @@ import {
   formatRelativeTime,
   isPeripheralStructural,
 } from '../utils/format'
+import MaterialIcon from '../components/MaterialIcon'
 import PeripheralStructuralBadge from '../components/PeripheralStructuralBadge'
 
 // Top 5% of fused scale (0–5) — mirrors ALERT_TOP_PERCENTILE in fusion.py
@@ -57,7 +58,7 @@ function ScoreTrendChart({ points }: { points: ScoreHistoryPoint[] }) {
 
   if (chartData.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-gray-500">
+      <p className="py-8 text-center text-sm text-on-surface-variant">
         No score history yet — scores are recorded each detection cycle after the
         account appears in the graph.
       </p>
@@ -68,7 +69,7 @@ function ScoreTrendChart({ points }: { points: ScoreHistoryPoint[] }) {
     <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-          <CartesianGrid stroke="#2a3238" strokeDasharray="3 3" />
+          <CartesianGrid stroke="#2a3a48" strokeDasharray="3 3" />
           <XAxis
             dataKey="time"
             type="number"
@@ -79,21 +80,21 @@ function ScoreTrendChart({ points }: { points: ScoreHistoryPoint[] }) {
                 minute: '2-digit',
               })
             }
-            stroke="#6b7280"
+            stroke="#a0b4c4"
             fontSize={10}
             tickLine={false}
           />
           <YAxis
             domain={[0, 5]}
-            stroke="#6b7280"
+            stroke="#a0b4c4"
             fontSize={10}
             tickLine={false}
             width={28}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#1a1f24',
-              border: '1px solid #2a3238',
+              backgroundColor: '#0f1524',
+              border: '1px solid #2a3a48',
               borderRadius: 6,
               fontSize: 12,
             }}
@@ -107,22 +108,22 @@ function ScoreTrendChart({ points }: { points: ScoreHistoryPoint[] }) {
           />
           <ReferenceLine
             y={ALERT_THRESHOLD_SCORE}
-            stroke="#d4a574"
+            stroke="#c8a0f0"
             strokeDasharray="6 4"
             label={{
               value: `Alert threshold (${ALERT_THRESHOLD_SCORE})`,
               position: 'insideTopRight',
-              fill: '#d4a574',
+              fill: '#c8a0f0',
               fontSize: 10,
             }}
           />
           <Line
             type="monotone"
             dataKey="score"
-            stroke="#4a8f8f"
+            stroke="#7dd3fc"
             strokeWidth={2}
             dot={chartData.length <= 24}
-            activeDot={{ r: 4, fill: '#4a8f8f' }}
+            activeDot={{ r: 4, fill: '#7dd3fc' }}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -138,15 +139,15 @@ interface AlertHistoryItemProps {
 
 function AlertHistoryItem({ alert, expanded, onToggle }: AlertHistoryItemProps) {
   return (
-    <div className="rounded-lg border border-charcoal-lighter bg-charcoal-light">
+    <div className="glass-panel rounded-xl">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-charcoal-lighter/40"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-primary/5"
       >
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-gray-200">
+            <span className="text-sm font-medium text-on-surface">
               Alert #{alert.id}
             </span>
             <StatusBadge status={alert.status} />
@@ -155,20 +156,20 @@ function AlertHistoryItem({ alert, expanded, onToggle }: AlertHistoryItemProps) 
               <PeripheralStructuralBadge compact />
             )}
             {alert.is_escalated && (
-              <span className="rounded border border-amber-soft/40 bg-amber-soft/10 px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide text-amber-soft">
+              <span className="rounded border border-tertiary/40 bg-tertiary/10 px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide text-tertiary">
                 ↑ escalated
               </span>
             )}
           </div>
-          <p className="mt-1 truncate text-xs text-gray-500">
+          <p className="mt-1 truncate text-xs text-on-surface-variant">
             {formatPatternType(alert.pattern_type)} · risk{' '}
             {alert.risk_score.toFixed(2)} · {formatRelativeTime(alert.detected_at)}
           </p>
         </div>
-        <span className="text-xs text-gray-600">{expanded ? '▲' : '▼'}</span>
+        <span className="text-xs text-on-surface-variant">{expanded ? '▲' : '▼'}</span>
       </button>
       {expanded && (
-        <div className="border-t border-charcoal-lighter px-4 py-3">
+        <div className="border-t border-primary/10 px-4 py-3">
           <AlertExplainability alertId={alert.id} />
         </div>
       )}
@@ -277,7 +278,7 @@ export default function AccountDetail() {
 
   if (!accountId) {
     return (
-      <p className="text-sm text-gray-500">No account ID provided in the URL.</p>
+      <p className="text-sm text-on-surface-variant">No account ID provided in the URL.</p>
     )
   }
 
@@ -302,70 +303,124 @@ export default function AccountDetail() {
 
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-wide text-gray-500">
-            Account
-          </p>
-          <h1 className="mt-1 break-all text-xl font-semibold text-gray-100">
-            {account.account_id}
-          </h1>
-          <dl className="mt-3 grid gap-2 text-xs text-gray-400 sm:grid-cols-2">
-            <div>
-              <dt className="text-gray-600">Created</dt>
-              <dd className="text-gray-300">
-                {formatDateTime(account.created_at)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-gray-600">Last active</dt>
-              <dd className="text-gray-300">
-                {formatDateTime(account.last_active_at)}{' '}
-                <span className="text-gray-600">
-                  ({formatRelativeTime(account.last_active_at)})
-                </span>
-              </dd>
-            </div>
-          </dl>
+      <header className="glass-panel sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 rounded-xl px-4 py-4 shadow-sm md:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
+          <Link
+            to="/alerts"
+            className="group flex items-center gap-2 text-on-surface-variant transition-colors hover:text-primary"
+          >
+            <MaterialIcon
+              name="arrow_back"
+              size={18}
+              className="transition-transform group-hover:-translate-x-1"
+            />
+            <span className="text-sm font-medium tracking-wide">
+              Back to Alert Queue
+            </span>
+          </Link>
+          <div className="hidden h-6 w-px bg-primary/20 sm:block" />
+          <div className="min-w-0">
+            <h1 className="truncate font-headline text-lg font-bold tracking-tight text-primary">
+              {account.account_id}
+            </h1>
+            <p className="text-xs text-on-surface-variant">
+              Created {formatDateTime(account.created_at)}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
           {hasActiveScore && (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-xs text-gray-500">Current risk</span>
-              <span className="text-sm font-medium tabular-nums text-gray-200">
+            <span className="flex items-center gap-1 rounded-full border border-error/20 bg-error/10 px-3 py-1 text-xs font-semibold text-error shadow-[0_0_15px_rgba(255,107,107,0.1)]">
+              <MaterialIcon name="warning" size={14} />
+              {account.confidence === 'high' ? 'High' : account.confidence} Risk
+            </span>
+          )}
+          <Link
+            to={`/?focus=${encodeURIComponent(account.account_id)}`}
+            className="rounded-lg border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/20 hover:shadow-primary-glow"
+          >
+            Open in Live Monitor
+          </Link>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <div className="flex flex-col gap-6 lg:col-span-8">
+      <section className="glass-panel-elevated rounded-xl p-6">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-headline text-lg font-semibold text-primary">
+              Risk Trend Analysis
+            </h2>
+            <p className="text-sm text-on-surface-variant">
+              Detection-cycle risk scoring (0–5 scale)
+            </p>
+          </div>
+          {hasActiveScore && (
+            <div className="text-right">
+              <p className="text-xs text-on-surface-variant">Current score</p>
+              <p className="text-xl font-semibold tabular-nums text-on-surface">
                 {account.fused_score!.toFixed(2)}
-              </span>
-              <ConfidenceBadge confidence={account.confidence!} />
+              </p>
             </div>
           )}
         </div>
-
-        <Link
-          to={`/?focus=${encodeURIComponent(account.account_id)}`}
-          className="rounded border border-teal-muted/50 bg-teal-muted/10 px-4 py-2 text-sm font-medium text-teal-accent hover:bg-teal-muted/20"
-        >
-          Open in Live Monitor →
-        </Link>
-      </div>
-
-      <section className="rounded-lg border border-charcoal-lighter bg-charcoal-light p-4">
-        <h2 className="text-sm font-medium text-gray-200">Risk score trend</h2>
-        <p className="mt-1 text-xs text-gray-500">
-          Combined risk score over detection cycles (0–5). Dashed line = top-5%
-          alert threshold.
-        </p>
-        <div className="mt-4">
-          <ScoreTrendChart points={scoreHistory} />
-        </div>
+        <ScoreTrendChart points={scoreHistory} />
       </section>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <section className="glass-panel rounded-xl p-6">
+          <h3 className="mb-4 flex items-center gap-2 font-headline font-semibold text-on-surface">
+            <MaterialIcon name="account_circle" className="text-tertiary" size={20} />
+            Account Profile
+          </h3>
+          <ul className="space-y-3 text-sm">
+            <li>
+              <p className="text-xs uppercase tracking-wider text-on-surface-variant">
+                Last active
+              </p>
+              <p className="font-medium text-on-surface">
+                {formatRelativeTime(account.last_active_at)}
+              </p>
+            </li>
+            <li>
+              <p className="text-xs uppercase tracking-wider text-on-surface-variant">
+                Open alerts
+              </p>
+              <p className="font-medium text-on-surface">{alerts.length}</p>
+            </li>
+          </ul>
+        </section>
+        <section className="glass-panel rounded-xl p-6">
+          <h3 className="mb-4 flex items-center gap-2 font-headline font-semibold text-on-surface">
+            <MaterialIcon name="policy" className="text-tertiary" size={20} />
+            Risk Status
+          </h3>
+          <div className="space-y-2">
+            {hasActiveScore ? (
+              <div className="flex items-center justify-between rounded border border-error/20 bg-error/5 p-2">
+                <span className="text-sm text-on-surface-variant">Flagged</span>
+                <ConfidenceBadge confidence={account.confidence!} />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between rounded border border-primary/10 bg-surface-container/50 p-2">
+                <span className="text-sm text-on-surface-variant">Current status</span>
+                <span className="text-xs font-semibold text-primary">CLEAR</span>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-sm font-medium text-gray-200">Alert history</h2>
-          <p className="text-xs text-gray-500">
+          <h2 className="text-sm font-medium text-on-surface">Alert history</h2>
+          <p className="text-xs text-on-surface-variant">
             All cases tied to this account, most recent first.
           </p>
         </div>
         {alerts.length === 0 ? (
-          <p className="rounded-lg border border-charcoal-lighter bg-charcoal-light px-4 py-6 text-center text-sm text-gray-500">
+          <p className="glass-panel rounded-xl px-4 py-6 text-center text-sm text-on-surface-variant">
             No alerts on record for this account.
           </p>
         ) : (
@@ -386,33 +441,33 @@ export default function AccountDetail() {
         )}
       </section>
 
-      <section className="rounded-lg border border-charcoal-lighter bg-charcoal-light">
-        <div className="border-b border-charcoal-lighter px-4 py-3">
-          <h2 className="text-sm font-medium text-gray-200">
+      <section className="glass-panel rounded-xl">
+        <div className="border-b border-primary/10 px-4 py-3">
+          <h2 className="text-sm font-medium text-on-surface">
             Transaction history
           </h2>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-on-surface-variant">
             {pagination.total.toLocaleString()} total transaction
             {pagination.total === 1 ? '' : 's'}
           </p>
         </div>
 
         {sortedTransactions.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-gray-500">
+          <p className="px-4 py-8 text-center text-sm text-on-surface-variant">
             No transactions recorded for this account yet.
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
-                <tr className="border-b border-charcoal-lighter text-[10px] uppercase tracking-wide text-gray-500">
+                <tr className="border-b border-primary/10 text-[10px] uppercase tracking-wide text-on-surface-variant">
                   <th className="px-4 py-2 font-medium">Direction</th>
                   <th className="px-4 py-2 font-medium">Counterparty</th>
                   <th className="px-4 py-2 font-medium">
                     <button
                       type="button"
                       onClick={() => toggleTxSort('amount')}
-                      className="hover:text-gray-300"
+                      className="hover:text-on-surface"
                     >
                       Amount{sortIndicator('amount')}
                     </button>
@@ -421,7 +476,7 @@ export default function AccountDetail() {
                     <button
                       type="button"
                       onClick={() => toggleTxSort('timestamp')}
-                      className="hover:text-gray-300"
+                      className="hover:text-on-surface"
                     >
                       Time{sortIndicator('timestamp')}
                     </button>
@@ -432,15 +487,15 @@ export default function AccountDetail() {
                 {sortedTransactions.map((tx) => (
                   <tr
                     key={tx.id}
-                    className="border-b border-charcoal-lighter/60 text-gray-300"
+                    className="border-b border-primary/10/60 text-on-surface"
                   >
-                    <td className="px-4 py-2 capitalize text-gray-400">
+                    <td className="px-4 py-2 capitalize text-on-surface-variant">
                       {tx.direction}
                     </td>
                     <td className="px-4 py-2">
                       <Link
                         to={`/accounts/${encodeURIComponent(tx.counterparty_id)}`}
-                        className="text-teal-accent hover:underline"
+                        className="text-primary hover:underline"
                       >
                         {tx.counterparty_id}
                       </Link>
@@ -448,7 +503,7 @@ export default function AccountDetail() {
                     <td className="px-4 py-2 tabular-nums">
                       {formatCurrency(tx.amount)}
                     </td>
-                    <td className="px-4 py-2 text-gray-500">
+                    <td className="px-4 py-2 text-on-surface-variant">
                       {formatDateTime(tx.timestamp)}
                     </td>
                   </tr>
@@ -459,7 +514,7 @@ export default function AccountDetail() {
         )}
 
         {pagination.total_pages > 1 && (
-          <div className="flex items-center justify-between border-t border-charcoal-lighter px-4 py-3 text-xs text-gray-500">
+          <div className="flex items-center justify-between border-t border-primary/10 px-4 py-3 text-xs text-on-surface-variant">
             <span>
               Page {pagination.page} of {pagination.total_pages}
             </span>
@@ -468,7 +523,7 @@ export default function AccountDetail() {
                 type="button"
                 disabled={txPage <= 1}
                 onClick={() => setTxPage((p) => Math.max(1, p - 1))}
-                className="rounded border border-charcoal-lighter px-3 py-1 hover:bg-charcoal-lighter disabled:opacity-40"
+                className="rounded border border-primary/10 px-3 py-1 hover:bg-primary/5 disabled:opacity-40"
               >
                 Previous
               </button>
@@ -478,7 +533,7 @@ export default function AccountDetail() {
                 onClick={() =>
                   setTxPage((p) => Math.min(pagination.total_pages, p + 1))
                 }
-                className="rounded border border-charcoal-lighter px-3 py-1 hover:bg-charcoal-lighter disabled:opacity-40"
+                className="rounded border border-primary/10 px-3 py-1 hover:bg-primary/5 disabled:opacity-40"
               >
                 Next
               </button>
@@ -486,39 +541,70 @@ export default function AccountDetail() {
           </div>
         )}
       </section>
+        </div>
 
-      <section className="rounded-lg border border-charcoal-lighter bg-charcoal-light p-4">
-        <h2 className="text-sm font-medium text-gray-200">Connected accounts</h2>
-        <p className="mt-1 text-xs text-gray-500">
-          Distinct counterparties in the recent activity window.
-        </p>
-        {account.connected_accounts.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-500">
-            No connected accounts in the current window.
-          </p>
-        ) : (
-          <ul className="mt-3 space-y-1">
-            {account.connected_accounts.map((peerId) => {
-              const hasActiveAlert = activeAlertAccountIds.has(peerId)
-              return (
-                <li key={peerId}>
-                  <Link
-                    to={`/accounts/${encodeURIComponent(peerId)}`}
-                    className="flex items-center justify-between rounded px-2 py-1.5 text-sm text-teal-accent hover:bg-charcoal-lighter/60 hover:underline"
-                  >
-                    <span className="truncate">{peerId}</span>
-                    {hasActiveAlert && (
-                      <span className="ml-2 shrink-0 rounded border border-amber-soft/40 bg-amber-soft/10 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-amber-soft">
-                        active alert
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
+        <aside className="lg:col-span-4">
+          <section className="glass-panel-elevated flex h-full flex-col rounded-xl">
+            <div className="border-b border-primary/10 p-6">
+              <h2 className="flex items-center gap-2 font-headline font-semibold text-primary">
+                <MaterialIcon name="hub" className="text-tertiary" size={20} />
+                Connected Entities
+              </h2>
+              <p className="mt-1 text-xs text-on-surface-variant">
+                Counterparties in the recent activity window
+              </p>
+            </div>
+            <div className="flex-1 space-y-3 overflow-y-auto p-4">
+              {account.connected_accounts.length === 0 ? (
+                <p className="text-sm text-on-surface-variant">
+                  No connected accounts in the current window.
+                </p>
+              ) : (
+                account.connected_accounts.map((peerId) => {
+                  const hasActiveAlert = activeAlertAccountIds.has(peerId)
+                  return (
+                    <Link
+                      key={peerId}
+                      to={`/accounts/${encodeURIComponent(peerId)}`}
+                      className="block rounded-lg border border-white/5 bg-surface-container/40 p-3 transition-colors hover:border-primary/30"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary">
+                            <MaterialIcon name="account_circle" size={16} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-on-surface hover:text-primary">
+                              {peerId}
+                            </p>
+                            <p className="text-[10px] text-on-surface-variant">
+                              1st degree · UPI account
+                            </p>
+                          </div>
+                        </div>
+                        {hasActiveAlert && (
+                          <span className="shrink-0 rounded bg-error/10 px-1.5 py-0.5 text-[10px] font-bold text-error">
+                            Alert
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  )
+                })
+              )}
+            </div>
+            <div className="border-t border-primary/10 bg-surface/40 p-4">
+              <Link
+                to={`/?focus=${encodeURIComponent(account.account_id)}`}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/20 bg-primary/10 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
+              >
+                <MaterialIcon name="bubble_chart" size={18} />
+                Expand Graph View
+              </Link>
+            </div>
+          </section>
+        </aside>
+      </div>
     </div>
   )
 }

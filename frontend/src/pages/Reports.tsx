@@ -15,6 +15,7 @@ import { exportReportsCsv, getReportsSummary } from '../api/client'
 import type { ReportPeriod, ReportSummary, StatusBreakdown } from '../api/types'
 import ErrorBanner from '../components/ErrorBanner'
 import LoadingSpinner from '../components/LoadingSpinner'
+import MaterialIcon from '../components/MaterialIcon'
 import { formatDateTime } from '../utils/format'
 
 const PERIODS: { value: ReportPeriod; label: string }[] = [
@@ -24,11 +25,11 @@ const PERIODS: { value: ReportPeriod; label: string }[] = [
 ]
 
 const STATUS_CHART_COLORS: Record<string, string> = {
-  new: '#4a8f8f',
-  reviewing: '#d4a574',
-  confirmed: '#f87171',
-  false_positive: '#6b7280',
-  auto_closed: '#64748b',
+  new: '#7dd3fc',
+  reviewing: '#c8a0f0',
+  confirmed: '#ff6b6b',
+  false_positive: '#4a6070',
+  auto_closed: '#88b4cc',
 }
 
 const STATUS_KEYS = [
@@ -50,9 +51,9 @@ const STATUS_LABELS: Record<StatusKey, string> = {
 }
 
 const CONFIDENCE_COLORS: Record<string, string> = {
-  high: '#d4a574',
-  medium: '#4a8f8f',
-  low: '#6b7280',
+  high: '#ff6b6b',
+  medium: '#c8a0f0',
+  low: '#7dd3fc',
 }
 
 const MIN_REVIEWED_SAMPLE = 20
@@ -77,25 +78,43 @@ interface MetricCardProps {
   label: string
   value: string | number
   hint?: string
+  icon?: string
+  highlight?: boolean
 }
 
-function MetricCard({ label, value, hint }: MetricCardProps) {
+function MetricCard({
+  label,
+  value,
+  hint,
+  icon,
+  highlight = false,
+}: MetricCardProps) {
   return (
-    <div className="rounded-lg border border-charcoal-lighter bg-charcoal-light px-4 py-3">
-      <p className="text-2xl font-semibold tabular-nums text-gray-100">{value}</p>
-      <p className="mt-1 text-xs text-gray-500">{label}</p>
-      {hint && <p className="mt-1 text-[10px] text-gray-600">{hint}</p>}
+    <div
+      className={`kpi-card ${highlight ? 'border-primary/30 shadow-[0_0_20px_rgba(125,211,252,0.1)]' : ''}`}
+    >
+      {icon && (
+        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary">
+          <MaterialIcon name={icon} size={20} />
+        </div>
+      )}
+      <p className="text-sm text-on-surface-variant">{label}</p>
+      <p
+        className={`mt-1 font-headline text-3xl font-semibold tabular-nums ${highlight ? 'text-primary glacier-text-glow' : 'text-on-surface'}`}
+      >
+        {value}
+      </p>
+      {hint && (
+        <p className="mt-1 text-[10px] text-on-surface-variant/70">{hint}</p>
+      )}
     </div>
   )
 }
 
 function periodChipClass(active: boolean): string {
-  return [
-    'rounded border px-3 py-1.5 text-xs font-medium transition-colors',
-    active
-      ? 'border-teal-muted/60 bg-teal-muted/15 text-teal-accent'
-      : 'border-charcoal-lighter text-gray-500 hover:border-gray-600 hover:text-gray-300',
-  ].join(' ')
+  return ['filter-chip', active ? 'filter-chip-active' : 'filter-chip-inactive'].join(
+    ' ',
+  )
 }
 
 export default function Reports() {
@@ -212,12 +231,14 @@ export default function Reports() {
     <div className="flex h-full flex-col gap-6 overflow-y-auto">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-100">Reports</h1>
-          <p className="mt-1 text-xs text-gray-500">
+          <h1 className="font-headline text-2xl font-semibold tracking-tight text-on-background glacier-text-glow md:text-3xl">
+            Performance Analytics
+          </h1>
+          <p className="page-subtitle mt-1">
             Alert volume and analyst outcomes for the selected period.
           </p>
           {summary && (
-            <p className="mt-2 text-[11px] text-gray-600">
+            <p className="mt-2 text-[11px] text-on-surface-variant">
               {formatDateTime(summary.period_start)} —{' '}
               {formatDateTime(summary.period_end)}
             </p>
@@ -239,7 +260,7 @@ export default function Reports() {
             type="button"
             onClick={handleExport}
             disabled={exporting || loading || summary?.total_alerts === 0}
-            className="ml-2 rounded border border-charcoal-lighter px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-charcoal-lighter disabled:cursor-not-allowed disabled:opacity-40"
+            className="ml-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {exporting ? 'Exporting…' : 'Export summary as CSV'}
           </button>
@@ -253,32 +274,36 @@ export default function Reports() {
       {loading ? (
         <LoadingSpinner label="Loading reports…" className="py-16" />
       ) : !summary || summary.total_alerts === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-charcoal-lighter bg-charcoal-light px-6 py-16 text-center">
-          <p className="text-lg font-medium text-gray-300">No alerts in this period</p>
-          <p className="mt-2 max-w-md text-sm text-gray-500">
+        <div className="glass-panel flex flex-col items-center justify-center rounded-2xl px-6 py-16 text-center">
+          <p className="text-lg font-medium text-on-surface">No alerts in this period</p>
+          <p className="mt-2 max-w-md text-sm text-on-surface-variant">
             Try a longer window, or let the simulator run after a demo reset
             before checking reports.
           </p>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <MetricCard
               label="Total alerts raised"
               value={summary.total_alerts.toLocaleString()}
+              icon="notifications_active"
             />
             <MetricCard
               label="Avg time to review"
               value={formatDuration(summary.average_time_to_review_seconds)}
-              hint="Analyst first action (reviewed_at − detected_at)"
+              hint="Analyst first action"
+              icon="timer"
             />
             <MetricCard
               label="Confirmed"
               value={summary.by_status.confirmed}
+              icon="gpp_maybe"
             />
             <MetricCard
               label="False positives"
               value={summary.by_status.false_positive}
+              icon="filter_alt_off"
             />
           </div>
 
@@ -293,11 +318,11 @@ export default function Reports() {
           </div>
 
           {precision && (
-            <section className="rounded-lg border border-charcoal-lighter bg-charcoal-light p-4">
-              <h2 className="text-sm font-medium text-gray-200">
+            <section className="glass-panel rounded-xl p-4">
+              <h2 className="text-sm font-medium text-on-surface">
                 Confirmed rate (analyst-reviewed only)
               </h2>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-on-surface-variant">
                 Of alerts where an analyst made a final call (
                 {precision.confirmed} confirmed + {precision.falsePositive}{' '}
                 false positive = {precision.reviewedTotal} judged), what share
@@ -305,17 +330,17 @@ export default function Reports() {
                 excluded.
               </p>
               {precision.reviewedTotal === 0 ? (
-                <p className="mt-3 text-sm text-gray-400">
+                <p className="mt-3 text-sm text-on-surface-variant">
                   No analyst-reviewed alerts in this period yet — triage a few
                   cases in the Alert Queue to populate this metric.
                 </p>
               ) : (
                 <>
-                  <p className="mt-3 text-3xl font-semibold tabular-nums text-gray-100">
+                  <p className="mt-3 text-3xl font-semibold tabular-nums text-on-surface">
                     {(precision.rate! * 100).toFixed(1)}%
                   </p>
                   {precision.reviewedTotal < MIN_REVIEWED_SAMPLE && (
-                    <p className="mt-2 rounded border border-amber-soft/30 bg-amber-soft/10 px-3 py-2 text-xs text-amber-soft">
+                    <p className="mt-2 rounded-lg border border-tertiary/30 bg-tertiary/10 px-3 py-2 text-xs text-tertiary">
                       Small sample ({precision.reviewedTotal} reviewed alerts) —
                       this rate is indicative only and should not be treated as
                       a stable precision estimate until at least{' '}
@@ -328,8 +353,8 @@ export default function Reports() {
           )}
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <section className="rounded-lg border border-charcoal-lighter bg-charcoal-light p-4">
-              <h2 className="text-sm font-medium text-gray-200">Alerts by status</h2>
+            <section className="glass-panel rounded-xl p-4">
+              <h2 className="text-sm font-medium text-on-surface">Alerts by status</h2>
               <div className="mt-4 h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={statusChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -361,8 +386,8 @@ export default function Reports() {
               </div>
             </section>
 
-            <section className="rounded-lg border border-charcoal-lighter bg-charcoal-light p-4">
-              <h2 className="text-sm font-medium text-gray-200">
+            <section className="glass-panel rounded-xl p-4">
+              <h2 className="text-sm font-medium text-on-surface">
                 Alerts by confidence
               </h2>
               <div className="mt-4 h-56">
@@ -400,9 +425,9 @@ export default function Reports() {
             </section>
           </div>
 
-          <section className="rounded-lg border border-charcoal-lighter bg-charcoal-light p-4">
-            <h2 className="text-sm font-medium text-gray-200">Alert volume over time</h2>
-            <p className="mt-1 text-xs text-gray-500">
+          <section className="glass-panel rounded-xl p-4">
+            <h2 className="text-sm font-medium text-on-surface">Alert volume over time</h2>
+            <p className="mt-1 text-xs text-on-surface-variant">
               Daily alert count within the selected period.
             </p>
             <div className="mt-4 h-56">
@@ -413,8 +438,8 @@ export default function Reports() {
                 >
                   <defs>
                     <linearGradient id="volumeFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4a8f8f" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#4a8f8f" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#7dd3fc" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#7dd3fc" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="#2a3238" strokeDasharray="3 3" />
@@ -446,7 +471,7 @@ export default function Reports() {
                   <Area
                     type="monotone"
                     dataKey="count"
-                    stroke="#4a8f8f"
+                    stroke="#7dd3fc"
                     fill="url(#volumeFill)"
                     strokeWidth={2}
                   />

@@ -10,15 +10,15 @@ export default function ConfidenceBadge({
   className = '',
 }: ConfidenceBadgeProps) {
   const styles: Record<ConfidenceLevel, string> = {
-    high: 'border-amber-soft bg-amber-soft/20 text-amber-soft',
-    medium: 'border-amber-soft/70 bg-transparent text-amber-soft',
-    low: 'border-gray-600 bg-transparent text-gray-400',
+    high: 'border-error/30 bg-error/10 text-error',
+    medium: 'border-tertiary/30 bg-tertiary/10 text-tertiary',
+    low: 'border-primary/30 bg-primary/10 text-primary',
   }
 
   return (
     <span
       className={[
-        'inline-flex rounded border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide',
+        'inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
         styles[confidence],
         className,
       ].join(' ')}
