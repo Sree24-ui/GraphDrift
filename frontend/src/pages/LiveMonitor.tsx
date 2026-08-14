@@ -263,29 +263,6 @@ export default function LiveMonitor() {
                 <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
                 Network Topology
               </h2>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="rounded-md border border-transparent p-1.5 text-on-surface-variant transition-colors hover:border-primary/20 hover:bg-surface-bright/50"
-                  aria-label="Zoom in"
-                >
-                  <MaterialIcon name="zoom_in" size={20} />
-                </button>
-                <button
-                  type="button"
-                  className="rounded-md border border-transparent p-1.5 text-on-surface-variant transition-colors hover:border-primary/20 hover:bg-surface-bright/50"
-                  aria-label="Zoom out"
-                >
-                  <MaterialIcon name="zoom_out" size={20} />
-                </button>
-                <button
-                  type="button"
-                  className="ml-2 rounded-md border border-transparent p-1.5 text-on-surface-variant transition-colors hover:border-primary/20 hover:bg-surface-bright/50"
-                  aria-label="Filter graph"
-                >
-                  <MaterialIcon name="filter_list" size={20} />
-                </button>
-              </div>
             </div>
             <div className="relative min-h-[360px] flex-1 bg-[radial-gradient(circle_at_center,rgba(125,211,252,0.05)_0%,transparent_70%)]">
               <GraphView

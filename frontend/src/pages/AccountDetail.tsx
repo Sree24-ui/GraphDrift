@@ -15,6 +15,7 @@ import {
   getAccountDetail,
   getAccountScoreHistory,
   getAlerts,
+  getSettings,
 } from '../api/client'
 import type {
   AccountDetail,
@@ -37,15 +38,19 @@ import {
 import MaterialIcon from '../components/MaterialIcon'
 import PeripheralStructuralBadge from '../components/PeripheralStructuralBadge'
 
-// Top 5% of fused scale (0–5) — mirrors ALERT_TOP_PERCENTILE in fusion.py
-const ALERT_THRESHOLD_SCORE = 4.75
-
 const TX_PAGE_SIZE = 15
+const FUSED_SCORE_SCALE = 5
 
 type TxSortKey = 'timestamp' | 'amount'
 type TxSortDir = 'asc' | 'desc'
 
-function ScoreTrendChart({ points }: { points: ScoreHistoryPoint[] }) {
+function ScoreTrendChart({
+  points,
+  thresholdScore,
+}: {
+  points: ScoreHistoryPoint[]
+  thresholdScore: number | null
+}) {
   const chartData = useMemo(
     () =>
       points.map((point) => ({
@@ -106,17 +111,19 @@ function ScoreTrendChart({ points }: { points: ScoreHistoryPoint[] }) {
               'Risk score',
             ]}
           />
-          <ReferenceLine
-            y={ALERT_THRESHOLD_SCORE}
-            stroke="#c8a0f0"
-            strokeDasharray="6 4"
-            label={{
-              value: `Alert threshold (${ALERT_THRESHOLD_SCORE})`,
-              position: 'insideTopRight',
-              fill: '#c8a0f0',
-              fontSize: 10,
-            }}
-          />
+          {thresholdScore != null && (
+            <ReferenceLine
+              y={thresholdScore}
+              stroke="#c8a0f0"
+              strokeDasharray="6 4"
+              label={{
+                value: `Alert threshold (${thresholdScore.toFixed(2)})`,
+                position: 'insideTopRight',
+                fill: '#c8a0f0',
+                fontSize: 10,
+              }}
+            />
+          )}
           <Line
             type="monotone"
             dataKey="score"
@@ -194,6 +201,9 @@ export default function AccountDetail() {
   const [txSortKey, setTxSortKey] = useState<TxSortKey>('timestamp')
   const [txSortDir, setTxSortDir] = useState<TxSortDir>('desc')
   const [expandedAlertId, setExpandedAlertId] = useState<number | null>(null)
+  const [alertThresholdScore, setAlertThresholdScore] = useState<number | null>(
+    null,
+  )
 
   const fetchAccountPage = useCallback(async () => {
     if (!accountId) {
@@ -204,7 +214,7 @@ export default function AccountDetail() {
     setError(null)
 
     try {
-      const [detail, history, alertResponse, openNew, openReviewing] =
+      const [detail, history, alertResponse, openNew, openReviewing, settings] =
         await Promise.all([
           getAccountDetail(accountId, { page: txPage, page_size: TX_PAGE_SIZE }),
           getAccountScoreHistory(accountId),
@@ -216,11 +226,13 @@ export default function AccountDetail() {
           }),
           getAlerts({ status: 'new', page_size: 100 }),
           getAlerts({ status: 'reviewing', page_size: 100 }),
+          getSettings(),
         ])
 
       setAccount(detail)
       setScoreHistory(history.points)
       setAlerts(alertResponse.items)
+      setAlertThresholdScore(settings.alert_top_percentile * FUSED_SCORE_SCALE)
 
       const activeIds = new Set<string>()
       for (const item of [...openNew.items, ...openReviewing.items]) {
@@ -365,7 +377,10 @@ export default function AccountDetail() {
             </div>
           )}
         </div>
-        <ScoreTrendChart points={scoreHistory} />
+        <ScoreTrendChart
+          points={scoreHistory}
+          thresholdScore={alertThresholdScore}
+        />
       </section>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
