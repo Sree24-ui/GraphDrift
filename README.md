@@ -59,3 +59,33 @@ After restart, open the Alert Queue (`/alerts`) and let the simulator run for
 15–20 minutes; you should see a fresh, manageable set of cases accumulate.
 
 ## Frontend Setup
+
+From the `frontend/` folder:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The Vite app will be available at `http://localhost:5173` and proxies `/api` and `/ws` to the backend during local development.
+
+## Deployment
+
+### Backend (Render)
+
+- **Root directory:** `backend`
+- **Build command:** `pip install -r requirements.txt`
+- **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+
+Set `ALLOWED_ORIGINS` to the live frontend URL once it is known (comma-separated if you have more than one origin).
+
+### Frontend (Vercel)
+
+- **Root directory:** `frontend`
+- **Build command:** `npm run build`
+- **Output directory:** `dist`
+
+Set `VITE_API_BASE_URL` and `VITE_WS_BASE_URL` in the Vercel project dashboard as shown in `frontend/.env.production.example`.
+
+After both services are deployed, update `ALLOWED_ORIGINS` on the Render backend to the real Vercel URL and redeploy or restart the backend so CORS allows the live frontend to connect.
