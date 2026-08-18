@@ -1,0 +1,43 @@
+{
+  "before_fix": {
+    "note": "build_explanation re-extracted features and recomputed baseline per alert",
+    "slope_total_vs_active15": 2.07,
+    "rows_mean_seconds": [
+      {
+        "target": 1000,
+        "active_15m": 684,
+        "n_alerts": 136,
+        "total": 3.7228,
+        "persist_explain": 2.8267,
+        "persist_history": 0.0065,
+        "persist_alerts": 0.1197,
+        "persist_commit": 0.1984,
+        "layer2": 0.2168
+      },
+      {
+        "target": 2500,
+        "active_15m": 1602,
+        "n_alerts": 271,
+        "total": 21.7453,
+        "persist_explain": 18.7548,
+        "persist_history": 0.0208,
+        "persist_alerts": 0.2698,
+        "persist_commit": 0.5588,
+        "layer2": 1.2262
+      },
+      {
+        "target": 5000,
+        "active_15m": 3162,
+        "n_alerts": 526,
+        "total": 88.9181,
+        "persist_explain": 80.4563,
+        "persist_history": 0.0416,
+        "persist_alerts": 0.8812,
+        "persist_commit": 1.2961,
+        "layer2": 3.9994
+      }
+    ]
+  },
+  "after_fix_slope": 1.389,
+  "after_fix_note": "See perf_persist_split.json for full after-fix scale_curve"
+}

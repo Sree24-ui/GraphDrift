@@ -64,6 +64,10 @@ class Transaction(Base):
     is_synthetic_attack: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="0", nullable=False
     )
+    is_labeled_fraud: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="0", nullable=False
+    )
+    attack_variant: Mapped[str | None] = mapped_column(String, nullable=True)
 
     sender: Mapped["Account"] = relationship(
         "Account", foreign_keys=[sender_id], back_populates="sent_transactions"
@@ -75,7 +79,10 @@ class Transaction(Base):
 
 class Alert(Base):
     __tablename__ = "alerts"
-    __table_args__ = (Index("ix_alerts_status", "status"),)
+    __table_args__ = (
+        Index("ix_alerts_status", "status"),
+        Index("ix_alerts_ring_id", "ring_id"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     account_id: Mapped[str] = mapped_column(
@@ -90,6 +97,7 @@ class Alert(Base):
     confidence: Mapped[str] = mapped_column(
         String, default="low", server_default="low", nullable=False
     )
+    ring_id: Mapped[str | None] = mapped_column(String, nullable=True)
     analyst_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     feature_breakdown: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(

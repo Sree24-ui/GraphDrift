@@ -15,6 +15,7 @@ import ErrorBanner from '../components/ErrorBanner'
 import LoadingSpinner from '../components/LoadingSpinner'
 import MaterialIcon from '../components/MaterialIcon'
 import PeripheralStructuralBadge from '../components/PeripheralStructuralBadge'
+import RingQueue from '../components/RingQueue'
 import RiskScorePill from '../components/RiskScorePill'
 import StatusBadge from '../components/StatusBadge'
 import TableSkeleton from '../components/TableSkeleton'
@@ -284,6 +285,8 @@ export default function AlertQueue() {
   const [bulkBusy, setBulkBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<'account' | 'ring'>('ring')
+  const [ringTotal, setRingTotal] = useState<number | null>(null)
 
   const queryParams = useMemo((): GetAlertsParams => {
     const params: GetAlertsParams = {
@@ -555,9 +558,13 @@ export default function AlertQueue() {
               Alert Queue
             </h1>
             <p className="text-xs text-on-surface-variant">
-              {loading
-                ? 'Loading alerts…'
-                : `${total.toLocaleString()} alert${total === 1 ? '' : 's'} matching filters`}
+              {viewMode === 'ring'
+                ? loading && ringTotal === null
+                  ? 'Loading rings…'
+                  : `${(ringTotal ?? 0).toLocaleString()} ring${(ringTotal ?? 0) === 1 ? '' : 's'} matching filters`
+                : loading
+                  ? 'Loading alerts…'
+                  : `${total.toLocaleString()} alert${total === 1 ? '' : 's'} matching filters`}
               {showingNeedsAttention && !loading && (
                 <span className="text-primary"> · needs-attention view</span>
               )}
@@ -572,6 +579,38 @@ export default function AlertQueue() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <div className="flex rounded-lg border border-primary/15 bg-surface/40 p-0.5 text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setViewMode('account')
+                setPage(1)
+              }}
+              className={[
+                'rounded-md px-3 py-1.5 font-medium',
+                viewMode === 'account'
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-on-surface-variant hover:text-on-surface',
+              ].join(' ')}
+            >
+              By Account
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setViewMode('ring')
+                setPage(1)
+              }}
+              className={[
+                'rounded-md px-3 py-1.5 font-medium',
+                viewMode === 'ring'
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-on-surface-variant hover:text-on-surface',
+              ].join(' ')}
+            >
+              By Ring
+            </button>
+          </div>
           <div className="relative hidden md:block">
             <MaterialIcon
               name="search"
@@ -681,7 +720,9 @@ export default function AlertQueue() {
       )}
 
       <div className="glass-panel min-h-[320px] flex-1 overflow-hidden rounded-xl shadow-[0_0_40px_rgba(125,211,252,0.03)]">
-        {loading ? (
+        {viewMode === 'ring' ? (
+          <RingQueue queryParams={queryParams} onTotalChange={setRingTotal} />
+        ) : loading ? (
           <TableSkeleton rows={8} columns={7} />
         ) : visibleItems.length === 0 && !error ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
@@ -863,7 +904,7 @@ export default function AlertQueue() {
           </div>
         )}
 
-        {totalPages > 1 && !loading && (
+        {viewMode === 'account' && totalPages > 1 && !loading && (
           <div className="flex items-center justify-between border-t border-primary/10 bg-surface/20 px-6 py-4 text-xs text-on-surface-variant">
             <span>
               Showing {(page - 1) * PAGE_SIZE + 1} to{' '}

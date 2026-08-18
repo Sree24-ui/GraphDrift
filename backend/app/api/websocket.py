@@ -118,6 +118,7 @@ def build_alert_message(alert: Alert, action: str) -> dict:
             "pattern_type": alert.pattern_type,
             "status": alert.status,
             "detected_at": alert.detected_at.isoformat(),
+            "ring_id": alert.ring_id,
         },
     }
 

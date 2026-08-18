@@ -132,9 +132,13 @@ def score_peripheral_accounts(
     top_anomaly_accounts: set[str],
 ) -> list[dict]:
     """
-    Score 1–2 tx accounts connected to top-anomaly hubs with fan leg patterns.
+    Score 1–2 tx accounts connected to already-selected hubs.
 
-    Returns rows tagged ``detection_method: peripheral_structural``.
+    ``top_anomaly_accounts`` must be the main pipeline's alert set. In the
+    live cycle that is the **union of independent per-scale top-k** from
+    ``compute_fused_scores_multiscale`` — never a second global cut on
+    max-pooled 15m/60m percentiles. This function does not re-rank hubs;
+    if no hub is in that set, no spoke can fire.
     """
     if not top_anomaly_accounts:
         return []
@@ -207,6 +211,7 @@ def build_peripheral_explanation(peripheral: dict) -> dict:
         "ring_risk_score": 0.0,
         "ring_percentile": 0.0,
         "community_id": None,
+        "ring_id": peripheral.get("ring_id"),
         "primary_reason": (
             f"Peripheral structural alert: {role} "
             f"({peripheral['tx_count']} tx in window; "
@@ -239,4 +244,6 @@ def peripheral_as_fused_result(peripheral: dict) -> dict:
         "feature_vector": None,
         "ring_info": None,
         "detection_method": DETECTION_METHOD,
+        "detection_window": WINDOW_MINUTES,
+        "ring_id": peripheral.get("ring_id"),
     }

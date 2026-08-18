@@ -4,6 +4,8 @@ __pycache__/
 backend/graphdrift.db
 backend/*.db
 backend/snapshots/
+backend/evaluation/data/*.csv
+backend/evaluation/data/*.txt
 
 frontend/node_modules/
 frontend/dist/

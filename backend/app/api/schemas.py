@@ -53,6 +53,7 @@ class AlertListItem(BaseModel):
     confidence: ConfidenceLevel
     updated_at: datetime
     is_escalated: bool = False
+    ring_id: str | None = None
 
 
 class AlertListResponse(BaseModel):
@@ -83,11 +84,87 @@ class AlertDetail(BaseModel):
     reviewed_at: datetime | None = None
     feature_breakdown: dict | None = None
     escalation_history: list[EscalationHistoryEntry] = Field(default_factory=list)
+    ring_id: str | None = None
 
 
 class AlertStatusUpdate(BaseModel):
     status: AlertStatus
     analyst_notes: str | None = None
+
+
+class RingMember(BaseModel):
+    account_id: str
+    alert_id: int | None = None
+    role: str
+    status: AlertStatus | None = None
+    confidence: ConfidenceLevel | None = None
+    risk_score: float | None = None
+    pattern_type: str | None = None
+    detected_at: datetime | None = None
+    is_escalated: bool = False
+
+
+class RingExplanation(BaseModel):
+    hub_concentration: float | None = None
+    external_edge_ratio: float | None = None
+    member_count: int | None = None
+    ring_risk_score: float | None = None
+    reason: str | None = None
+    detection_window: int | None = None
+    core_account_ids: list[str] = Field(default_factory=list)
+    peripheral_account_ids: list[str] = Field(default_factory=list)
+
+
+class RingListItem(BaseModel):
+    ring_id: str
+    hub_account_id: str | None = None
+    member_count: int
+    alert_count: int
+    aggregate_risk_score: float
+    confidence: ConfidenceLevel
+    status: AlertStatus
+    first_detected_at: datetime
+    last_updated_at: datetime
+    open_alert_count: int
+
+
+class RingListResponse(BaseModel):
+    items: list[RingListItem]
+    pagination: PaginationMeta
+
+
+class RingDetail(BaseModel):
+    ring_id: str
+    hub_account_id: str | None = None
+    member_count: int
+    alert_count: int
+    aggregate_risk_score: float
+    confidence: ConfidenceLevel
+    status: AlertStatus
+    first_detected_at: datetime
+    last_updated_at: datetime
+    open_alert_count: int
+    members: list[RingMember]
+    explanation: RingExplanation
+
+
+class RingStatusUpdate(BaseModel):
+    status: Literal["reviewing", "confirmed", "false_positive"]
+    analyst_notes: str | None = None
+
+
+class RingSkippedAlert(BaseModel):
+    alert_id: int
+    account_id: str
+    reason: str
+
+
+class RingBulkUpdateResponse(BaseModel):
+    ring_id: str
+    target_status: AlertStatus
+    updated_alert_ids: list[int]
+    skipped: list[RingSkippedAlert]
+    ring: RingDetail
 
 
 class TransactionItem(BaseModel):

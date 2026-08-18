@@ -106,17 +106,13 @@ def _burstiness(timestamps: list[datetime]) -> float:
     return std_gap / mean_gap
 
 
-def extract_features(
-    db: Session,
+def _features_from_transactions(
     account_id: str,
-    as_of: datetime,
-    window_minutes: int = WINDOW_MINUTES,
+    transactions: list[Transaction],
+    window_minutes: int,
     *,
     min_transactions: int = MIN_TRANSACTIONS_FOR_SCORING,
 ) -> dict | None:
-    window_start, window_end = _window_bounds(as_of, window_minutes)
-    transactions = _get_account_transactions(db, account_id, window_start, window_end)
-
     if not transactions:
         return None
 
@@ -162,6 +158,24 @@ def extract_features(
     }
 
 
+def extract_features(
+    db: Session,
+    account_id: str,
+    as_of: datetime,
+    window_minutes: int = WINDOW_MINUTES,
+    *,
+    min_transactions: int = MIN_TRANSACTIONS_FOR_SCORING,
+) -> dict | None:
+    window_start, window_end = _window_bounds(as_of, window_minutes)
+    transactions = _get_account_transactions(db, account_id, window_start, window_end)
+    return _features_from_transactions(
+        account_id,
+        transactions,
+        window_minutes,
+        min_transactions=min_transactions,
+    )
+
+
 def extract_all_features(
     db: Session,
     as_of: datetime,
@@ -169,20 +183,40 @@ def extract_all_features(
     *,
     min_transactions: int = MIN_TRANSACTIONS_FOR_SCORING,
 ) -> list[dict]:
-    active_accounts = get_active_accounts(db, as_of, window_minutes)
-    features: list[dict] = []
+    """Score every active account in the window.
 
-    for account_id in active_accounts:
-        account_features = extract_features(
-            db,
+    Loads the window once instead of issuing one query per account (required
+    for dense IBM-AML slices with 10^5 accounts).
+    """
+    window_start, window_end = _window_bounds(as_of, window_minutes)
+    stmt = (
+        select(Transaction)
+        .where(
+            and_(
+                Transaction.timestamp >= window_start,
+                Transaction.timestamp <= window_end,
+            )
+        )
+        .order_by(Transaction.timestamp.asc(), Transaction.id.asc())
+    )
+    rows = list(db.scalars(stmt).all())
+
+    by_account: dict[str, list[Transaction]] = {}
+    for tx in rows:
+        by_account.setdefault(tx.sender_id, []).append(tx)
+        if tx.receiver_id != tx.sender_id:
+            by_account.setdefault(tx.receiver_id, []).append(tx)
+
+    features: list[dict] = []
+    for account_id, transactions in by_account.items():
+        account_features = _features_from_transactions(
             account_id,
-            as_of,
+            transactions,
             window_minutes,
             min_transactions=min_transactions,
         )
         if account_features is not None:
             features.append(account_features)
-
     return features
 
 

@@ -180,6 +180,12 @@ def explain_score(feature_vector: dict | np.ndarray, baseline: dict) -> list[dic
 
 
 def compute_gdi_scores(feature_list: list[dict]) -> list[dict]:
+    """Score a feature list. Window size is applied upstream in extract_all_features.
+
+    Each result includes ``layer1_baseline``: the single population mean /
+    inverse-covariance computed for this call. Callers that later explain
+    scores must reuse that object instead of recomputing it.
+    """
     if not feature_list:
         return []
 
@@ -196,6 +202,7 @@ def compute_gdi_scores(feature_list: list[dict]) -> list[dict]:
                 "gdi_score": _raw_to_gdi(raw),
                 "raw_mahalanobis": raw,
                 "feature_vector": _display_feature_dict(row),
+                "layer1_baseline": baseline,
             }
         )
 

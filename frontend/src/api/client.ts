@@ -9,9 +9,14 @@ import type {
   AppSettingsUpdate,
   GetAccountDetailParams,
   GetAlertsParams,
+  GetRingsParams,
   GraphSnapshot,
   ReportPeriod,
   ReportSummary,
+  RingBulkUpdateResponse,
+  RingDetail,
+  RingListResponse,
+  RingStatusUpdate,
   ScoreHistoryResponse,
 } from './types'
 
@@ -69,6 +74,36 @@ export async function patchAlert(
   body: AlertStatusUpdate,
 ): Promise<AlertDetail> {
   const { data } = await api.patch<AlertDetail>(`/api/alerts/${id}`, body)
+  return data
+}
+
+export async function getRings(
+  params: GetRingsParams = {},
+): Promise<RingListResponse> {
+  const { data } = await api.get<RingListResponse>('/api/rings', {
+    params,
+    paramsSerializer: {
+      indexes: null,
+    },
+  })
+  return data
+}
+
+export async function getRingDetail(ringId: string): Promise<RingDetail> {
+  const { data } = await api.get<RingDetail>(
+    `/api/rings/${encodeURIComponent(ringId)}`,
+  )
+  return data
+}
+
+export async function patchRing(
+  ringId: string,
+  body: RingStatusUpdate,
+): Promise<RingBulkUpdateResponse> {
+  const { data } = await api.patch<RingBulkUpdateResponse>(
+    `/api/rings/${encodeURIComponent(ringId)}`,
+    body,
+  )
   return data
 }
 

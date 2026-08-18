@@ -57,6 +57,7 @@ def _alert_to_list_item(alert: Alert) -> AlertListItem:
         confidence=alert.confidence,  # type: ignore[arg-type]
         updated_at=alert.updated_at,
         is_escalated=_is_escalated(alert),
+        ring_id=alert.ring_id,
     )
 
 
@@ -96,7 +97,48 @@ def _alert_to_detail(alert: Alert) -> AlertDetail:
         reviewed_at=alert.reviewed_at,
         feature_breakdown=alert.feature_breakdown,
         escalation_history=_extract_escalation_history(alert),
+        ring_id=alert.ring_id,
     )
+
+
+def apply_alert_status_change(
+    alert: Alert,
+    new_status: AlertStatus,
+    analyst_notes: str | None,
+    *,
+    now: datetime | None = None,
+) -> None:
+    """Mutate ``alert`` in place. Caller is responsible for commit."""
+    as_of = now or datetime.now()
+    if new_status != alert.status:
+        if alert.status in TERMINAL_STATUSES:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Cannot change status from terminal state '{alert.status}'. "
+                    "Only analyst_notes can be updated."
+                ),
+            )
+
+        allowed = ALLOWED_TRANSITIONS.get(alert.status, frozenset())
+        if new_status not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Invalid status transition from '{alert.status}' to '{new_status}'. "
+                    f"Allowed targets: {sorted(allowed) or 'none'}."
+                ),
+            )
+
+        if alert.status in {"new", "reviewing"} and alert.reviewed_at is None:
+            alert.reviewed_at = as_of
+
+        alert.status = new_status
+
+    if analyst_notes is not None:
+        alert.analyst_notes = analyst_notes
+
+    alert.updated_at = as_of
 
 
 @router.get("", response_model=AlertListResponse)
@@ -180,37 +222,11 @@ def update_alert(
     if alert is None:
         raise HTTPException(status_code=404, detail="Alert not found")
 
-    if body.status != alert.status:
-        if alert.status in TERMINAL_STATUSES:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Cannot change status from terminal state '{alert.status}'. "
-                    "Only analyst_notes can be updated."
-                ),
-            )
+    if body.status != alert.status or body.analyst_notes is not None:
+        apply_alert_status_change(
+            alert, body.status, body.analyst_notes, now=datetime.now()
+        )
 
-        allowed = ALLOWED_TRANSITIONS.get(alert.status, frozenset())
-        if body.status not in allowed:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Invalid status transition from '{alert.status}' to '{body.status}'. "
-                    f"Allowed targets: {sorted(allowed) or 'none'}."
-                ),
-            )
-
-        if alert.status == "new" and alert.reviewed_at is None:
-            alert.reviewed_at = datetime.now()
-        elif alert.status == "reviewing" and alert.reviewed_at is None:
-            alert.reviewed_at = datetime.now()
-
-        alert.status = body.status
-
-    if body.analyst_notes is not None:
-        alert.analyst_notes = body.analyst_notes
-
-    alert.updated_at = datetime.now()
     db.commit()
     db.refresh(alert)
     return _alert_to_detail(alert)

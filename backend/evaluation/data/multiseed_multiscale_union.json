@@ -1,0 +1,22 @@
+{
+  "note": "fusion_multiscale after union-of-per-scale-top-k fix. Old max-merge F1 was 0.304 ± 0.058.",
+  "old_max_merge": {
+    "precision": 0.390,
+    "recall": 0.261,
+    "f1": 0.304,
+    "fpr": 0.133
+  },
+  "union": {
+    "precision": {"mean": 0.368, "std": 0.103, "min": 0.194, "max": 0.455},
+    "recall": {"mean": 0.328, "std": 0.098, "min": 0.260, "max": 0.500},
+    "f1": {"mean": 0.336, "std": 0.072, "min": 0.226, "max": 0.423},
+    "fpr": {"mean": 0.180, "std": 0.022, "min": 0.152, "max": 0.203}
+  },
+  "per_seed": [
+    {"seed": 42, "precision": 0.407, "recall": 0.306, "f1": 0.349, "fpr": 0.1524, "tp": 11, "fp": 16, "fn": 25, "tn": 89},
+    {"seed": 123, "precision": 0.367, "recall": 0.500, "f1": 0.423, "fpr": 0.1610, "tp": 11, "fp": 19, "fn": 11, "tn": 99},
+    {"seed": 7, "precision": 0.194, "recall": 0.273, "f1": 0.226, "fpr": 0.2033, "tp": 6, "fp": 25, "fn": 16, "tn": 98},
+    {"seed": 2026, "precision": 0.419, "recall": 0.260, "f1": 0.321, "fpr": 0.1895, "tp": 13, "fp": 18, "fn": 37, "tn": 77},
+    {"seed": 99, "precision": 0.455, "recall": 0.300, "f1": 0.361, "fpr": 0.1935, "tp": 15, "fp": 18, "fn": 35, "tn": 75}
+  ]
+}

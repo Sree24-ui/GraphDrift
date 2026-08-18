@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import accounts, alerts, graph, reports, settings, websocket
+from app.api import accounts, alerts, graph, reports, rings, settings, websocket
 from app.api.websocket import (
     DETECTION_CYCLE_INTERVAL_SECONDS,
     METRICS_BROADCAST_INTERVAL_SECONDS,
@@ -105,6 +105,7 @@ app = FastAPI(title="GraphDrift", lifespan=lifespan)
 
 app.include_router(graph.router)
 app.include_router(alerts.router)
+app.include_router(rings.router)
 app.include_router(accounts.router)
 app.include_router(reports.router)
 app.include_router(settings.router)

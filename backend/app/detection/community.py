@@ -181,44 +181,57 @@ def compute_community_metrics(
         _group_partition(previous_partition) if previous_partition else {}
     )
 
+    internal_edges: dict[int, int] = defaultdict(int)
+    external_edges: dict[int, int] = defaultdict(int)
+    internal_weight_sum: dict[int, float] = defaultdict(float)
+    internal_weight_n: dict[int, int] = defaultdict(int)
+    node_incident_edges: dict[int, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+
+    # One pass over edges. The previous implementation scanned every edge once
+    # per community (O(|C| · |E|)), which is unusable on a 200k-node IBM slice.
+    for source, target, data in graph.edges(data=True):
+        cs = partition.get(source)
+        ct = partition.get(target)
+        if cs is None or ct is None:
+            continue
+        weight = float(data.get("weight", 1))
+        if cs == ct:
+            internal_edges[cs] += 1
+            internal_weight_sum[cs] += weight
+            internal_weight_n[cs] += 1
+            node_incident_edges[cs][source] += 1
+            node_incident_edges[cs][target] += 1
+        else:
+            external_edges[cs] += 1
+            external_edges[ct] += 1
+
     metrics_list: list[dict] = []
     for community_id, members in communities.items():
         member_accounts = sorted(members)
         member_count = len(member_accounts)
+        n_internal = internal_edges[community_id]
+        n_external = external_edges[community_id]
+        incidents = node_incident_edges[community_id]
 
-        internal_edges = 0
-        external_edges = 0
-        internal_weights: list[float] = []
-        node_incident_edges: dict[str, int] = defaultdict(int)
-
-        for source, target, data in graph.edges(data=True):
-            source_in = source in members
-            target_in = target in members
-            if source_in and target_in:
-                internal_edges += 1
-                internal_weights.append(float(data.get("weight", 1)))
-                node_incident_edges[source] += 1
-                node_incident_edges[target] += 1
-            elif source_in or target_in:
-                external_edges += 1
-
-        if internal_edges > 0 and node_incident_edges:
-            hub_account_id = max(node_incident_edges, key=node_incident_edges.get)
-            max_node_degree = node_incident_edges[hub_account_id]
-            hub_concentration = max_node_degree / internal_edges
+        if n_internal > 0 and incidents:
+            hub_account_id = max(incidents, key=incidents.get)
+            max_node_degree = incidents[hub_account_id]
+            hub_concentration = max_node_degree / n_internal
         else:
             hub_account_id = None
             hub_concentration = 0.0
 
         possible_internal = member_count * (member_count - 1)
         internal_density = (
-            internal_edges / possible_internal if possible_internal > 0 else 0.0
+            n_internal / possible_internal if possible_internal > 0 else 0.0
         )
         avg_internal_weight = (
-            sum(internal_weights) / len(internal_weights) if internal_weights else 0.0
+            internal_weight_sum[community_id] / internal_weight_n[community_id]
+            if internal_weight_n[community_id]
+            else 0.0
         )
         external_edge_ratio = (
-            external_edges / internal_edges if internal_edges > 0 else float(external_edges)
+            n_external / n_internal if n_internal > 0 else float(n_external)
         )
         formed_recently = not _community_existed_before(members, previous_communities)
 

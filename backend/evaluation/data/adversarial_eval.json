@@ -1,0 +1,3523 @@
+{
+  "as_of": "2026-08-16T13:15:00",
+  "n_fusion_15": 357,
+  "n_fusion_60": 457,
+  "n_hybrid_flags": 222,
+  "n_fusion_multiscale_flags": 40,
+  "k_multiscale": 40,
+  "n_union_flags": 40,
+  "n_union_hybrid_flags": 222,
+  "n_peripheral": 182,
+  "n_peripheral_union": 182,
+  "account_level_hybrid_on_visible_60": {
+    "precision": 0.8873873873873874,
+    "recall": 0.49622166246851385,
+    "f1": 0.6365105008077545,
+    "fpr": 0.16666666666666666,
+    "tp": 197,
+    "fp": 25,
+    "fn": 200,
+    "tn": 125,
+    "positives": 397,
+    "negatives": 150,
+    "predicted_positive": 222
+  },
+  "by_variant": {
+    "standard": {
+      "n_instances": 5,
+      "recall_hybrid": 1.0,
+      "recall_fusion_multiscale": 1.0,
+      "recall_fusion_15": 1.0,
+      "recall_fusion_60": 0.0,
+      "recall_union_scales": 1.0,
+      "recall_union_hybrid": 1.0,
+      "n_caught_fusion_15": 5,
+      "n_caught_fusion_60": 0,
+      "n_caught_fusion_ms": 5,
+      "n_caught_peripheral_only": 5,
+      "recall_peripheral_only": 1.0,
+      "recall_hybrid_hub": 1.0,
+      "n_caught_hybrid": 5,
+      "n_evade_15_caught_60": 0,
+      "n_evade_both_scales": 0,
+      "frac_evade_15_caught_60": 0.0,
+      "frac_evade_both_scales": 0.0
+    },
+    "straddle_15": {
+      "n_instances": 5,
+      "recall_hybrid": 1.0,
+      "recall_fusion_multiscale": 1.0,
+      "recall_fusion_15": 1.0,
+      "recall_fusion_60": 0.0,
+      "recall_union_scales": 1.0,
+      "recall_union_hybrid": 1.0,
+      "n_caught_fusion_15": 5,
+      "n_caught_fusion_60": 0,
+      "n_caught_fusion_ms": 5,
+      "n_caught_peripheral_only": 5,
+      "recall_peripheral_only": 1.0,
+      "recall_hybrid_hub": 1.0,
+      "n_caught_hybrid": 5,
+      "n_evade_15_caught_60": 0,
+      "n_evade_both_scales": 0,
+      "frac_evade_15_caught_60": 0.0,
+      "frac_evade_both_scales": 0.0
+    },
+    "straddle_60": {
+      "n_instances": 5,
+      "recall_hybrid": 0.0,
+      "recall_fusion_multiscale": 0.0,
+      "recall_fusion_15": 0.0,
+      "recall_fusion_60": 0.0,
+      "recall_union_scales": 0.0,
+      "recall_union_hybrid": 0.0,
+      "n_caught_fusion_15": 0,
+      "n_caught_fusion_60": 0,
+      "n_caught_fusion_ms": 0,
+      "n_caught_peripheral_only": 0,
+      "recall_peripheral_only": 0.0,
+      "recall_hybrid_hub": 0.0,
+      "n_caught_hybrid": 0,
+      "n_evade_15_caught_60": 0,
+      "n_evade_both_scales": 5,
+      "frac_evade_15_caught_60": 0.0,
+      "frac_evade_both_scales": 1.0
+    },
+    "diluted_hub": {
+      "n_instances": 5,
+      "recall_hybrid": 0.0,
+      "recall_fusion_multiscale": 0.0,
+      "recall_fusion_15": 0.0,
+      "recall_fusion_60": 0.0,
+      "recall_union_scales": 0.0,
+      "recall_union_hybrid": 0.0,
+      "n_caught_fusion_15": 0,
+      "n_caught_fusion_60": 0,
+      "n_caught_fusion_ms": 0,
+      "n_caught_peripheral_only": 0,
+      "recall_peripheral_only": 0.0,
+      "recall_hybrid_hub": 0.0,
+      "n_caught_hybrid": 0,
+      "n_evade_15_caught_60": 0,
+      "n_evade_both_scales": 5,
+      "frac_evade_15_caught_60": 0.0,
+      "frac_evade_both_scales": 1.0
+    },
+    "minimal_ring": {
+      "n_instances": 5,
+      "recall_hybrid": 1.0,
+      "recall_fusion_multiscale": 1.0,
+      "recall_fusion_15": 1.0,
+      "recall_fusion_60": 0.0,
+      "recall_union_scales": 1.0,
+      "recall_union_hybrid": 1.0,
+      "n_caught_fusion_15": 5,
+      "n_caught_fusion_60": 0,
+      "n_caught_fusion_ms": 5,
+      "n_caught_peripheral_only": 5,
+      "recall_peripheral_only": 1.0,
+      "recall_hybrid_hub": 1.0,
+      "n_caught_hybrid": 5,
+      "n_evade_15_caught_60": 0,
+      "n_evade_both_scales": 0,
+      "frac_evade_15_caught_60": 0.0,
+      "frac_evade_both_scales": 0.0
+    }
+  },
+  "instances": {
+    "standard": [
+      {
+        "instance_id": "standard:0",
+        "variant": "standard",
+        "n_members": 19,
+        "n_visible_15": 19,
+        "n_visible_60": 19,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 19,
+          "flagged_hubs": [
+            "vaidyanaksh@okhdfc"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "vaidyanaksh@okhdfc"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 18,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "vaidyanaksh@okhdfc"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "vaidyanaksh@okhdfc"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 19,
+          "flagged_hubs": [
+            "vaidyanaksh@okhdfc"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      },
+      {
+        "instance_id": "standard:1",
+        "variant": "standard",
+        "n_members": 19,
+        "n_visible_15": 19,
+        "n_visible_60": 19,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 19,
+          "flagged_hubs": [
+            "vasaabha@paytm"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "vasaabha@paytm"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 18,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "vasaabha@paytm"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "vasaabha@paytm"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 19,
+          "flagged_hubs": [
+            "vasaabha@paytm"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      },
+      {
+        "instance_id": "standard:2",
+        "variant": "standard",
+        "n_members": 19,
+        "n_visible_15": 19,
+        "n_visible_60": 19,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 19,
+          "flagged_hubs": [
+            "radhika97@okicici"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "radhika97@okicici"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 18,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "radhika97@okicici"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "radhika97@okicici"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 19,
+          "flagged_hubs": [
+            "radhika97@okicici"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      },
+      {
+        "instance_id": "standard:3",
+        "variant": "standard",
+        "n_members": 19,
+        "n_visible_15": 19,
+        "n_visible_60": 19,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 19,
+          "flagged_hubs": [
+            "kothariekalinga@okicici"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "kothariekalinga@okicici"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 18,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "kothariekalinga@okicici"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "kothariekalinga@okicici"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 19,
+          "flagged_hubs": [
+            "kothariekalinga@okicici"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      },
+      {
+        "instance_id": "standard:4",
+        "variant": "standard",
+        "n_members": 19,
+        "n_visible_15": 19,
+        "n_visible_60": 19,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 19,
+          "flagged_hubs": [
+            "abalay@okicici"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "abalay@okicici"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 18,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "abalay@okicici"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "abalay@okicici"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 19,
+          "flagged_hubs": [
+            "abalay@okicici"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      }
+    ],
+    "straddle_15": [
+      {
+        "instance_id": "straddle_15:0",
+        "variant": "straddle_15",
+        "n_members": 19,
+        "n_visible_15": 11,
+        "n_visible_60": 19,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 11,
+          "flagged_hubs": [
+            "nehagola@okhdfc"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "nehagola@okhdfc"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 10,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "nehagola@okhdfc"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "nehagola@okhdfc"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 11,
+          "flagged_hubs": [
+            "nehagola@okhdfc"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      },
+      {
+        "instance_id": "straddle_15:1",
+        "variant": "straddle_15",
+        "n_members": 19,
+        "n_visible_15": 11,
+        "n_visible_60": 19,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 11,
+          "flagged_hubs": [
+            "mtripathi@ybl"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "mtripathi@ybl"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 10,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "mtripathi@ybl"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "mtripathi@ybl"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 11,
+          "flagged_hubs": [
+            "mtripathi@ybl"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      },
+      {
+        "instance_id": "straddle_15:2",
+        "variant": "straddle_15",
+        "n_members": 19,
+        "n_visible_15": 11,
+        "n_visible_60": 19,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 11,
+          "flagged_hubs": [
+            "amrita18@okicici"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "amrita18@okicici"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 10,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "amrita18@okicici"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "amrita18@okicici"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 11,
+          "flagged_hubs": [
+            "amrita18@okicici"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      },
+      {
+        "instance_id": "straddle_15:3",
+        "variant": "straddle_15",
+        "n_members": 19,
+        "n_visible_15": 11,
+        "n_visible_60": 19,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 11,
+          "flagged_hubs": [
+            "darshrao@okhdfc"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "darshrao@okhdfc"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 10,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "darshrao@okhdfc"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "darshrao@okhdfc"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 11,
+          "flagged_hubs": [
+            "darshrao@okhdfc"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      },
+      {
+        "instance_id": "straddle_15:4",
+        "variant": "straddle_15",
+        "n_members": 19,
+        "n_visible_15": 13,
+        "n_visible_60": 19,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 13,
+          "flagged_hubs": [
+            "watikaedwin@paytm"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "watikaedwin@paytm"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 12,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "watikaedwin@paytm"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "watikaedwin@paytm"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 13,
+          "flagged_hubs": [
+            "watikaedwin@paytm"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      }
+    ],
+    "straddle_60": [
+      {
+        "instance_id": "straddle_60:0",
+        "variant": "straddle_60",
+        "n_members": 19,
+        "n_visible_15": 0,
+        "n_visible_60": 11,
+        "hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_multiscale": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "peripheral_only": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": true
+      },
+      {
+        "instance_id": "straddle_60:1",
+        "variant": "straddle_60",
+        "n_members": 19,
+        "n_visible_15": 0,
+        "n_visible_60": 11,
+        "hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_multiscale": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "peripheral_only": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": true
+      },
+      {
+        "instance_id": "straddle_60:2",
+        "variant": "straddle_60",
+        "n_members": 19,
+        "n_visible_15": 0,
+        "n_visible_60": 11,
+        "hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_multiscale": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "peripheral_only": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": true
+      },
+      {
+        "instance_id": "straddle_60:3",
+        "variant": "straddle_60",
+        "n_members": 19,
+        "n_visible_15": 0,
+        "n_visible_60": 11,
+        "hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_multiscale": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "peripheral_only": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": true
+      },
+      {
+        "instance_id": "straddle_60:4",
+        "variant": "straddle_60",
+        "n_members": 19,
+        "n_visible_15": 0,
+        "n_visible_60": 13,
+        "hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_multiscale": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "peripheral_only": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": true
+      }
+    ],
+    "diluted_hub": [
+      {
+        "instance_id": "diluted_hub:0",
+        "variant": "diluted_hub",
+        "n_members": 21,
+        "n_visible_15": 21,
+        "n_visible_60": 21,
+        "hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_multiscale": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "peripheral_only": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": true
+      },
+      {
+        "instance_id": "diluted_hub:1",
+        "variant": "diluted_hub",
+        "n_members": 21,
+        "n_visible_15": 21,
+        "n_visible_60": 21,
+        "hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_multiscale": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "peripheral_only": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": true
+      },
+      {
+        "instance_id": "diluted_hub:2",
+        "variant": "diluted_hub",
+        "n_members": 21,
+        "n_visible_15": 21,
+        "n_visible_60": 21,
+        "hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_multiscale": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "peripheral_only": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": true
+      },
+      {
+        "instance_id": "diluted_hub:3",
+        "variant": "diluted_hub",
+        "n_members": 21,
+        "n_visible_15": 21,
+        "n_visible_60": 21,
+        "hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_multiscale": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "peripheral_only": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": true
+      },
+      {
+        "instance_id": "diluted_hub:4",
+        "variant": "diluted_hub",
+        "n_members": 21,
+        "n_visible_15": 21,
+        "n_visible_60": 21,
+        "hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_multiscale": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "peripheral_only": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_hybrid": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": true
+      }
+    ],
+    "minimal_ring": [
+      {
+        "instance_id": "minimal_ring:0",
+        "variant": "minimal_ring",
+        "n_members": 9,
+        "n_visible_15": 9,
+        "n_visible_60": 9,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 9,
+          "flagged_hubs": [
+            "trivenisehgal@ybl"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "trivenisehgal@ybl"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 8,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "trivenisehgal@ybl"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "trivenisehgal@ybl"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 9,
+          "flagged_hubs": [
+            "trivenisehgal@ybl"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      },
+      {
+        "instance_id": "minimal_ring:1",
+        "variant": "minimal_ring",
+        "n_members": 9,
+        "n_visible_15": 9,
+        "n_visible_60": 9,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 9,
+          "flagged_hubs": [
+            "chakrika30@ybl"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "chakrika30@ybl"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 8,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "chakrika30@ybl"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "chakrika30@ybl"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 9,
+          "flagged_hubs": [
+            "chakrika30@ybl"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      },
+      {
+        "instance_id": "minimal_ring:2",
+        "variant": "minimal_ring",
+        "n_members": 9,
+        "n_visible_15": 9,
+        "n_visible_60": 9,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 9,
+          "flagged_hubs": [
+            "devangayathri@paytm"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "devangayathri@paytm"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 8,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "devangayathri@paytm"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "devangayathri@paytm"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 9,
+          "flagged_hubs": [
+            "devangayathri@paytm"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      },
+      {
+        "instance_id": "minimal_ring:3",
+        "variant": "minimal_ring",
+        "n_members": 9,
+        "n_visible_15": 9,
+        "n_visible_60": 9,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 9,
+          "flagged_hubs": [
+            "ekhatri@paytm"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "ekhatri@paytm"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 8,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "ekhatri@paytm"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "ekhatri@paytm"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 9,
+          "flagged_hubs": [
+            "ekhatri@paytm"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      },
+      {
+        "instance_id": "minimal_ring:4",
+        "variant": "minimal_ring",
+        "n_members": 9,
+        "n_visible_15": 9,
+        "n_visible_60": 9,
+        "hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 9,
+          "flagged_hubs": [
+            "senharinakshi@okhdfc"
+          ]
+        },
+        "fusion_multiscale": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "senharinakshi@okhdfc"
+          ]
+        },
+        "peripheral_only": {
+          "caught_any": true,
+          "caught_hub": false,
+          "n_members_flagged": 8,
+          "flagged_hubs": []
+        },
+        "fusion_15": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "senharinakshi@okhdfc"
+          ]
+        },
+        "fusion_60": {
+          "caught_any": false,
+          "caught_hub": false,
+          "n_members_flagged": 0,
+          "flagged_hubs": []
+        },
+        "union_scales": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 1,
+          "flagged_hubs": [
+            "senharinakshi@okhdfc"
+          ]
+        },
+        "union_hybrid": {
+          "caught_any": true,
+          "caught_hub": true,
+          "n_members_flagged": 9,
+          "flagged_hubs": [
+            "senharinakshi@okhdfc"
+          ]
+        },
+        "evade_15_caught_60": false,
+        "evade_both_scales": false
+      }
+    ]
+  },
+  "missed_instances": [
+    {
+      "instance_id": "straddle_60:0",
+      "variant": "straddle_60",
+      "hubs": [
+        "jkarpe@paytm"
+      ],
+      "n_members": 19,
+      "n_visible_15": 0,
+      "n_visible_60": 11,
+      "caught_fusion_15": false,
+      "caught_fusion_60": false,
+      "hubs_detail": [
+        {
+          "account_id": "jkarpe@paytm",
+          "features_15": null,
+          "features_60": {
+            "in_degree": 5,
+            "out_degree": 5,
+            "in_count": 5,
+            "out_count": 5,
+            "velocity": 0.16666666666666666,
+            "amount_entropy": 1.8464393446710154,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8333333333333334,
+            "burstiness": 0.5321683239352001,
+            "account_id": "jkarpe@paytm"
+          },
+          "community_15": {
+            "in_window": false,
+            "window_minutes": 15
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 37,
+            "member_count": 11,
+            "hub_account_id": "jkarpe@paytm",
+            "hub_concentration": 1.0,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "fused_15": null,
+          "fused_60": {
+            "fused_score": 3.577302631578947,
+            "gdi_score": 1.1671559129718254,
+            "gdi_percentile": 0.8464912280701754,
+            "ring_risk_score": 3.0,
+            "ring_percentile": 0.5844298245614035,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 52,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 5.0,
+              "out_degree": 5.0,
+              "in_count": 5.0,
+              "out_count": 5.0,
+              "velocity": 0.16666666666666666,
+              "amount_entropy": 1.8464393446710154,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8333333333333334,
+              "burstiness": 0.5321683239352001
+            },
+            "hub_concentration": 1.0,
+            "ring_member_count": 11,
+            "ring_reason": "hub-and-spoke pattern: account jkarpe@paytm handles 100% of this community's transaction edges (newly-formed community of 11 accounts)"
+          },
+          "fused_multiscale": null
+        }
+      ]
+    },
+    {
+      "instance_id": "diluted_hub:0",
+      "variant": "diluted_hub",
+      "hubs": [
+        "yastitandon@ybl",
+        "vedikaprakash@okicici",
+        "ubika28@paytm"
+      ],
+      "n_members": 21,
+      "n_visible_15": 21,
+      "n_visible_60": 21,
+      "caught_fusion_15": false,
+      "caught_fusion_60": false,
+      "hubs_detail": [
+        {
+          "account_id": "yastitandon@ybl",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.5,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.5824062476368395,
+            "account_id": "yastitandon@ybl"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.5,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.5824062476368395,
+            "account_id": "yastitandon@ybl"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 17,
+            "member_count": 21,
+            "hub_account_id": "yastitandon@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 15,
+            "member_count": 21,
+            "hub_account_id": "yastitandon@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "fused_15": {
+            "fused_score": 1.878511235955056,
+            "gdi_score": 0.6983409740594893,
+            "gdi_percentile": 0.5280898876404494,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 352,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.5,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.5824062476368395
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.308114035087719,
+            "gdi_score": 1.2733198185811567,
+            "gdi_percentile": 0.9078947368421053,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 129,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.5,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.5824062476368395
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        },
+        {
+          "account_id": "vedikaprakash@okicici",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.5,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.6343285535047267,
+            "account_id": "vedikaprakash@okicici"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.5,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.6343285535047267,
+            "account_id": "vedikaprakash@okicici"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 17,
+            "member_count": 21,
+            "hub_account_id": "yastitandon@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 15,
+            "member_count": 21,
+            "hub_account_id": "yastitandon@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "fused_15": {
+            "fused_score": 1.8539325842696628,
+            "gdi_score": 0.6871168393836969,
+            "gdi_percentile": 0.5182584269662921,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 355,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.5,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.6343285535047267
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.294407894736842,
+            "gdi_score": 1.2727257618290349,
+            "gdi_percentile": 0.9024122807017544,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 131,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.5,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.6343285535047267
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        },
+        {
+          "account_id": "ubika28@paytm",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.5,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.7825234873361171,
+            "account_id": "ubika28@paytm"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.5,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.7825234873361171,
+            "account_id": "ubika28@paytm"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 17,
+            "member_count": 21,
+            "hub_account_id": "yastitandon@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 15,
+            "member_count": 21,
+            "hub_account_id": "yastitandon@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "fused_15": {
+            "fused_score": 1.8925561797752808,
+            "gdi_score": 0.7002862826567955,
+            "gdi_percentile": 0.5337078651685393,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 349,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.5,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.7825234873361171
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.319078947368421,
+            "gdi_score": 1.274307131658376,
+            "gdi_percentile": 0.9122807017543859,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 124,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.5,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.7825234873361171
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        }
+      ]
+    },
+    {
+      "instance_id": "straddle_60:1",
+      "variant": "straddle_60",
+      "hubs": [
+        "gviswanathan@okicici"
+      ],
+      "n_members": 19,
+      "n_visible_15": 0,
+      "n_visible_60": 11,
+      "caught_fusion_15": false,
+      "caught_fusion_60": false,
+      "hubs_detail": [
+        {
+          "account_id": "gviswanathan@okicici",
+          "features_15": null,
+          "features_60": {
+            "in_degree": 5,
+            "out_degree": 5,
+            "in_count": 5,
+            "out_count": 5,
+            "velocity": 0.16666666666666666,
+            "amount_entropy": 1.6854752972273344,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8333333333333334,
+            "burstiness": 0.5321683239352001,
+            "account_id": "gviswanathan@okicici"
+          },
+          "community_15": {
+            "in_window": false,
+            "window_minutes": 15
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 39,
+            "member_count": 11,
+            "hub_account_id": "gviswanathan@okicici",
+            "hub_concentration": 1.0,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "fused_15": null,
+          "fused_60": {
+            "fused_score": 3.5608552631578947,
+            "gdi_score": 1.159642769632884,
+            "gdi_percentile": 0.8399122807017544,
+            "ring_risk_score": 3.0,
+            "ring_percentile": 0.5844298245614035,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 53,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 5.0,
+              "out_degree": 5.0,
+              "in_count": 5.0,
+              "out_count": 5.0,
+              "velocity": 0.16666666666666666,
+              "amount_entropy": 1.6854752972273344,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8333333333333334,
+              "burstiness": 0.5321683239352001
+            },
+            "hub_concentration": 1.0,
+            "ring_member_count": 11,
+            "ring_reason": "hub-and-spoke pattern: account gviswanathan@okicici handles 100% of this community's transaction edges (newly-formed community of 11 accounts)"
+          },
+          "fused_multiscale": null
+        }
+      ]
+    },
+    {
+      "instance_id": "diluted_hub:1",
+      "variant": "diluted_hub",
+      "hubs": [
+        "npatil@paytm",
+        "aadi21@ybl",
+        "jaggiharshil@ybl"
+      ],
+      "n_members": 21,
+      "n_visible_15": 21,
+      "n_visible_60": 21,
+      "caught_fusion_15": false,
+      "caught_fusion_60": false,
+      "hubs_detail": [
+        {
+          "account_id": "npatil@paytm",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.561278124459133,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.5824062476368395,
+            "account_id": "npatil@paytm"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.561278124459133,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.5824062476368395,
+            "account_id": "npatil@paytm"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 19,
+            "member_count": 21,
+            "hub_account_id": "npatil@paytm",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 18,
+            "member_count": 21,
+            "hub_account_id": "npatil@paytm",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "fused_15": {
+            "fused_score": 1.8644662921348316,
+            "gdi_score": 0.696536643999709,
+            "gdi_percentile": 0.5224719101123596,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 353,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.561278124459133,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.5824062476368395
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.286184210526316,
+            "gdi_score": 1.2725694559423935,
+            "gdi_percentile": 0.8991228070175439,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 132,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.561278124459133,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.5824062476368395
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        },
+        {
+          "account_id": "aadi21@ybl",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.2987949406953985,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.6343285535047267,
+            "account_id": "aadi21@ybl"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.2987949406953985,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.6343285535047267,
+            "account_id": "aadi21@ybl"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 19,
+            "member_count": 21,
+            "hub_account_id": "npatil@paytm",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 18,
+            "member_count": 21,
+            "hub_account_id": "npatil@paytm",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "fused_15": {
+            "fused_score": 1.913623595505618,
+            "gdi_score": 0.7248109640551054,
+            "gdi_percentile": 0.5421348314606742,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 346,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.2987949406953985,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.6343285535047267
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.330043859649123,
+            "gdi_score": 1.2794402586939384,
+            "gdi_percentile": 0.9166666666666666,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 121,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.2987949406953985,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.6343285535047267
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        },
+        {
+          "account_id": "jaggiharshil@ybl",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.2987949406953985,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.7825234873361171,
+            "account_id": "jaggiharshil@ybl"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.2987949406953985,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.7825234873361171,
+            "account_id": "jaggiharshil@ybl"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 19,
+            "member_count": 21,
+            "hub_account_id": "npatil@paytm",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 18,
+            "member_count": 21,
+            "hub_account_id": "npatil@paytm",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "fused_15": {
+            "fused_score": 1.9276685393258424,
+            "gdi_score": 0.7359100979049402,
+            "gdi_percentile": 0.547752808988764,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 344,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.2987949406953985,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.7825234873361171
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.351973684210526,
+            "gdi_score": 1.2807858875910572,
+            "gdi_percentile": 0.9254385964912281,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 115,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.2987949406953985,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.7825234873361171
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        }
+      ]
+    },
+    {
+      "instance_id": "straddle_60:2",
+      "variant": "straddle_60",
+      "hubs": [
+        "tankagastya@okhdfc"
+      ],
+      "n_members": 19,
+      "n_visible_15": 0,
+      "n_visible_60": 11,
+      "caught_fusion_15": false,
+      "caught_fusion_60": false,
+      "hubs_detail": [
+        {
+          "account_id": "tankagastya@okhdfc",
+          "features_15": null,
+          "features_60": {
+            "in_degree": 5,
+            "out_degree": 5,
+            "in_count": 5,
+            "out_count": 5,
+            "velocity": 0.16666666666666666,
+            "amount_entropy": 2.5219280948873624,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8333333333333334,
+            "burstiness": 0.5321683239352001,
+            "account_id": "tankagastya@okhdfc"
+          },
+          "community_15": {
+            "in_window": false,
+            "window_minutes": 15
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 40,
+            "member_count": 11,
+            "hub_account_id": "tankagastya@okhdfc",
+            "hub_concentration": 1.0,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "fused_15": null,
+          "fused_60": {
+            "fused_score": 3.6759868421052633,
+            "gdi_score": 1.247650678171589,
+            "gdi_percentile": 0.8859649122807017,
+            "ring_risk_score": 3.0,
+            "ring_percentile": 0.5844298245614035,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 50,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 5.0,
+              "out_degree": 5.0,
+              "in_count": 5.0,
+              "out_count": 5.0,
+              "velocity": 0.16666666666666666,
+              "amount_entropy": 2.5219280948873624,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8333333333333334,
+              "burstiness": 0.5321683239352001
+            },
+            "hub_concentration": 1.0,
+            "ring_member_count": 11,
+            "ring_reason": "hub-and-spoke pattern: account tankagastya@okhdfc handles 100% of this community's transaction edges (newly-formed community of 11 accounts)"
+          },
+          "fused_multiscale": null
+        }
+      ]
+    },
+    {
+      "instance_id": "diluted_hub:2",
+      "variant": "diluted_hub",
+      "hubs": [
+        "zbhasin@okicici",
+        "doctortanveer@ybl",
+        "upkaar51@ybl"
+      ],
+      "n_members": 21,
+      "n_visible_15": 21,
+      "n_visible_60": 21,
+      "caught_fusion_15": false,
+      "caught_fusion_60": false,
+      "hubs_detail": [
+        {
+          "account_id": "zbhasin@okicici",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.9056390622295665,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.5824062476368395,
+            "account_id": "zbhasin@okicici"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.9056390622295665,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.5824062476368395,
+            "account_id": "zbhasin@okicici"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 21,
+            "member_count": 21,
+            "hub_account_id": "zbhasin@okicici",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 22,
+            "member_count": 21,
+            "hub_account_id": "zbhasin@okicici",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "fused_15": {
+            "fused_score": 1.9417134831460672,
+            "gdi_score": 0.7636145635281952,
+            "gdi_percentile": 0.5533707865168539,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 342,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.9056390622295665,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.5824062476368395
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.335526315789474,
+            "gdi_score": 1.2798448501817683,
+            "gdi_percentile": 0.918859649122807,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 119,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.9056390622295665,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.5824062476368395
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        },
+        {
+          "account_id": "doctortanveer@ybl",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.561278124459133,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.6343285535047267,
+            "account_id": "doctortanveer@ybl"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.561278124459133,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.6343285535047267,
+            "account_id": "doctortanveer@ybl"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 21,
+            "member_count": 21,
+            "hub_account_id": "zbhasin@okicici",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 22,
+            "member_count": 21,
+            "hub_account_id": "zbhasin@okicici",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "fused_15": {
+            "fused_score": 1.839887640449438,
+            "gdi_score": 0.68519981451681,
+            "gdi_percentile": 0.5126404494382022,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 356,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.561278124459133,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.6343285535047267
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.2779605263157894,
+            "gdi_score": 1.27199879954004,
+            "gdi_percentile": 0.8958333333333334,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 133,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.561278124459133,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.6343285535047267
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        },
+        {
+          "account_id": "upkaar51@ybl",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.75,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.7825234873361171,
+            "account_id": "upkaar51@ybl"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.75,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.7825234873361171,
+            "account_id": "upkaar51@ybl"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 21,
+            "member_count": 21,
+            "hub_account_id": "zbhasin@okicici",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 22,
+            "member_count": 21,
+            "hub_account_id": "zbhasin@okicici",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "fused_15": {
+            "fused_score": 1.9066011235955056,
+            "gdi_score": 0.7212822114554885,
+            "gdi_percentile": 0.5393258426966292,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 347,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.75,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.7825234873361171
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.324561403508772,
+            "gdi_score": 1.2755113011968948,
+            "gdi_percentile": 0.9144736842105263,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 122,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.75,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.7825234873361171
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        }
+      ]
+    },
+    {
+      "instance_id": "straddle_60:3",
+      "variant": "straddle_60",
+      "hubs": [
+        "krishnasamarth@okhdfc"
+      ],
+      "n_members": 19,
+      "n_visible_15": 0,
+      "n_visible_60": 11,
+      "caught_fusion_15": false,
+      "caught_fusion_60": false,
+      "hubs_detail": [
+        {
+          "account_id": "krishnasamarth@okhdfc",
+          "features_15": null,
+          "features_60": {
+            "in_degree": 5,
+            "out_degree": 5,
+            "in_count": 5,
+            "out_count": 5,
+            "velocity": 0.16666666666666666,
+            "amount_entropy": 2.1709505944546685,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8333333333333334,
+            "burstiness": 0.5321683239352001,
+            "account_id": "krishnasamarth@okhdfc"
+          },
+          "community_15": {
+            "in_window": false,
+            "window_minutes": 15
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 41,
+            "member_count": 11,
+            "hub_account_id": "krishnasamarth@okhdfc",
+            "hub_concentration": 1.0,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "fused_15": null,
+          "fused_60": {
+            "fused_score": 3.6047149122807016,
+            "gdi_score": 1.196623249673106,
+            "gdi_percentile": 0.8574561403508771,
+            "ring_risk_score": 3.0,
+            "ring_percentile": 0.5844298245614035,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 51,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 5.0,
+              "out_degree": 5.0,
+              "in_count": 5.0,
+              "out_count": 5.0,
+              "velocity": 0.16666666666666666,
+              "amount_entropy": 2.1709505944546685,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8333333333333334,
+              "burstiness": 0.5321683239352001
+            },
+            "hub_concentration": 1.0,
+            "ring_member_count": 11,
+            "ring_reason": "hub-and-spoke pattern: account krishnasamarth@okhdfc handles 100% of this community's transaction edges (newly-formed community of 11 accounts)"
+          },
+          "fused_multiscale": null
+        }
+      ]
+    },
+    {
+      "instance_id": "diluted_hub:3",
+      "variant": "diluted_hub",
+      "hubs": [
+        "lbawa@ybl",
+        "gperi@paytm",
+        "watikabhargava@ybl"
+      ],
+      "n_members": 21,
+      "n_visible_15": 21,
+      "n_visible_60": 21,
+      "caught_fusion_15": false,
+      "caught_fusion_60": false,
+      "hubs_detail": [
+        {
+          "account_id": "lbawa@ybl",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.5,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.5824062476368395,
+            "account_id": "lbawa@ybl"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.5,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.5824062476368395,
+            "account_id": "lbawa@ybl"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 24,
+            "member_count": 21,
+            "hub_account_id": "lbawa@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 28,
+            "member_count": 21,
+            "hub_account_id": "lbawa@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "fused_15": {
+            "fused_score": 1.878511235955056,
+            "gdi_score": 0.6983409740594893,
+            "gdi_percentile": 0.5280898876404494,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 350,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.5,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.5824062476368395
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.308114035087719,
+            "gdi_score": 1.2733198185811567,
+            "gdi_percentile": 0.9078947368421053,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 127,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.5,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.5824062476368395
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        },
+        {
+          "account_id": "gperi@paytm",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.561278124459133,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.6343285535047267,
+            "account_id": "gperi@paytm"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.561278124459133,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.6343285535047267,
+            "account_id": "gperi@paytm"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 24,
+            "member_count": 21,
+            "hub_account_id": "lbawa@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 28,
+            "member_count": 21,
+            "hub_account_id": "lbawa@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "fused_15": {
+            "fused_score": 1.839887640449438,
+            "gdi_score": 0.68519981451681,
+            "gdi_percentile": 0.5126404494382022,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 357,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.561278124459133,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.6343285535047267
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.2779605263157894,
+            "gdi_score": 1.27199879954004,
+            "gdi_percentile": 0.8958333333333334,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 134,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.561278124459133,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.6343285535047267
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        },
+        {
+          "account_id": "watikabhargava@ybl",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.2987949406953985,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.7825234873361171,
+            "account_id": "watikabhargava@ybl"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.2987949406953985,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.7825234873361171,
+            "account_id": "watikabhargava@ybl"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 24,
+            "member_count": 21,
+            "hub_account_id": "lbawa@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 28,
+            "member_count": 21,
+            "hub_account_id": "lbawa@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "fused_15": {
+            "fused_score": 1.9276685393258424,
+            "gdi_score": 0.7359100979049402,
+            "gdi_percentile": 0.547752808988764,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 345,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.2987949406953985,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.7825234873361171
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.351973684210526,
+            "gdi_score": 1.2807858875910572,
+            "gdi_percentile": 0.9254385964912281,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 116,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.2987949406953985,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.7825234873361171
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        }
+      ]
+    },
+    {
+      "instance_id": "straddle_60:4",
+      "variant": "straddle_60",
+      "hubs": [
+        "diyadutt@ybl"
+      ],
+      "n_members": 19,
+      "n_visible_15": 0,
+      "n_visible_60": 13,
+      "caught_fusion_15": false,
+      "caught_fusion_60": false,
+      "hubs_detail": [
+        {
+          "account_id": "diyadutt@ybl",
+          "features_15": null,
+          "features_60": {
+            "in_degree": 6,
+            "out_degree": 6,
+            "in_count": 6,
+            "out_count": 6,
+            "velocity": 0.2,
+            "amount_entropy": 2.084962500721156,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8571428571428571,
+            "burstiness": 0.8048150549829897,
+            "account_id": "diyadutt@ybl"
+          },
+          "community_15": {
+            "in_window": false,
+            "window_minutes": 15
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 20,
+            "member_count": 13,
+            "hub_account_id": "diyadutt@ybl",
+            "hub_concentration": 1.0,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "fused_15": null,
+          "fused_60": {
+            "fused_score": 3.4457236842105265,
+            "gdi_score": 1.0881541852917853,
+            "gdi_percentile": 0.793859649122807,
+            "ring_risk_score": 3.0,
+            "ring_percentile": 0.5844298245614035,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 56,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 6.0,
+              "out_degree": 6.0,
+              "in_count": 6.0,
+              "out_count": 6.0,
+              "velocity": 0.2,
+              "amount_entropy": 2.084962500721156,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8571428571428571,
+              "burstiness": 0.8048150549829897
+            },
+            "hub_concentration": 1.0,
+            "ring_member_count": 13,
+            "ring_reason": "hub-and-spoke pattern: account diyadutt@ybl handles 100% of this community's transaction edges (newly-formed community of 13 accounts)"
+          },
+          "fused_multiscale": null
+        }
+      ]
+    },
+    {
+      "instance_id": "diluted_hub:4",
+      "variant": "diluted_hub",
+      "hubs": [
+        "omishabose@ybl",
+        "rohan47@ybl",
+        "apall@okhdfc"
+      ],
+      "n_members": 21,
+      "n_visible_15": 21,
+      "n_visible_60": 21,
+      "caught_fusion_15": false,
+      "caught_fusion_60": false,
+      "hubs_detail": [
+        {
+          "account_id": "omishabose@ybl",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.5,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.5824062476368395,
+            "account_id": "omishabose@ybl"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.5,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.5824062476368395,
+            "account_id": "omishabose@ybl"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 26,
+            "member_count": 21,
+            "hub_account_id": "omishabose@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 2,
+            "member_count": 21,
+            "hub_account_id": "omishabose@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": true
+          },
+          "fused_15": {
+            "fused_score": 1.878511235955056,
+            "gdi_score": 0.6983409740594893,
+            "gdi_percentile": 0.5280898876404494,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 351,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.5,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.5824062476368395
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.308114035087719,
+            "gdi_score": 1.2733198185811567,
+            "gdi_percentile": 0.9078947368421053,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 128,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.5,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.5824062476368395
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        },
+        {
+          "account_id": "rohan47@ybl",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.5,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.6343285535047267,
+            "account_id": "rohan47@ybl"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.5,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.6343285535047267,
+            "account_id": "rohan47@ybl"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 26,
+            "member_count": 21,
+            "hub_account_id": "omishabose@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 2,
+            "member_count": 21,
+            "hub_account_id": "omishabose@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "fused_15": {
+            "fused_score": 1.8539325842696628,
+            "gdi_score": 0.6871168393836969,
+            "gdi_percentile": 0.5182584269662921,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 354,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.5,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.6343285535047267
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.294407894736842,
+            "gdi_score": 1.2727257618290349,
+            "gdi_percentile": 0.9024122807017544,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 130,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.5,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.6343285535047267
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        },
+        {
+          "account_id": "apall@okhdfc",
+          "features_15": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.5333333333333333,
+            "amount_entropy": 1.2987949406953985,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.7825234873361171,
+            "account_id": "apall@okhdfc"
+          },
+          "features_60": {
+            "in_degree": 4,
+            "out_degree": 4,
+            "in_count": 4,
+            "out_count": 4,
+            "velocity": 0.13333333333333333,
+            "amount_entropy": 1.2987949406953985,
+            "counterparty_diversity": 1.0,
+            "fan_ratio": 0.8,
+            "burstiness": 0.7825234873361171,
+            "account_id": "apall@okhdfc"
+          },
+          "community_15": {
+            "in_window": true,
+            "window_minutes": 15,
+            "community_id": 26,
+            "member_count": 21,
+            "hub_account_id": "omishabose@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "community_60": {
+            "in_window": true,
+            "window_minutes": 60,
+            "community_id": 2,
+            "member_count": 21,
+            "hub_account_id": "omishabose@ybl",
+            "hub_concentration": 0.38095238095238093,
+            "ring_risk_score": null,
+            "is_named_hub": false
+          },
+          "fused_15": {
+            "fused_score": 1.9276685393258424,
+            "gdi_score": 0.7359100979049402,
+            "gdi_percentile": 0.547752808988764,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.22331460674157302,
+            "detection_window": 15,
+            "fused_score_by_window": null,
+            "rank": 343,
+            "n_scored": 357,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.5333333333333333,
+              "amount_entropy": 1.2987949406953985,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.7825234873361171
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_60": {
+            "fused_score": 2.351973684210526,
+            "gdi_score": 1.2807858875910572,
+            "gdi_percentile": 0.9254385964912281,
+            "ring_risk_score": 0.0,
+            "ring_percentile": 0.015350877192982455,
+            "detection_window": 60,
+            "fused_score_by_window": null,
+            "rank": 114,
+            "n_scored": 457,
+            "features": {
+              "in_degree": 4.0,
+              "out_degree": 4.0,
+              "in_count": 4.0,
+              "out_count": 4.0,
+              "velocity": 0.13333333333333333,
+              "amount_entropy": 1.2987949406953985,
+              "counterparty_diversity": 1.0,
+              "fan_ratio": 0.8,
+              "burstiness": 0.7825234873361171
+            },
+            "hub_concentration": null,
+            "ring_member_count": null,
+            "ring_reason": null
+          },
+          "fused_multiscale": null
+        }
+      ]
+    }
+  ],
+  "dilution_audit": [
+    {
+      "instance_id": "diluted_hub:0",
+      "n_hubs": 3,
+      "n_spokes": 18,
+      "hubs_in_fusion_ms": [],
+      "hubs_in_peripheral": [],
+      "spokes_in_fusion_ms": [],
+      "spokes_in_peripheral": [],
+      "any_member_hybrid": false
+    },
+    {
+      "instance_id": "diluted_hub:1",
+      "n_hubs": 3,
+      "n_spokes": 18,
+      "hubs_in_fusion_ms": [],
+      "hubs_in_peripheral": [],
+      "spokes_in_fusion_ms": [],
+      "spokes_in_peripheral": [],
+      "any_member_hybrid": false
+    },
+    {
+      "instance_id": "diluted_hub:2",
+      "n_hubs": 3,
+      "n_spokes": 18,
+      "hubs_in_fusion_ms": [],
+      "hubs_in_peripheral": [],
+      "spokes_in_fusion_ms": [],
+      "spokes_in_peripheral": [],
+      "any_member_hybrid": false
+    },
+    {
+      "instance_id": "diluted_hub:3",
+      "n_hubs": 3,
+      "n_spokes": 18,
+      "hubs_in_fusion_ms": [],
+      "hubs_in_peripheral": [],
+      "spokes_in_fusion_ms": [],
+      "spokes_in_peripheral": [],
+      "any_member_hybrid": false
+    },
+    {
+      "instance_id": "diluted_hub:4",
+      "n_hubs": 3,
+      "n_spokes": 18,
+      "hubs_in_fusion_ms": [],
+      "hubs_in_peripheral": [],
+      "spokes_in_fusion_ms": [],
+      "spokes_in_peripheral": [],
+      "any_member_hybrid": false
+    }
+  ]
+}

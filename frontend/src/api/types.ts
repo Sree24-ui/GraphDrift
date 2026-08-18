@@ -52,6 +52,7 @@ export interface Alert {
   confidence: ConfidenceLevel
   updated_at: string
   is_escalated?: boolean
+  ring_id?: string | null
 }
 
 export interface AlertListResponse {
@@ -80,6 +81,7 @@ export interface AlertDetail {
   reviewed_at: string | null
   feature_breakdown: Record<string, unknown> | null
   escalation_history: EscalationHistoryEntry[]
+  ring_id?: string | null
 }
 
 export interface AlertStatusUpdate {
@@ -173,6 +175,7 @@ export interface LiveAlertData {
   pattern_type: string
   status: AlertStatus
   detected_at: string
+  ring_id?: string | null
 }
 
 export interface LiveAlertMessage {
@@ -225,6 +228,88 @@ export interface AppSettingsUpdate {
 }
 
 export interface GetAccountDetailParams {
+  page?: number
+  page_size?: number
+}
+
+export type RingMemberRole = 'hub' | 'core' | 'fan-in' | 'fan-out' | 'peripheral'
+
+export interface RingMember {
+  account_id: string
+  alert_id: number | null
+  role: RingMemberRole | string
+  status: AlertStatus | null
+  confidence: ConfidenceLevel | null
+  risk_score: number | null
+  pattern_type: string | null
+  detected_at: string | null
+  is_escalated: boolean
+}
+
+export interface RingExplanation {
+  hub_concentration: number | null
+  external_edge_ratio: number | null
+  member_count: number | null
+  ring_risk_score: number | null
+  reason: string | null
+  detection_window: number | null
+  core_account_ids: string[]
+  peripheral_account_ids: string[]
+}
+
+export interface RingListItem {
+  ring_id: string
+  hub_account_id: string | null
+  member_count: number
+  alert_count: number
+  aggregate_risk_score: number
+  confidence: ConfidenceLevel
+  status: AlertStatus
+  first_detected_at: string
+  last_updated_at: string
+  open_alert_count: number
+}
+
+export interface RingListResponse {
+  items: RingListItem[]
+  pagination: PaginationMeta
+}
+
+export interface RingDetail {
+  ring_id: string
+  hub_account_id: string | null
+  member_count: number
+  alert_count: number
+  aggregate_risk_score: number
+  confidence: ConfidenceLevel
+  status: AlertStatus
+  first_detected_at: string
+  last_updated_at: string
+  open_alert_count: number
+  members: RingMember[]
+  explanation: RingExplanation
+}
+
+export interface RingStatusUpdate {
+  status: 'reviewing' | 'confirmed' | 'false_positive'
+  analyst_notes?: string | null
+}
+
+export interface RingBulkUpdateResponse {
+  ring_id: string
+  target_status: AlertStatus
+  updated_alert_ids: number[]
+  skipped: { alert_id: number; account_id: string; reason: string }[]
+  ring: RingDetail
+}
+
+export interface GetRingsParams {
+  status?: AlertStatus
+  statuses?: AlertStatus[]
+  confidence?: ConfidenceLevel
+  detected_after?: string
+  sort_by?: 'detected_at' | 'risk_score'
+  sort_dir?: 'asc' | 'desc'
   page?: number
   page_size?: number
 }

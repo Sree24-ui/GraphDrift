@@ -1,0 +1,34 @@
+{
+  "note": "Hybrid after union-of-per-scale-top-k merge. Old max-merge hybrid F1 was 0.644 ± 0.091. Universe: all 15m-active accounts.",
+  "old_max_merge_hybrid": {
+    "precision": 0.733,
+    "recall": 0.578,
+    "f1": 0.644,
+    "fpr": 0.140
+  },
+  "union_fusion_multiscale_scored_ge3": {
+    "f1": 0.336,
+    "recall": 0.328,
+    "precision": 0.368,
+    "fpr": 0.180
+  },
+  "union_fusion_on_active": {
+    "precision": {"mean": 0.358, "std": 0.101},
+    "recall": {"mean": 0.135, "std": 0.021},
+    "f1": {"mean": 0.192, "std": 0.026},
+    "fpr": {"mean": 0.177, "std": 0.015}
+  },
+  "hybrid_union_plus_peripheral": {
+    "precision": {"mean": 0.710, "std": 0.105, "min": 0.536, "max": 0.800},
+    "recall": {"mean": 0.683, "std": 0.086, "min": 0.600, "max": 0.828},
+    "f1": {"mean": 0.691, "std": 0.065, "min": 0.588, "max": 0.763},
+    "fpr": {"mean": 0.191, "std": 0.013, "min": 0.173, "max": 0.203}
+  },
+  "per_seed": [
+    {"seed": 42, "precision": 0.725, "recall": 0.682, "f1": 0.703, "fpr": 0.1930, "tp": 58, "fp": 22, "fn": 27, "tn": 92, "eval": 199, "fraud": 85},
+    {"seed": 123, "precision": 0.707, "recall": 0.828, "f1": 0.763, "fpr": 0.1732, "tp": 53, "fp": 22, "fn": 11, "tn": 105, "eval": 191, "fraud": 64},
+    {"seed": 7, "precision": 0.536, "recall": 0.652, "f1": 0.588, "fpr": 0.2031, "tp": 30, "fp": 26, "fn": 16, "tn": 102, "eval": 174, "fraud": 46},
+    {"seed": 2026, "precision": 0.800, "recall": 0.655, "f1": 0.720, "fpr": 0.1837, "tp": 72, "fp": 18, "fn": 38, "tn": 80, "eval": 208, "fraud": 110},
+    {"seed": 99, "precision": 0.783, "recall": 0.600, "f1": 0.679, "fpr": 0.2020, "tp": 72, "fp": 20, "fn": 48, "tn": 79, "eval": 219, "fraud": 120}
+  ]
+}

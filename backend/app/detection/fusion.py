@@ -23,12 +23,24 @@ from app.detection.community import get_ring_alerts
 from app.detection.features import WINDOW_MINUTES, extract_all_features, MIN_TRANSACTIONS_FOR_SCORING
 from app.detection.lifecycle import auto_expire_stale_alerts
 from app.detection.node_anomaly import compute_baseline, compute_gdi_scores, explain_score
+from app.detection.ring_id import get_or_create_ring_id
 from app.models import AccountScoreHistory, Alert, Transaction
 
+from app.detection.cycle_timing import phase
 from app.settings_store import get_alert_top_percentile
+
+
+def _timed_commit(db: Session) -> None:
+    with phase("persist_commit"):
+        db.commit()
 
 # Default alert percentile when settings store is at its initial value (top 5%).
 DEFAULT_ALERT_TOP_PERCENTILE = 0.95
+
+# Slow-attack scale run in parallel with WINDOW_MINUTES (15). Slow-drip
+# simulations span 12–15 minutes and often fail to form a complete ring in
+# a single 15-minute slice.
+SECONDARY_WINDOW_MINUTES = 60
 
 # In-memory debug flag for demo diagnostics (--debug).
 _DEBUG_ALERT_CREATION = False
@@ -163,62 +175,223 @@ def compute_fused_scores(
     window_minutes: int = WINDOW_MINUTES,
     min_transactions: int = MIN_TRANSACTIONS_FOR_SCORING,
 ) -> list[dict]:
-    features = extract_all_features(
-        db, as_of, window_minutes, min_transactions=min_transactions
-    )
-    gdi_results = compute_gdi_scores(features)
-    ring_alerts = get_ring_alerts(db, as_of, window_minutes)
+    from app.detection.cycle_timing import phase
+
+    with phase("features"):
+        features = extract_all_features(
+            db, as_of, window_minutes, min_transactions=min_transactions
+        )
+    with phase("layer1"):
+        gdi_results = compute_gdi_scores(features)
+    with phase("layer2"):
+        ring_alerts = get_ring_alerts(db, as_of, window_minutes)
     ring_lookup = _build_ring_lookup(ring_alerts)
 
-    gdi_by_account = {row["account_id"]: row for row in gdi_results}
-    account_ids = sorted(set(gdi_by_account) | set(ring_lookup))
+    with phase("fusion_merge"):
+        gdi_by_account = {row["account_id"]: row for row in gdi_results}
+        account_ids = sorted(set(gdi_by_account) | set(ring_lookup))
 
-    raw_rows: list[dict] = []
-    for account_id in account_ids:
-        gdi_row = gdi_by_account.get(account_id)
-        gdi_score = float(gdi_row["gdi_score"]) if gdi_row else 0.0
+        raw_rows: list[dict] = []
+        for account_id in account_ids:
+            gdi_row = gdi_by_account.get(account_id)
+            gdi_score = float(gdi_row["gdi_score"]) if gdi_row else 0.0
 
-        ring_info = ring_lookup.get(account_id)
-        ring_risk_score = float(ring_info["ring_risk_score"]) if ring_info else 0.0
-        community_id = int(ring_info["community_id"]) if ring_info else None
+            ring_info = ring_lookup.get(account_id)
+            ring_risk_score = float(ring_info["ring_risk_score"]) if ring_info else 0.0
+            community_id = int(ring_info["community_id"]) if ring_info else None
 
-        raw_rows.append(
-            {
-                "account_id": account_id,
-                "gdi_score": gdi_score,
-                "ring_risk_score": ring_risk_score,
-                "community_id": community_id,
-                "feature_vector": gdi_row["feature_vector"] if gdi_row else None,
-                "ring_info": ring_info,
-            }
-        )
+            raw_rows.append(
+                {
+                    "account_id": account_id,
+                    "gdi_score": gdi_score,
+                    "ring_risk_score": ring_risk_score,
+                    "community_id": community_id,
+                    "feature_vector": gdi_row["feature_vector"] if gdi_row else None,
+                    "layer1_baseline": (
+                        gdi_row.get("layer1_baseline") if gdi_row else None
+                    ),
+                    "ring_info": ring_info,
+                }
+            )
 
-    gdi_percentiles = _percentile_ranks([row["gdi_score"] for row in raw_rows])
-    ring_percentiles = _percentile_ranks([row["ring_risk_score"] for row in raw_rows])
+        gdi_percentiles = _percentile_ranks([row["gdi_score"] for row in raw_rows])
+        ring_percentiles = _percentile_ranks([row["ring_risk_score"] for row in raw_rows])
 
-    fused_results: list[dict] = []
-    for row, gdi_pct, ring_pct in zip(raw_rows, gdi_percentiles, ring_percentiles):
-        fused_score = 5.0 * (
-            (FUSION_GDI_WEIGHT * gdi_pct) + (FUSION_RING_WEIGHT * ring_pct)
-        )
+        fused_results: list[dict] = []
+        for row, gdi_pct, ring_pct in zip(raw_rows, gdi_percentiles, ring_percentiles):
+            fused_score = 5.0 * (
+                (FUSION_GDI_WEIGHT * gdi_pct) + (FUSION_RING_WEIGHT * ring_pct)
+            )
 
-        fused_results.append(
-            {
-                "account_id": row["account_id"],
-                "fused_score": float(fused_score),
-                "gdi_percentile": float(gdi_pct),
-                "ring_percentile": float(ring_pct),
-                "confidence": _confidence_label(gdi_pct, ring_pct),
-                "gdi_score": row["gdi_score"],
-                "ring_risk_score": row["ring_risk_score"],
-                "community_id": row["community_id"],
-                "feature_vector": row["feature_vector"],
-                "ring_info": row["ring_info"],
-            }
-        )
+            fused_results.append(
+                {
+                    "account_id": row["account_id"],
+                    "fused_score": float(fused_score),
+                    "gdi_percentile": float(gdi_pct),
+                    "ring_percentile": float(ring_pct),
+                    "confidence": _confidence_label(gdi_pct, ring_pct),
+                    "gdi_score": row["gdi_score"],
+                    "ring_risk_score": row["ring_risk_score"],
+                    "community_id": row["community_id"],
+                    "feature_vector": row["feature_vector"],
+                    "layer1_baseline": row.get("layer1_baseline"),
+                    "ring_info": row["ring_info"],
+                    "ring_id": None,
+                }
+            )
 
-    fused_results.sort(key=lambda item: item["fused_score"], reverse=True)
-    return fused_results
+        fused_results.sort(key=lambda item: item["fused_score"], reverse=True)
+        for row in fused_results:
+            row.setdefault("detection_window", window_minutes)
+        return fused_results
+
+
+def _merge_multiscale_display_row(
+    row_15: dict | None, row_60: dict | None
+) -> dict:
+    """Pick a display row when an account has scores at one or both scales.
+
+    Percentiles are *not* comparable across windows. This merge is for
+    explainability (which scale to show) only — never for a global top-k cut.
+    Ties prefer the fast window.
+    """
+    score_15 = float(row_15["fused_score"]) if row_15 else 0.0
+    score_60 = float(row_60["fused_score"]) if row_60 else 0.0
+    if row_60 is not None and score_60 > score_15:
+        winner = dict(row_60)
+        winner["detection_window"] = SECONDARY_WINDOW_MINUTES
+    elif row_15 is not None:
+        winner = dict(row_15)
+        winner["detection_window"] = WINDOW_MINUTES
+    else:
+        winner = dict(row_60)
+        winner["detection_window"] = SECONDARY_WINDOW_MINUTES
+    winner["fused_score_by_window"] = {
+        WINDOW_MINUTES: score_15,
+        SECONDARY_WINDOW_MINUTES: score_60,
+    }
+    cleared: list[int] = []
+    if row_15 is not None:
+        cleared.append(WINDOW_MINUTES)
+    if row_60 is not None:
+        cleared.append(SECONDARY_WINDOW_MINUTES)
+    winner["scored_windows"] = cleared
+    return winner
+
+
+def select_top_anomaly_accounts_multiscale(
+    primary: list[dict],
+    secondary: list[dict],
+    *,
+    percentile: float | None = None,
+) -> tuple[set[str], list[dict], dict]:
+    """Independent top-k at each scale, then union.
+
+    A 15-minute percentile and a 60-minute percentile are not on the same
+    scale. Ranking max(score_15, score_60) across the pooled population is
+    invalid and is not performed here.
+    """
+    selected_15, threshold_15, k_15 = select_top_anomaly_accounts(
+        primary, "fused_score", percentile=percentile
+    )
+    selected_60, threshold_60, k_60 = select_top_anomaly_accounts(
+        secondary, "fused_score", percentile=percentile
+    )
+    selected = selected_15 | selected_60
+    by_15 = {row["account_id"]: row for row in primary}
+    by_60 = {row["account_id"]: row for row in secondary}
+    merged = [
+        _merge_multiscale_display_row(by_15.get(account_id), by_60.get(account_id))
+        for account_id in selected
+    ]
+    for row in merged:
+        aid = row["account_id"]
+        row["cleared_windows"] = [
+            w
+            for w, chosen in (
+                (WINDOW_MINUTES, aid in selected_15),
+                (SECONDARY_WINDOW_MINUTES, aid in selected_60),
+            )
+            if chosen
+        ]
+    merged.sort(key=lambda item: item["fused_score"], reverse=True)
+    meta = {
+        "n_primary": len(primary),
+        "n_secondary": len(secondary),
+        "k_primary": k_15,
+        "k_secondary": k_60,
+        "threshold_primary": threshold_15,
+        "threshold_secondary": threshold_60,
+        "n_selected": len(selected),
+        "n_selected_primary_only": len(selected_15 - selected_60),
+        "n_selected_secondary_only": len(selected_60 - selected_15),
+        "n_selected_both": len(selected_15 & selected_60),
+    }
+    return selected, merged, meta
+
+
+def compute_fused_scores_multiscale(
+    db: Session,
+    as_of: datetime,
+    *,
+    min_transactions: int = MIN_TRANSACTIONS_FOR_SCORING,
+) -> list[dict]:
+    """Alert candidates: union of per-scale top-k, not max-then-global-cut.
+
+    Each window's fused score is a percentile rank *within that window*.
+    An account is a candidate if it clears the top-percentile budget in the
+    15-minute population **or** the 60-minute population. Returned rows are
+    that union; ``detection_window`` is the scale with the higher display
+    score (ties prefer 15m).
+
+    Do **not** pass this list through ``select_top_anomaly_accounts`` — that
+    would apply a second, invalid global cut.
+    """
+    _, _, merged, _ = compute_fused_scores_multiscale_with_meta(
+        db, as_of, min_transactions=min_transactions
+    )
+    return merged
+
+
+def compute_fused_scores_multiscale_with_meta(
+    db: Session,
+    as_of: datetime,
+    *,
+    min_transactions: int = MIN_TRANSACTIONS_FOR_SCORING,
+) -> tuple[list[dict], list[dict], list[dict], dict]:
+    """Return (primary_scores, secondary_scores, union_candidate_rows, meta)."""
+    primary = compute_fused_scores(
+        db,
+        as_of,
+        window_minutes=WINDOW_MINUTES,
+        min_transactions=min_transactions,
+    )
+    secondary = compute_fused_scores(
+        db,
+        as_of,
+        window_minutes=SECONDARY_WINDOW_MINUTES,
+        min_transactions=min_transactions,
+    )
+    from app.detection.cycle_timing import phase
+
+    with phase("fusion_merge"):
+        _, merged, meta = select_top_anomaly_accounts_multiscale(primary, secondary)
+    return primary, secondary, merged, meta
+
+
+def compute_fused_scores_multiscale_max_merge(*args, **kwargs):
+    """Removed. Percentile ranks from different windows are not comparable.
+
+    The old implementation took max(15m, 60m) per account then applied one
+    global top-k. That let a merely-high 60m account outrank a 15m star.
+    Use ``compute_fused_scores_multiscale`` (union of independent per-scale
+    top-k) instead.
+    """
+    raise RuntimeError(
+        "compute_fused_scores_multiscale_max_merge was removed: 15m and 60m "
+        "percentiles are not comparable. Use compute_fused_scores_multiscale "
+        "(independent per-scale top-k, then union)."
+    )
 
 
 def build_explanation(
@@ -227,8 +400,14 @@ def build_explanation(
     db: Session,
     as_of: datetime,
 ) -> dict:
-    features = extract_all_features(db, as_of)
-    baseline = compute_baseline(features) if features else None
+    window_minutes = int(fused_result.get("detection_window", WINDOW_MINUTES))
+    baseline = fused_result.get("layer1_baseline")
+    if baseline is None and fused_result.get("feature_vector") is not None:
+        # Fallback for callers that did not pass through compute_gdi_scores
+        # (tests, eval scripts). Production cycles attach the scoring-pass
+        # baseline so we do not re-extract the whole window per alert.
+        features = extract_all_features(db, as_of, window_minutes)
+        baseline = compute_baseline(features) if features else None
 
     layer1_breakdown: list[dict] = []
     if fused_result.get("feature_vector") and baseline is not None:
@@ -255,6 +434,7 @@ def build_explanation(
             "formed_recently": bool(ring_info["formed_recently"]),
             "reason": str(ring_info["reason"]),
             "is_hub_account": account_id == ring_info.get("hub_account_id"),
+            "member_accounts": list(ring_info.get("member_accounts") or []),
         }
 
     gdi_pct = float(fused_result.get("gdi_percentile", 0.0))
@@ -293,6 +473,9 @@ def build_explanation(
         "primary_reason": primary_reason,
         "layer1_breakdown": layer1_breakdown,
         "layer2_detail": layer2_detail,
+        "detection_window": window_minutes,
+        "fused_score_by_window": fused_result.get("fused_score_by_window"),
+        "ring_id": fused_result.get("ring_id"),
     }
 
 
@@ -373,13 +556,62 @@ def _apply_escalation(
     existing_alert.updated_at = as_of
     existing_alert.feature_breakdown = breakdown
     flag_modified(existing_alert, "feature_breakdown")
+    _stamp_ring_id(existing_alert, explanation, db=db)
 
     db_pattern = _determine_pattern_type(explanation)
     existing_alert.pattern_type = db_pattern
 
-    db.commit()
+    _timed_commit(db)
     db.refresh(existing_alert)
     return existing_alert
+
+
+def _hub_account_for_ring(
+    explanation: dict, fused_result: dict | None = None
+) -> str | None:
+    layer2 = explanation.get("layer2_detail") or {}
+    if layer2.get("hub_account_id"):
+        return str(layer2["hub_account_id"])
+    peripheral = explanation.get("peripheral_detail") or {}
+    if peripheral.get("linked_hub_account_id"):
+        return str(peripheral["linked_hub_account_id"])
+    info = (fused_result or {}).get("ring_info") or {}
+    if info.get("hub_account_id"):
+        return str(info["hub_account_id"])
+    fused_peripheral = (fused_result or {}).get("linked_hub_account_id")
+    if fused_peripheral:
+        return str(fused_peripheral)
+    return None
+
+
+def _resolve_ring_id(
+    explanation: dict,
+    fused_result: dict | None = None,
+    *,
+    db: Session | None = None,
+) -> str | None:
+    hub = _hub_account_for_ring(explanation, fused_result)
+    if hub and db is not None:
+        return get_or_create_ring_id(db, hub)
+    for source in (explanation, fused_result or {}):
+        value = source.get("ring_id")
+        if value:
+            return str(value)
+    return None
+
+
+def _stamp_ring_id(
+    alert: Alert,
+    explanation: dict,
+    fused_result: dict | None = None,
+    *,
+    db: Session | None = None,
+) -> bool:
+    ring_id = _resolve_ring_id(explanation, fused_result, db=db)
+    if not ring_id or alert.ring_id == ring_id:
+        return False
+    alert.ring_id = ring_id
+    return True
 
 
 def create_alert_if_needed(
@@ -407,16 +639,25 @@ def create_alert_if_needed(
     # Case-management dedup: one open alert per account until resolved or auto-closed.
     # The previous 15-minute window allowed the same account to be re-alerted every
     # cycle after the window rolled, inflating queue volume without new information.
-    existing_alert = db.scalar(
-        select(Alert).where(
-            Alert.account_id == account_id,
-            Alert.status.in_(["new", "reviewing"]),
+    with phase("persist_alerts"):
+        existing_alert = db.scalar(
+            select(Alert).where(
+                Alert.account_id == account_id,
+                Alert.status.in_(["new", "reviewing"]),
+            )
         )
-    )
     if existing_alert is not None:
-        old_confidence = _alert_confidence(existing_alert)
-        old_score = float(existing_alert.risk_score)
-        if _should_escalate_alert(existing_alert, fused_score, new_confidence):
+        with phase("persist_alerts"):
+            stamped = _stamp_ring_id(existing_alert, explanation, fused_result, db=db)
+        if stamped:
+            _timed_commit(db)
+        with phase("persist_alerts"):
+            old_confidence = _alert_confidence(existing_alert)
+            old_score = float(existing_alert.risk_score)
+            should_escalate = _should_escalate_alert(
+                existing_alert, fused_score, new_confidence
+            )
+        if should_escalate:
             escalated = _apply_escalation(
                 db, existing_alert, fused_score, explanation, as_of
             )
@@ -441,22 +682,24 @@ def create_alert_if_needed(
             )
         return None
 
-    breakdown = dict(explanation)
-    breakdown["confidence_at_creation"] = new_confidence
-    breakdown["escalation_history"] = []
+    with phase("persist_alerts"):
+        breakdown = dict(explanation)
+        breakdown["confidence_at_creation"] = new_confidence
+        breakdown["escalation_history"] = []
 
-    alert = Alert(
-        account_id=account_id,
-        risk_score=fused_score,
-        confidence=new_confidence,
-        pattern_type=_determine_pattern_type(explanation),
-        detected_at=as_of,
-        updated_at=as_of,
-        status="new",
-        feature_breakdown=breakdown,
-    )
-    db.add(alert)
-    db.commit()
+        alert = Alert(
+            account_id=account_id,
+            risk_score=fused_score,
+            confidence=new_confidence,
+            pattern_type=_determine_pattern_type(explanation),
+            detected_at=as_of,
+            updated_at=as_of,
+            status="new",
+            ring_id=_resolve_ring_id(explanation, fused_result, db=db),
+            feature_breakdown=breakdown,
+        )
+        db.add(alert)
+    _timed_commit(db)
     db.refresh(alert)
 
     if _DEBUG_ALERT_CREATION:
@@ -474,15 +717,31 @@ def persist_score_history(
     fused_results: list[dict],
     as_of: datetime,
 ) -> None:
-    for row in fused_results:
-        db.add(
-            AccountScoreHistory(
-                account_id=row["account_id"],
-                score=float(row["fused_score"]),
-                recorded_at=as_of,
+    with phase("persist_history"):
+        for row in fused_results:
+            db.add(
+                AccountScoreHistory(
+                    account_id=row["account_id"],
+                    score=float(row["fused_score"]),
+                    recorded_at=as_of,
+                )
             )
-        )
-    db.commit()
+    _timed_commit(db)
+
+
+def _bind_ring_ids(db: Session, fused_results: list[dict]) -> dict[str, str]:
+    """Assign lifecycle-aware ring_ids on fused rows that Layer 2 tied to a hub."""
+    cache: dict[str, str] = {}
+    for row in fused_results:
+        info = row.get("ring_info") or {}
+        hub = info.get("hub_account_id")
+        if not hub:
+            continue
+        hub = str(hub)
+        if hub not in cache:
+            cache[hub] = get_or_create_ring_id(db, hub)
+        row["ring_id"] = cache[hub]
+    return cache
 
 
 def run_detection_cycle(
@@ -490,76 +749,122 @@ def run_detection_cycle(
     as_of: datetime | None = None,
     *,
     return_diagnostics: bool = False,
+    profile: bool = False,
 ) -> list[AlertActionResult] | tuple[list[AlertActionResult], dict]:
+    from app.detection.cycle_timing import phase, record_cycle_timing
+
     if as_of is None:
         as_of = datetime.now()
 
-    expired_count = auto_expire_stale_alerts(db, as_of)
+    def _run() -> tuple[list[AlertActionResult], dict]:
+        with phase("persist"):
+            expired_count = auto_expire_stale_alerts(db, as_of)
 
-    fused_results = compute_fused_scores(db, as_of)
-    persist_score_history(db, fused_results, as_of)
-    alert_budget = top_anomaly_budget(len(fused_results))
-    alert_threshold = compute_alert_threshold(fused_results)
-    alert_actions: list[AlertActionResult] = []
-
-    eligible_count = min(alert_budget, len(fused_results))
-
-    for rank, fused_result in enumerate(fused_results, start=1):
-        if rank > alert_budget:
-            break
-
-        account_id = fused_result["account_id"]
-        explanation = build_explanation(account_id, fused_result, db, as_of)
-        action_result = create_alert_if_needed(
-            db,
-            account_id,
-            fused_result,
-            explanation,
-            as_of,
-            alert_threshold,
-            rank=rank,
+        primary, secondary, fused_results, ms_meta = (
+            compute_fused_scores_multiscale_with_meta(db, as_of)
         )
-        if action_result is not None:
-            alert_actions.append(action_result)
+        by_15 = {row["account_id"]: row for row in primary}
+        by_60 = {row["account_id"]: row for row in secondary}
+        history_rows = [
+            _merge_multiscale_display_row(by_15.get(account_id), by_60.get(account_id))
+            for account_id in set(by_15) | set(by_60)
+        ]
+        with phase("persist"):
+            persist_score_history(db, history_rows, as_of)
 
-    top_anomaly_accounts, _, _ = select_top_anomaly_accounts(
-        fused_results, "fused_score"
-    )
-    from app.detection.structural_pass import (
-        build_peripheral_explanation,
-        peripheral_as_fused_result,
-        score_peripheral_accounts,
-    )
-
-    peripheral_results = score_peripheral_accounts(
-        db, as_of, WINDOW_MINUTES, top_anomaly_accounts
-    )
-    for peripheral in peripheral_results:
-        explanation = build_peripheral_explanation(peripheral)
-        pseudo_fused = peripheral_as_fused_result(peripheral)
-        action_result = create_alert_if_needed(
-            db,
-            peripheral["account_id"],
-            pseudo_fused,
-            explanation,
-            as_of,
-            alert_threshold=0.0,
+        hub_ring_ids = _bind_ring_ids(db, fused_results)
+        alert_budget = len(fused_results)
+        alert_threshold = min(
+            float(ms_meta["threshold_primary"]),
+            float(ms_meta["threshold_secondary"]),
         )
-        if action_result is not None:
-            alert_actions.append(action_result)
+        alert_actions: list[AlertActionResult] = []
+        eligible_count = alert_budget
 
-    diagnostics = {
-        "as_of": as_of,
-        "alert_threshold": alert_threshold,
-        "accounts_scored": len(fused_results),
-        "eligible_count": eligible_count,
-        "expired_count": expired_count,
-        "fused_results": fused_results,
-        "peak_fused_score": max(
-            (float(row["fused_score"]) for row in fused_results),
-            default=0.0,
-        ),
-    }
+        with phase("persist"):
+            for rank, fused_result in enumerate(fused_results, start=1):
+                account_id = fused_result["account_id"]
+                with phase("persist_explain"):
+                    explanation = build_explanation(account_id, fused_result, db, as_of)
+                action_result = create_alert_if_needed(
+                    db,
+                    account_id,
+                    fused_result,
+                    explanation,
+                    as_of,
+                    alert_threshold,
+                    rank=rank,
+                )
+                if action_result is not None:
+                    alert_actions.append(action_result)
+
+        top_anomaly_accounts = {row["account_id"] for row in fused_results}
+        from app.detection.structural_pass import (
+            build_peripheral_explanation,
+            peripheral_as_fused_result,
+            score_peripheral_accounts,
+        )
+
+        hub_ring_ids = dict(hub_ring_ids)
+        for row in fused_results:
+            info = row.get("ring_info") or {}
+            hub = info.get("hub_account_id")
+            ring_id = row.get("ring_id")
+            if hub and ring_id:
+                hub_ring_ids[str(hub)] = str(ring_id)
+
+        with phase("peripheral"):
+            peripheral_results = score_peripheral_accounts(
+                db, as_of, WINDOW_MINUTES, top_anomaly_accounts
+            )
+            for peripheral in peripheral_results:
+                hub_id = peripheral["linked_hub_account_id"]
+                inherited = hub_ring_ids.get(hub_id) or get_or_create_ring_id(db, hub_id)
+                hub_ring_ids[hub_id] = inherited
+                peripheral["ring_id"] = inherited
+                explanation = build_peripheral_explanation(peripheral)
+                pseudo_fused = peripheral_as_fused_result(peripheral)
+                action_result = create_alert_if_needed(
+                    db,
+                    peripheral["account_id"],
+                    pseudo_fused,
+                    explanation,
+                    as_of,
+                    alert_threshold=0.0,
+                )
+                if action_result is not None:
+                    alert_actions.append(action_result)
+                hub_alert = db.scalar(
+                    select(Alert).where(
+                        Alert.account_id == hub_id,
+                        Alert.status.in_(["new", "reviewing"]),
+                    )
+                )
+                if hub_alert is not None and hub_alert.ring_id is None:
+                    hub_alert.ring_id = inherited
+                    db.commit()
+
+        diagnostics = {
+            "as_of": as_of,
+            "alert_threshold": alert_threshold,
+            "accounts_scored": len(set(by_15) | set(by_60)),
+            "eligible_count": eligible_count,
+            "expired_count": expired_count,
+            "fused_results": fused_results,
+            "multiscale_selection": ms_meta,
+            "peak_fused_score": max(
+                (float(row["fused_score"]) for row in fused_results),
+                default=0.0,
+            ),
+        }
+        return alert_actions, diagnostics
+
+    if profile:
+        with record_cycle_timing() as spans:
+            alert_actions, diagnostics = _run()
+        diagnostics["timings"] = dict(spans)
+    else:
+        alert_actions, diagnostics = _run()
 
     if return_diagnostics:
         return alert_actions, diagnostics
@@ -650,15 +955,32 @@ def _ensure_alert_schema(db: Session) -> None:
     if "reviewed_at" not in column_names:
         db.execute(text("ALTER TABLE alerts ADD COLUMN reviewed_at DATETIME"))
         db.commit()
+    if "ring_id" not in column_names:
+        db.execute(text("ALTER TABLE alerts ADD COLUMN ring_id VARCHAR"))
+        db.commit()
 
 
 def ensure_db_schema(db: Session) -> None:
     """Apply lightweight SQLite migrations for columns added after initial deploy."""
     _ensure_alert_schema(db)
+    _ensure_transaction_schema(db)
 
 
-def _account_has_synthetic_activity(db: Session, account_id: str, as_of: datetime) -> bool:
-    window_start, window_end = _window_bounds(as_of, WINDOW_MINUTES)
+def _ensure_transaction_schema(db: Session) -> None:
+    columns = db.execute(text("PRAGMA table_info(transactions)")).all()
+    column_names = {row[1] for row in columns}
+    if "attack_variant" not in column_names:
+        db.execute(text("ALTER TABLE transactions ADD COLUMN attack_variant VARCHAR"))
+        db.commit()
+
+
+def _account_has_synthetic_activity(
+    db: Session,
+    account_id: str,
+    as_of: datetime,
+    window_minutes: int = WINDOW_MINUTES,
+) -> bool:
+    window_start, window_end = _window_bounds(as_of, window_minutes)
     stmt = (
         select(Transaction.id)
         .where(
@@ -783,15 +1105,27 @@ if __name__ == "__main__":
         alert_threshold = diagnostics["alert_threshold"]
         new_alerts = [action.alert for action in alert_actions]
 
-        attack_accounts = _synthetic_attack_accounts(db, as_of)
-        slow_drip_accounts = _slow_drip_synthetic_accounts(db, as_of)
-
-        print(f"Fusion detection cycle as_of={as_of.isoformat()} window={WINDOW_MINUTES}m")
-        print(
-            f"Alert rule: top {(1 - get_alert_top_percentile()) * 100:.0f}% of fused scores "
-            f"(threshold={alert_threshold:.3f} this cycle)"
+        attack_accounts = _synthetic_attack_accounts(
+            db, as_of, SECONDARY_WINDOW_MINUTES
         )
-        print(f"Accounts scored: {len(fused_results)} | New alerts created: {len(new_alerts)}")
+        slow_drip_accounts = _slow_drip_synthetic_accounts(
+            db, as_of, SECONDARY_WINDOW_MINUTES
+        )
+
+        print(
+            f"Fusion detection cycle as_of={as_of.isoformat()} "
+            f"windows={WINDOW_MINUTES}m+{SECONDARY_WINDOW_MINUTES}m "
+            f"(union of per-scale top-k)"
+        )
+        print(
+            f"Alert rule: top {(1 - get_alert_top_percentile()) * 100:.0f}% "
+            f"independently at each scale, then union "
+            f"(min scale threshold={alert_threshold:.3f} this cycle)"
+        )
+        print(
+            f"Accounts scored (unique 15m∪60m): {diagnostics['accounts_scored']} | "
+            f"Union candidates: {len(fused_results)} | New alerts created: {len(new_alerts)}"
+        )
         print(
             f"Eligible for alerting (fused >= {alert_threshold:.3f}): "
             f"{diagnostics['eligible_count']}"

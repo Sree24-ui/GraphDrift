@@ -30,6 +30,27 @@ POOL_SIZE = 150
 _account_pool: list[str] = []
 
 
+def set_simulation_seed(seed: int | None) -> None:
+    """Seed Faker, random, and numpy. None leaves RNGs untouched (live/demo)."""
+    global fake, _account_pool
+    _account_pool = []
+    if seed is None:
+        return
+    random.seed(seed)
+    np.random.seed(seed)
+    fake = Faker("en_IN")
+    fake.seed_instance(seed)
+
+
+def reset_account_pool() -> None:
+    global _account_pool
+    _account_pool = []
+
+
+def _now(clock: datetime | None) -> datetime:
+    return clock if clock is not None else datetime.now()
+
+
 def _generate_upi_id() -> str:
     username = fake.user_name().lower().replace(".", "").replace(" ", "")[:20]
     handle = random.choice(UPI_HANDLES)
@@ -68,36 +89,48 @@ def _distribute_amounts(total: float, count: int) -> list[float]:
     return amounts
 
 
-def seed_accounts(db: Session) -> list[str]:
+def seed_accounts(
+    db: Session,
+    *,
+    created_at: datetime | None = None,
+    pool_size: int | None = None,
+) -> list[str]:
     global _account_pool
 
+    target = POOL_SIZE if pool_size is None else int(pool_size)
     existing_ids = list(db.scalars(select(Account.id)).all())
     if existing_ids:
-        _account_pool = existing_ids
-        return _account_pool
+        if len(existing_ids) >= target:
+            _account_pool = sorted(existing_ids)
+            return _account_pool
+        seen = set(existing_ids)
+    else:
+        seen = set()
 
-    now = datetime.now()
-    seen: set[str] = set()
-    while len(seen) < POOL_SIZE:
+    stamp = _now(created_at)
+    while len(seen) < target:
         seen.add(_generate_upi_id())
 
+    existing_set = set(existing_ids)
     for account_id in seen:
+        if account_id in existing_set:
+            continue
         db.add(
             Account(
                 id=account_id,
-                created_at=now,
-                last_active_at=now,
+                created_at=stamp,
+                last_active_at=stamp,
             )
         )
 
     db.commit()
-    _account_pool = list(seen)
+    _account_pool = sorted(seen)
     return _account_pool
 
 
-def _ensure_pool(db: Session) -> list[str]:
+def _ensure_pool(db: Session, *, created_at: datetime | None = None) -> list[str]:
     if not _account_pool:
-        return seed_accounts(db)
+        return seed_accounts(db, created_at=created_at)
     return _account_pool
 
 
@@ -123,6 +156,9 @@ def _persist_transaction(
     amount: float,
     timestamp: datetime,
     is_synthetic_attack: bool,
+    *,
+    commit: bool = True,
+    attack_variant: str | None = None,
 ) -> Transaction:
     tx = Transaction(
         sender_id=sender_id,
@@ -130,6 +166,7 @@ def _persist_transaction(
         amount=amount,
         timestamp=timestamp,
         is_synthetic_attack=is_synthetic_attack,
+        attack_variant=attack_variant,
     )
     db.add(tx)
 
@@ -138,29 +175,38 @@ def _persist_transaction(
         if account is not None and account.last_active_at < timestamp:
             account.last_active_at = timestamp
 
-    db.commit()
-    db.refresh(tx)
+    if commit:
+        db.commit()
+        db.refresh(tx)
+    else:
+        db.flush()
     return tx
 
 
-def generate_normal_transaction(db: Session) -> Transaction:
-    pool = _ensure_pool(db)
+def generate_normal_transaction(
+    db: Session, *, now: datetime | None = None, commit: bool = True
+) -> Transaction:
+    pool = _ensure_pool(db, created_at=now)
     sender_id, receiver_id = random.sample(pool, 2)
     return _persist_transaction(
         db=db,
         sender_id=sender_id,
         receiver_id=receiver_id,
         amount=_generate_normal_amount(),
-        timestamp=datetime.now(),
+        timestamp=_now(now),
         is_synthetic_attack=False,
+        commit=commit,
     )
 
 
 def _generate_fan_in_fan_out_attack(
     db: Session,
     window_seconds: float,
+    *,
+    now: datetime | None = None,
+    commit: bool = True,
 ) -> list[Transaction]:
-    pool = _ensure_pool(db)
+    pool = _ensure_pool(db, created_at=now)
     mule_id = random.choice(pool)
 
     fan_in_count = random.randint(8, 10)
@@ -171,7 +217,7 @@ def _generate_fan_in_fan_out_attack(
         raise ValueError("Not enough accounts in pool for fan-in leg")
 
     fan_in_senders = random.sample(available_senders, fan_in_count)
-    base_time = datetime.now()
+    base_time = _now(now)
     fan_in_timestamps = _clustered_timestamps(fan_in_count, window_seconds, base_time)
 
     transactions: list[Transaction] = []
@@ -188,6 +234,8 @@ def _generate_fan_in_fan_out_attack(
                 amount=amount,
                 timestamp=timestamp,
                 is_synthetic_attack=True,
+                commit=commit,
+                attack_variant=None,
             )
         )
 
@@ -211,25 +259,126 @@ def _generate_fan_in_fan_out_attack(
                 amount=amount,
                 timestamp=timestamp,
                 is_synthetic_attack=True,
+                commit=commit,
             )
         )
 
     return transactions
 
 
-def generate_mule_attack(db: Session) -> list[Transaction]:
+def generate_mule_attack(
+    db: Session, *, now: datetime | None = None, commit: bool = True
+) -> list[Transaction]:
     window_seconds = random.uniform(120, 180)
-    return _generate_fan_in_fan_out_attack(db, window_seconds)
+    return _generate_fan_in_fan_out_attack(
+        db, window_seconds, now=now, commit=commit
+    )
 
 
-def generate_slow_drip_attack(db: Session) -> list[Transaction]:
+def generate_slow_drip_attack(
+    db: Session, *, now: datetime | None = None, commit: bool = True
+) -> list[Transaction]:
     window_seconds = random.uniform(720, 900)
-    return _generate_fan_in_fan_out_attack(db, window_seconds)
+    return _generate_fan_in_fan_out_attack(
+        db, window_seconds, now=now, commit=commit
+    )
+
+
+def generate_offline_trace(
+    db: Session,
+    *,
+    n_steps: int,
+    seed: int,
+    start_time: datetime,
+    interval_seconds: float = SIMULATION_INTERVAL_SECONDS,
+    catchup: str = "none",
+    include_attacks: bool = True,
+) -> dict[str, int]:
+    """Run n_steps of the sim with a virtual clock (no sleep, no websocket).
+
+    catchup:
+      none     — stop after n_steps (live loop body, no extra events)
+      normals  — inject only legitimate txs until clock >= max(timestamp)
+      organic  — keep running the same roll as run_simulation until clock
+                 >= max(timestamp) (live-equivalent continuation)
+
+    include_attacks: if False, every step is a legitimate transfer (background
+    for overlaying labeled adversarial variants).
+    """
+    set_simulation_seed(seed)
+    seed_accounts(db, created_at=start_time)
+
+    n_normal = 0
+    n_fast = 0
+    n_slow = 0
+    n_tx = 0
+    n_catchup = 0
+    clock = start_time
+
+    def _step(at: datetime) -> int:
+        nonlocal n_normal, n_fast, n_slow
+        if not include_attacks:
+            txs = [generate_normal_transaction(db, now=at, commit=False)]
+            n_normal += 1
+            db.commit()
+            return len(txs)
+        roll = random.random()
+        if roll < 1.0 - MULE_ATTACK_PROBABILITY - SLOW_DRIP_ATTACK_PROBABILITY:
+            txs = [generate_normal_transaction(db, now=at, commit=False)]
+            n_normal += 1
+        elif roll < 1.0 - SLOW_DRIP_ATTACK_PROBABILITY:
+            txs = generate_mule_attack(db, now=at, commit=False)
+            n_fast += 1
+        else:
+            txs = generate_slow_drip_attack(db, now=at, commit=False)
+            n_slow += 1
+        db.commit()
+        return len(txs)
+
+    for _ in range(n_steps):
+        n_tx += _step(clock)
+        clock = clock + timedelta(seconds=interval_seconds)
+
+    if catchup not in {"none", "normals", "organic"}:
+        raise ValueError(f"unknown catchup mode: {catchup}")
+
+    if catchup != "none":
+        from sqlalchemy import func, select
+
+        while True:
+            max_ts = db.scalar(select(func.max(Transaction.timestamp)))
+            if max_ts is None or clock >= max_ts:
+                break
+            if catchup == "normals":
+                generate_normal_transaction(db, now=clock, commit=False)
+                db.commit()
+                n_tx += 1
+                n_normal += 1
+            else:
+                n_tx += _step(clock)
+            n_catchup += 1
+            clock = clock + timedelta(seconds=interval_seconds)
+
+    return {
+        "steps": n_steps,
+        "catchup_steps": n_catchup,
+        "catchup_mode": catchup,
+        "transactions": n_tx,
+        "normal_events": n_normal,
+        "fast_attack_events": n_fast,
+        "slow_drip_events": n_slow,
+        "last_clock": clock.isoformat(),
+    }
 
 
 async def run_simulation(
     interval_seconds: float = SIMULATION_INTERVAL_SECONDS,
+    *,
+    seed: int | None = None,
 ) -> AsyncIterator[Transaction]:
+    if seed is not None:
+        set_simulation_seed(seed)
+
     db = SessionLocal()
     try:
         seed_accounts(db)

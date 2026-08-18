@@ -136,6 +136,22 @@ export default function AlertExplainability({
         </p>
       )}
 
+      {typeof breakdown.detection_window === 'number' && (
+        <p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">
+          Detection window: {breakdown.detection_window} minutes
+          {(() => {
+            const byWindow = breakdown.fused_score_by_window
+            if (!byWindow || typeof byWindow !== 'object') {
+              return ''
+            }
+            const scores = byWindow as Record<string, number>
+            const score15 = Number(scores[15] ?? scores['15'] ?? 0)
+            const score60 = Number(scores[60] ?? scores['60'] ?? 0)
+            return ` · 15m=${score15.toFixed(2)} / 60m=${score60.toFixed(2)}`
+          })()}
+        </p>
+      )}
+
       {primaryReason && (
         <p className="text-xs leading-relaxed text-on-surface">{primaryReason}</p>
       )}

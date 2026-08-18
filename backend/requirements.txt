@@ -12,4 +12,6 @@ pydantic
 pandas
 datasets
 huggingface_hub
+kaggle
 pytest
+scikit-learn
