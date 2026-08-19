@@ -6,15 +6,16 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.constants import (
+    DETECTION_CYCLE_INTERVAL_SECONDS,
+    METRICS_BROADCAST_INTERVAL_SECONDS,
+)
 from app.db import SessionLocal
 from app.detection.community import build_graph
 from app.detection.fusion import compute_fused_scores
 from app.models import Alert, Transaction
 
 router = APIRouter(tags=["websocket"])
-
-DETECTION_CYCLE_INTERVAL_SECONDS = 45
-METRICS_BROADCAST_INTERVAL_SECONDS = 10
 
 _last_cycle_peak_fused_score: float = 0.0
 

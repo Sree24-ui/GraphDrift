@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import {
   API_BASE_URL,
@@ -7,7 +7,7 @@ import {
   patchSettings,
   WS_BASE_URL,
 } from '../api/client'
-import type { AlertStatus, ConfidenceLevel } from '../api/types'
+import type { AlertStatus, AppSettings, ConfidenceLevel } from '../api/types'
 import ErrorBanner from '../components/ErrorBanner'
 import LoadingSpinner from '../components/LoadingSpinner'
 import MaterialIcon from '../components/MaterialIcon'
@@ -17,6 +17,12 @@ import {
   saveDefaultConfidenceFilter,
   saveDefaultStatusFilter,
 } from '../utils/settingsPreferences'
+import {
+  DEFAULT_ALERT_TOP_PERCENT,
+  DEFAULT_ALERT_TOP_PERCENTILE,
+  MANUAL_ALERT_TOP_PERCENT_MAX,
+  MANUAL_ALERT_TOP_PERCENT_MIN,
+} from '../knobs'
 
 const STATUS_OPTIONS: { value: AlertStatus | 'all'; label: string }[] = [
   { value: 'new', label: 'New' },
@@ -50,8 +56,8 @@ function filterChipClass(active: boolean): string {
 type WsStatus = 'connecting' | 'connected' | 'disconnected'
 
 export default function Settings() {
-  const [topPercent, setTopPercent] = useState(5)
-  const [percentile, setPercentile] = useState(0.95)
+  const [topPercent, setTopPercent] = useState(DEFAULT_ALERT_TOP_PERCENT)
+  const [percentile, setPercentile] = useState(DEFAULT_ALERT_TOP_PERCENTILE)
   const [simMule, setSimMule] = useState(0)
   const [simSlow, setSimSlow] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -66,6 +72,11 @@ export default function Settings() {
     ConfidenceLevel | 'all'
   >(() => loadDefaultConfidenceFilter())
 
+  const [calibrationOn, setCalibrationOn] = useState(false)
+  const [calibration, setCalibration] = useState<AppSettings['calibration']>(null)
+  const [system, setSystem] = useState<AppSettings['system']>(null)
+  const [togglingCalibration, setTogglingCalibration] = useState(false)
+  const sliderDirtyRef = useRef(false)
   const [healthStatus, setHealthStatus] = useState<string>('checking…')
   const [wsStatus, setWsStatus] = useState<WsStatus>('connecting')
 
@@ -78,6 +89,10 @@ export default function Settings() {
       setPercentile(data.alert_top_percentile)
       setSimMule(data.mule_attack_probability)
       setSimSlow(data.slow_drip_attack_probability)
+      setCalibrationOn(data.calibration_enabled)
+      setCalibration(data.calibration)
+      setSystem(data.system)
+      sliderDirtyRef.current = false
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load settings')
     } finally {
@@ -85,9 +100,28 @@ export default function Settings() {
     }
   }, [])
 
+  const fetchSettingsQuiet = useCallback(async () => {
+    try {
+      const data = await getSettings()
+      if (!sliderDirtyRef.current) {
+        setTopPercent(data.alert_top_percent)
+        setPercentile(data.alert_top_percentile)
+      }
+      setCalibrationOn(data.calibration_enabled)
+      setCalibration(data.calibration)
+      setSystem(data.system)
+    } catch {
+      /* keep last good snapshot */
+    }
+  }, [])
+
   useEffect(() => {
-    fetchSettings()
-  }, [fetchSettings])
+    void fetchSettings()
+    const interval = window.setInterval(() => {
+      void fetchSettingsQuiet()
+    }, 20000)
+    return () => window.clearInterval(interval)
+  }, [fetchSettings, fetchSettingsQuiet])
 
   useEffect(() => {
     let cancelled = false
@@ -131,12 +165,31 @@ export default function Settings() {
       setPercentile(updated.alert_top_percentile)
       setTopPercent(updated.alert_top_percent)
       setSaveMessage(
-        `Saved — alerts will target the top ${updated.alert_top_percent}% of accounts each cycle.`,
+        `Saved — alerts will target the top ${updated.alert_top_percent}% of accounts each cycle. Auto-calibration counters reset so this manual baseline is not overwritten this tick.`,
       )
+      setCalibration(updated.calibration)
+      setCalibrationOn(updated.calibration_enabled)
+      sliderDirtyRef.current = false
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save settings')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleToggleCalibration = async (enabled: boolean) => {
+    setTogglingCalibration(true)
+    setError(null)
+    try {
+      const updated = await patchSettings({ calibration_enabled: enabled })
+      setCalibrationOn(updated.calibration_enabled)
+      setCalibration(updated.calibration)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Failed to update auto-calibration',
+      )
+    } finally {
+      setTogglingCalibration(false)
     }
   }
 
@@ -198,11 +251,14 @@ export default function Settings() {
               </div>
               <input
                 type="range"
-                min={1}
-                max={25}
-                step={1}
+                min={system?.manual_alert_top_percent_min ?? MANUAL_ALERT_TOP_PERCENT_MIN}
+                max={system?.manual_alert_top_percent_max ?? MANUAL_ALERT_TOP_PERCENT_MAX}
+                step={calibration?.step_percent_points ?? 0.5}
                 value={topPercent}
-                onChange={(e) => setTopPercent(Number(e.target.value))}
+                onChange={(e) => {
+                  sliderDirtyRef.current = true
+                  setTopPercent(Number(e.target.value))
+                }}
                 className="mt-2 w-full accent-primary"
               />
               <p className="mt-2 text-[11px] text-on-surface-variant">
@@ -271,6 +327,115 @@ export default function Settings() {
               </a>
             </div>
           </dl>
+        </section>
+
+        <section className={`${sectionClass(true)} lg:col-span-3`}>
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-on-surface">
+              <MaterialIcon name="sync_alt" className="text-primary" size={22} />
+              Auto-calibration
+            </h2>
+            <label className="flex items-center gap-3 text-sm text-on-surface">
+              <span className="text-on-surface-variant">
+                {calibrationOn ? 'On' : 'Off'} (opt-in)
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={calibrationOn}
+                disabled={togglingCalibration || loading}
+                onClick={() => void handleToggleCalibration(!calibrationOn)}
+                className={[
+                  'relative h-6 w-11 rounded-full transition-colors',
+                  calibrationOn ? 'bg-primary' : 'bg-outline/40',
+                  togglingCalibration ? 'opacity-40' : '',
+                ].join(' ')}
+              >
+                <span
+                  className={[
+                    'absolute top-0.5 h-5 w-5 rounded-full bg-on-primary transition-transform',
+                    calibrationOn ? 'left-5' : 'left-0.5',
+                  ].join(' ')}
+                />
+              </button>
+            </label>
+          </div>
+          <p className="mb-4 text-sm text-on-surface-variant">
+            Uses confirmed vs false-positive judgments only (same rule as Reports).
+            {calibration ? (
+              <>
+                {' '}
+                Target confirmed-rate band is{' '}
+                {(calibration.target_band_low * 100).toFixed(0)}–
+                {(calibration.target_band_high * 100).toFixed(0)}%. Below the
+                band the queue is too noisy and the top-share tightens by{' '}
+                {calibration.step_percent_points} pp; above it loosens by the
+                same step to recover recall. Requires {calibration.min_sample}{' '}
+                judged alerts, two consecutive out-of-band ticks, auto clamp{' '}
+                {calibration.clamp_low_percent}–{calibration.clamp_high_percent}
+                %, and runs once per {calibration.cycles_per_calibration}{' '}
+                detection cycles. Manual Apply always wins and resets the
+                controller. Default is off.
+              </>
+            ) : (
+              ' Auto-calibration is opt-in and off by default.'
+            )}
+          </p>
+          {calibration && (
+            <dl className="grid gap-4 text-sm sm:grid-cols-3">
+              <div>
+                <dt className="text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                  Confirmed rate
+                </dt>
+                <dd className="mt-1 tabular-nums text-on-surface">
+                  {calibration.confirmed_rate == null
+                    ? '—'
+                    : `${(calibration.confirmed_rate * 100).toFixed(1)}%`}
+                  <span className="ml-2 text-xs text-on-surface-variant">
+                    target {(calibration.target_band_low * 100).toFixed(0)}–
+                    {(calibration.target_band_high * 100).toFixed(0)}%
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                  Sample size
+                </dt>
+                <dd className="mt-1 tabular-nums text-on-surface">
+                  {calibration.sample_size} / {calibration.min_sample} min
+                  <span className="ml-2 text-xs text-on-surface-variant">
+                    window {calibration.window_size}
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                  Next tick
+                </dt>
+                <dd className="mt-1 text-on-surface">
+                  {calibrationOn
+                    ? calibration.cycles_until_next == null ||
+                      calibration.cycles_until_next === 0
+                      ? 'this / just-ran cycle'
+                      : `${calibration.cycles_until_next} detection cycle(s)`
+                    : 'disabled'}
+                </dd>
+              </div>
+            </dl>
+          )}
+          {calibration?.last_adjustment && (
+            <p className="mt-4 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-on-surface">
+              {calibration.last_adjustment.reason}
+              <span className="mt-1 block text-xs text-on-surface-variant">
+                {new Date(calibration.last_adjustment.at).toLocaleString()}
+              </span>
+            </p>
+          )}
+          {calibration?.skipped_reason && (
+            <p className="mt-3 text-xs text-on-surface-variant">
+              {calibration.skipped_reason}
+            </p>
+          )}
         </section>
 
         <section className={`${sectionClass()} lg:col-span-3`}>

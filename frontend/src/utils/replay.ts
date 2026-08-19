@@ -1,6 +1,10 @@
-export const REPLAY_WINDOW_MS = 15 * 60 * 1000
-export const REPLAY_STEP_MS = 30 * 1000
-export const REPLAY_STEPS = REPLAY_WINDOW_MS / REPLAY_STEP_MS
+import {
+  REPLAY_STEP_MS,
+  REPLAY_STEPS,
+  REPLAY_WINDOW_MS,
+} from '../knobs'
+
+export { REPLAY_STEP_MS, REPLAY_STEPS, REPLAY_WINDOW_MS }
 
 export function stepToEndMs(step: number, nowMs: number = Date.now()): number {
   const clamped = Math.max(0, Math.min(REPLAY_STEPS, step))

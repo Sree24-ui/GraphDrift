@@ -7,6 +7,8 @@ For evaluation we proportionally compress step-hours by PAYSIM_TIME_SCALE
 preserved while the production 15-minute detection window remains meaningful.
 """
 
+from app.constants import WINDOW_MINUTES
+
 # Minutes represented by one PaySim step in the raw dataset.
 PAYSIM_MINUTES_PER_STEP = 60
 
@@ -16,8 +18,8 @@ PAYSIM_TIME_SCALE = 20
 # Wall-clock minutes per PaySim step after compression (60 / 20 = 3).
 PAYSIM_COMPRESSED_MINUTES_PER_STEP = PAYSIM_MINUTES_PER_STEP / PAYSIM_TIME_SCALE
 
-# Eval uses the same 15-minute window as production after compression.
-PAYSIM_WINDOW_MINUTES = 15
+# Eval uses the same detection window as production after compression.
+PAYSIM_WINDOW_MINUTES = WINDOW_MINUTES
 
 # PaySim accounts rarely have ≥3 tx in any window; eval-only scoring gate.
 PAYSIM_MIN_TRANSACTIONS_FOR_SCORING = 1

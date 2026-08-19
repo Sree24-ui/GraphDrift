@@ -13,10 +13,8 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.constants import ALERT_STALENESS_HOURS
 from app.models import Alert
-
-# Untouched `new` alerts older than this leave the active queue (auto_closed).
-ALERT_STALENESS_HOURS = 2
 
 
 def auto_expire_stale_alerts(

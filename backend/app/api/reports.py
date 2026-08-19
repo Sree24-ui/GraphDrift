@@ -15,6 +15,7 @@ from app.api.schemas import (
     ReportSummaryResponse,
     StatusBreakdown,
 )
+from app.constants import MIN_REVIEWED_SAMPLE
 from app.models import Alert
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
@@ -98,6 +99,7 @@ def _summarize_alerts(
         by_confidence=by_confidence,
         average_time_to_review_seconds=average_time_to_review,
         daily_counts=_build_daily_counts(alerts, period_start, period_end),
+        min_reviewed_sample=MIN_REVIEWED_SAMPLE,
     )
 
 

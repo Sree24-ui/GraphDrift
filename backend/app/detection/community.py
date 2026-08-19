@@ -11,19 +11,24 @@ import networkx as nx
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
-from app.detection.features import WINDOW_MINUTES
+from app.constants import (
+    COMMUNITY_SIMILARITY_THRESHOLD,
+    GDI_MAX,
+    LOUVAIN_RESOLUTION,
+    MAX_PARTITION_SNAPSHOTS,
+    MIN_RING_MEMBER_COUNT,
+    RING_EXTERNAL_WEIGHT,
+    RING_HUB_WEIGHT,
+    RING_RECENT_WEIGHT,
+    RISK_THRESHOLD,
+    WINDOW_MINUTES,
+)
 from app.models import Transaction
 
 try:
     import community.community_louvain as community_louvain
 except ImportError:  # pragma: no cover - fallback for alternate package layout
     import community as community_louvain
-
-RISK_THRESHOLD = 2.0
-LOUVAIN_RESOLUTION = 2.0
-MIN_RING_MEMBER_COUNT = 4
-MAX_PARTITION_SNAPSHOTS = 5
-COMMUNITY_SIMILARITY_THRESHOLD = 0.7
 
 # In-memory store of recent Louvain partitions keyed by as_of timestamp.
 _PARTITION_SNAPSHOTS: list[dict] = []
@@ -269,16 +274,18 @@ def community_risk_score(metrics: dict) -> float:
     used here because star-shaped mule rings have low density by construction.
     """
     member_count = metrics["member_count"]
-    hub_component = metrics["hub_concentration"] * 5.0 * 0.45
+    hub_component = metrics["hub_concentration"] * GDI_MAX * RING_HUB_WEIGHT
 
     capped_external = min(float(metrics["external_edge_ratio"]), 10.0) / 10.0
-    external_component = capped_external * 5.0 * 0.30
+    external_component = capped_external * GDI_MAX * RING_EXTERNAL_WEIGHT
 
     recent_component = (
-        5.0 * 0.15 if metrics["formed_recently"] and member_count >= MIN_RING_MEMBER_COUNT else 0.0
+        GDI_MAX * RING_RECENT_WEIGHT
+        if metrics["formed_recently"] and member_count >= MIN_RING_MEMBER_COUNT
+        else 0.0
     )
 
-    return min(hub_component + external_component + recent_component, 5.0)
+    return min(hub_component + external_component + recent_component, GDI_MAX)
 
 
 def _build_reason(metrics: dict) -> str:

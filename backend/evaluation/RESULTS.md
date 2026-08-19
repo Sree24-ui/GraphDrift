@@ -115,28 +115,28 @@ Seeds: 42, 123, 7, 2026, 99. Reproduce: `python -m evaluation.generate_multi_see
 | 42 | baseline | 0.750 | 0.083 | 0.150 | 0.0095 | 3 | 1 | 33 | 104 | 36 | 141 |
 | 42 | layer1 | 0.750 | 0.167 | 0.273 | 0.0190 | 6 | 2 | 30 | 103 | 36 | 141 |
 | 42 | fusion | 0.600 | 0.167 | 0.261 | 0.0381 | 6 | 4 | 30 | 101 | 36 | 141 |
-| 42 | fusion_multiscale | 0.476 | 0.278 | 0.351 | 0.1048 | 10 | 11 | 26 | 94 | 36 | 141 |
-| 42 | hybrid | 0.792 | 0.671 | 0.726 | 0.1316 | 57 | 15 | 28 | 99 | 85 | 199 |
+| 42 | fusion_multiscale (union) | 0.407 | 0.306 | 0.349 | 0.1524 | 11 | 16 | 25 | 89 | 36 | 141 |
+| 42 | hybrid (union+peri) | 0.725 | 0.682 | 0.703 | 0.1930 | 58 | 22 | 27 | 92 | 85 | 199 |
 | 123 | baseline | 0.000 | 0.000 | 0.000 | 0.0000 | 0 | 0 | 22 | 118 | 22 | 140 |
 | 123 | layer1 | 0.500 | 0.182 | 0.267 | 0.0339 | 4 | 4 | 18 | 114 | 22 | 140 |
 | 123 | fusion | 0.600 | 0.273 | 0.375 | 0.0339 | 6 | 4 | 16 | 114 | 22 | 140 |
-| 123 | fusion_multiscale | 0.304 | 0.318 | 0.311 | 0.1356 | 7 | 16 | 15 | 102 | 22 | 140 |
-| 123 | hybrid | 0.702 | 0.625 | 0.661 | 0.1339 | 40 | 17 | 24 | 110 | 64 | 191 |
+| 123 | fusion_multiscale (union) | 0.367 | 0.500 | 0.423 | 0.1610 | 11 | 19 | 11 | 99 | 22 | 140 |
+| 123 | hybrid (union+peri) | 0.707 | 0.828 | 0.763 | 0.1732 | 53 | 22 | 11 | 105 | 64 | 191 |
 | 7 | baseline | 0.500 | 0.045 | 0.083 | 0.0081 | 1 | 1 | 21 | 122 | 22 | 145 |
 | 7 | layer1 | 0.500 | 0.182 | 0.267 | 0.0325 | 4 | 4 | 18 | 119 | 22 | 145 |
 | 7 | fusion | 0.444 | 0.182 | 0.258 | 0.0407 | 4 | 5 | 18 | 118 | 22 | 145 |
-| 7 | fusion_multiscale | 0.217 | 0.227 | 0.222 | 0.1463 | 5 | 18 | 17 | 105 | 22 | 145 |
-| 7 | hybrid | 0.525 | 0.457 | 0.488 | 0.1484 | 21 | 19 | 25 | 109 | 46 | 174 |
+| 7 | fusion_multiscale (union) | 0.194 | 0.273 | 0.226 | 0.2033 | 6 | 25 | 16 | 98 | 22 | 145 |
+| 7 | hybrid (union+peri) | 0.536 | 0.652 | 0.588 | 0.2031 | 30 | 26 | 16 | 102 | 46 | 174 |
 | 2026 | baseline | 1.000 | 0.100 | 0.182 | 0.0000 | 5 | 0 | 45 | 95 | 50 | 145 |
 | 2026 | layer1 | 0.875 | 0.140 | 0.241 | 0.0105 | 7 | 1 | 43 | 94 | 50 | 145 |
 | 2026 | fusion | 0.727 | 0.160 | 0.262 | 0.0316 | 8 | 3 | 42 | 92 | 50 | 145 |
-| 2026 | fusion_multiscale | 0.435 | 0.200 | 0.274 | 0.1368 | 10 | 13 | 40 | 82 | 50 | 145 |
-| 2026 | hybrid | 0.822 | 0.545 | 0.656 | 0.1327 | 60 | 13 | 50 | 85 | 110 | 208 |
+| 2026 | fusion_multiscale (union) | 0.419 | 0.260 | 0.321 | 0.1895 | 13 | 18 | 37 | 77 | 50 | 145 |
+| 2026 | hybrid (union+peri) | 0.800 | 0.655 | 0.720 | 0.1837 | 72 | 18 | 38 | 80 | 110 | 208 |
 | 99 | baseline | 1.000 | 0.060 | 0.113 | 0.0000 | 3 | 0 | 47 | 93 | 50 | 143 |
 | 99 | layer1 | 0.750 | 0.120 | 0.207 | 0.0215 | 6 | 2 | 44 | 91 | 50 | 143 |
 | 99 | fusion | 0.727 | 0.160 | 0.262 | 0.0323 | 8 | 3 | 42 | 90 | 50 | 143 |
-| 99 | fusion_multiscale | 0.519 | 0.280 | 0.364 | 0.1398 | 14 | 13 | 36 | 80 | 50 | 143 |
-| 99 | hybrid | 0.826 | 0.592 | 0.689 | 0.1515 | 71 | 15 | 49 | 84 | 120 | 219 |
+| 99 | fusion_multiscale (union) | 0.455 | 0.300 | 0.361 | 0.1935 | 15 | 18 | 35 | 75 | 50 | 143 |
+| 99 | hybrid (union+peri) | 0.783 | 0.600 | 0.679 | 0.2020 | 72 | 20 | 48 | 79 | 120 | 219 |
 
 ### Aggregated (mean ± std [min, max], n=5)
 
@@ -145,30 +145,12 @@ Seeds: 42, 123, 7, 2026, 99. Reproduce: `python -m evaluation.generate_multi_see
 | baseline | 0.650 ± 0.418 [0.000, 1.000] | 0.058 ± 0.039 [0.000, 0.100] | 0.106 ± 0.070 [0.000, 0.182] | 0.004 ± 0.005 [0.000, 0.010] |
 | layer1 | 0.675 ± 0.168 [0.500, 0.875] | 0.158 ± 0.027 [0.120, 0.182] | 0.251 ± 0.027 [0.207, 0.273] | 0.023 ± 0.010 [0.011, 0.034] |
 | fusion | 0.620 ± 0.117 [0.444, 0.727] | 0.188 ± 0.048 [0.160, 0.273] | 0.284 ± 0.051 [0.258, 0.375] | 0.035 ± 0.004 [0.032, 0.041] |
-| fusion_multiscale | 0.390 ± 0.126 [0.217, 0.519] | 0.261 ± 0.047 [0.200, 0.318] | 0.304 ± 0.058 [0.222, 0.364] | 0.133 ± 0.016 [0.105, 0.146] |
-| hybrid | 0.733 ± 0.127 [0.525, 0.826] | 0.578 ± 0.082 [0.457, 0.671] | 0.644 ± 0.091 [0.488, 0.726] | 0.140 ± 0.010 [0.132, 0.152] |
+| fusion_multiscale (union) | 0.368 ± 0.103 [0.194, 0.455] | 0.328 ± 0.098 [0.260, 0.500] | **0.336 ± 0.072** [0.226, 0.423] | 0.180 ± 0.022 [0.152, 0.203] |
+| hybrid (union+peri) | **0.710 ± 0.105** [0.536, 0.800] | **0.683 ± 0.086** [0.600, 0.828] | **0.691 ± 0.065** [0.588, 0.763] | **0.191 ± 0.013** [0.173, 0.203] |
 
-**Correction — fusion_multiscale merge (do not cite 0.304 in §4.4/4.5).** The row above used an invalid max-then-global-cut: `max(15m_percentile, 60m_percentile)` then one top-k on the pooled list. That is the same bug that scored 0/5 on standard adversarial controls. The shipped merge is now **independent top-5% at each scale, then union**. Re-run of **only** the `fusion_multiscale` detector on the same 5 snapshots:
+`fusion_multiscale` and `hybrid` are the **shipped union merge** (independent top-5% at 15m and at 60m, then union; peripheral hubs = that union set). Do **not** cite the retired max-then-global-cut numbers: fusion_multiscale F1 **0.304 ± 0.058** and hybrid F1 **0.644 ± 0.091**. Code: `select_top_anomaly_accounts_multiscale`; `compute_fused_scores_multiscale_max_merge` raises.
 
-| Detector | Precision | Recall | F1 | FPR |
-|----------|-----------|--------|----|-----|
-| fusion_multiscale (union, corrected) | 0.368 ± 0.103 [0.194, 0.455] | 0.328 ± 0.098 [0.260, 0.500] | **0.336 ± 0.072** [0.226, 0.423] | 0.180 ± 0.022 [0.152, 0.203] |
-| fusion_multiscale (old max-merge, do not cite) | 0.390 ± 0.126 | 0.261 ± 0.047 | 0.304 ± 0.058 | 0.133 ± 0.016 |
-
-Per seed (union): 42 F1=0.349; 123 F1=0.423; 7 F1=0.226; 2026 F1=0.321; 99 F1=0.361. Recall rose (0.261 → 0.328); FPR rose (0.133 → 0.180) because the union spends two independent 5% budgets. F1 0.304 → 0.336 is a real change — **update the paper before using the old multiscale row.** The 15-minute single-scale fusion cite (**0.284 ± 0.051**) is unaffected.
-
-**Correction — Hybrid (union fusion + peripheral), same 5 snapshots, all-active universe.** Peripheral hubs are the union candidate set (`run_detection_cycle` → `score_peripheral_accounts(..., top_anomaly_accounts=union)`). No leftover max-merge path.
-
-| Detector | Precision | Recall | F1 | FPR |
-|----------|-----------|--------|----|-----|
-| **hybrid (union+peri, corrected)** | **0.710 ± 0.105** [0.536, 0.800] | **0.683 ± 0.086** [0.600, 0.828] | **0.691 ± 0.065** [0.588, 0.763] | **0.191 ± 0.013** [0.173, 0.203] |
-| hybrid (old max-merge, do not cite) | 0.733 ± 0.127 | 0.578 ± 0.082 | 0.644 ± 0.091 | 0.140 ± 0.010 |
-| fusion_multiscale (union, ≥3-tx universe) | 0.368 ± 0.103 | 0.328 ± 0.098 | 0.336 ± 0.072 | 0.180 ± 0.022 |
-| fusion_multiscale (union, **active** universe) | 0.358 ± 0.101 | 0.135 ± 0.021 | 0.192 ± 0.026 | 0.177 ± 0.015 |
-
-Per seed hybrid (corrected): 42 F1=0.703 P=0.725 R=0.682; 123 F1=0.763 P=0.707 R=0.828; 7 F1=0.588 P=0.536 R=0.652; 2026 F1=0.720 P=0.800 R=0.655; 99 F1=0.679 P=0.783 R=0.600.
-
-Do **not** subtract 0.691 − 0.336 as “peripheral lift”: 0.336 is ≥3-tx only. On the **same active-account universe**, union fusion alone is F1 0.192 / recall 0.135; peripheral raises recall **+0.548** (to 0.683) and F1 **+0.499** (to 0.691) with FPR +0.014. vs the old buggy hybrid, corrected hybrid F1 is **0.691 vs 0.644** (recall 0.683 vs 0.578) because the union now supplies the right hubs for the cascade.
+On the **same active-account universe**, union fusion alone is F1 0.192 / recall 0.135; peripheral raises recall **+0.548** (to 0.683) and F1 **+0.499** (to 0.691) with FPR +0.014. Do **not** subtract 0.691 − 0.336 as “peripheral lift”: 0.336 is ≥3-tx only.
 
 **Headline fusion (15-min, ≥3-tx universe) vs original 0.625:** the original single-snapshot fusion F1 is **optimistic relative to this distribution (above all 5 seeds; max=0.375)**. Fusion F1 std=0.051 (≤ 0.1); seed-to-seed spread is modest. The paper should report **fusion F1 = 0.284 ± 0.051** (range 0.258–0.375) rather than 0.625 as a point estimate.
 
@@ -232,6 +214,8 @@ Degenerate (unique < 5 or unique < k) on any seed: L1=False, L1+structural=False
 | isolation_forest_l1_features | 0.600 ± 0.163 [0.375, 0.750] | 0.139 ± 0.025 [0.120, 0.182] | 0.222 ± 0.027 [0.200, 0.267] | 0.029 ± 0.008 [0.021, 0.041] |
 | fusion (percentile L1+L2, existing) | 0.620 ± 0.117 | 0.188 ± 0.048 | **0.284 ± 0.051** | 0.035 ± 0.004 |
 | isolation_forest_all_features | 0.625 ± 0.153 [0.375, 0.750] | 0.149 ± 0.045 [0.120, 0.227] | 0.235 ± 0.056 [0.200, 0.333] | 0.027 ± 0.008 [0.021, 0.041] |
+
+† Cite these **sklearn-default** Isolation Forest rows (`n_estimators=100`, `max_samples='auto'`, `max_features=1.0`). Sensitivity sweep (300 trees, `max_samples=64`, `max_features=0.7`): IF-L1 F1 **0.215–0.222**, IF-all **0.235–0.249**; GraphDrift stays ahead. Do not cite the best-of-sweep cell. See [Isolation Forest sensitivity](#isolation-forest-sensitivity).
 
 ### Honest read
 
@@ -456,7 +440,7 @@ Reproduce: `python -m evaluation.bench_perf`.
 <!-- /perf-bench -->
 ## Interpretation
 
-- **Synthetic snapshot (cite this):** fusion F1 = **0.284 ± 0.051** (n=5 seeds, 15-min, ≥3-tx). The historical `graphdrift_snapshot_2026-08-12.db` fusion F1=0.625 sits above every seed here and should not be the paper's point estimate.
+- **Synthetic snapshot (cite this):** 15-min fusion F1 = **0.284 ± 0.051** (n=5 seeds, ≥3-tx). Multi-scale **union** fusion F1 = **0.336 ± 0.072**. Hybrid (union+peripheral, all-active) F1 = **0.691 ± 0.065**. Do not cite retired max-merge 0.304 / 0.644 or the historical single-snapshot fusion 0.625.
 - **PaySim (corrected timing + rank-based threshold):** fusion F1=0.041 (TP=5, FP=95, FN=141, fraud=146, eval=1989) vs baseline F1=0.000.
 
 ## Snapshot recall by attack type (fusion) — historical single run only

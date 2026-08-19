@@ -37,9 +37,10 @@ import {
 } from '../utils/format'
 import MaterialIcon from '../components/MaterialIcon'
 import PeripheralStructuralBadge from '../components/PeripheralStructuralBadge'
+import { GDI_MAX } from '../knobs'
 
 const TX_PAGE_SIZE = 15
-const FUSED_SCORE_SCALE = 5
+const FUSED_SCORE_SCALE = GDI_MAX
 
 type TxSortKey = 'timestamp' | 'amount'
 type TxSortDir = 'asc' | 'desc'

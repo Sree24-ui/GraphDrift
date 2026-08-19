@@ -147,6 +147,7 @@ export interface ReportSummary {
   by_confidence: ConfidenceBreakdown
   average_time_to_review_seconds: number | null
   daily_counts: DailyAlertCount[]
+  min_reviewed_sample: number
 }
 
 // WebSocket live-feed message types (app/api/websocket.py)
@@ -215,16 +216,71 @@ export interface GetAlertsParams {
   page_size?: number
 }
 
+export interface CalibrationLastAdjustment {
+  at: string
+  previous_percent: number
+  new_percent: number
+  action: string
+  confirmed_rate: number
+  sample_size: number
+  reason: string
+}
+
+export interface CalibrationStatus {
+  enabled: boolean
+  confirmed_rate: number | null
+  sample_size: number
+  confirmed: number
+  false_positive: number
+  min_sample: number
+  window_size: number
+  target_band_low: number
+  target_band_high: number
+  step_percent_points: number
+  clamp_low_percent: number
+  clamp_high_percent: number
+  cycles_per_calibration: number
+  cycles_until_next: number | null
+  skipped_reason: string | null
+  last_adjustment: CalibrationLastAdjustment | null
+  alert_top_percent: number
+  alert_top_percentile: number
+}
+
+export interface SystemKnobs {
+  window_minutes: number
+  secondary_window_minutes: number
+  min_transactions_for_scoring: number
+  gdi_min: number
+  gdi_max: number
+  default_alert_top_percent: number
+  default_alert_top_percentile: number
+  manual_alert_top_percent_min: number
+  manual_alert_top_percent_max: number
+  detection_cycle_interval_seconds: number
+  metrics_broadcast_interval_seconds: number
+  simulation_interval_seconds: number
+  pool_size: number
+  alert_staleness_hours: number
+  min_reviewed_sample: number
+  replay_step_seconds: number
+  min_ring_member_count: number
+}
+
 export interface AppSettings {
   alert_top_percentile: number
   alert_top_percent: number
   mule_attack_probability: number
   slow_drip_attack_probability: number
+  calibration_enabled: boolean
+  calibration: CalibrationStatus | null
+  system: SystemKnobs | null
 }
 
 export interface AppSettingsUpdate {
   alert_top_percentile?: number
   alert_top_percent?: number
+  calibration_enabled?: boolean
 }
 
 export interface GetAccountDetailParams {

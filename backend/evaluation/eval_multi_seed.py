@@ -40,6 +40,10 @@ RESULTS_MD = BACKEND_ROOT / "evaluation" / "RESULTS.md"
 REPORT_JSON = BACKEND_ROOT / "evaluation" / "data" / "multiseed_eval.json"
 ORIGINAL_FUSION_F1 = 0.625
 DETECTORS = ("baseline", "layer1", "fusion", "fusion_multiscale", "hybrid")
+DETECTOR_LABELS = {
+    "fusion_multiscale": "fusion_multiscale (union)",
+    "hybrid": "hybrid (union+peri)",
+}
 
 
 def predict_fusion_multiscale(db, as_of, *, min_transactions: int) -> set[str]:
@@ -214,8 +218,9 @@ def _results_section(per_seed: list[dict], agg: dict) -> str:
         "|------|----------|---|---|----|-----|----|----|----|----|-------|------|",
     ]
     for r in per_seed:
+        label = DETECTOR_LABELS.get(r["detector"], r["detector"])
         seed_lines.append(
-            f"| {r['seed']} | {r['detector']} | {r['precision']:.3f} | {r['recall']:.3f} | "
+            f"| {r['seed']} | {label} | {r['precision']:.3f} | {r['recall']:.3f} | "
             f"{r['f1']:.3f} | {r['fpr']:.4f} | {r['tp']} | {r['fp']} | {r['fn']} | {r['tn']} | "
             f"{r['ground_truth_fraud_scored']} | {r['accounts_evaluated']} |"
         )
@@ -226,8 +231,9 @@ def _results_section(per_seed: list[dict], agg: dict) -> str:
     ]
     for det in DETECTORS:
         a = agg[det]
+        label = DETECTOR_LABELS.get(det, det)
         agg_lines.append(
-            f"| {det} | {_fmt(a['precision'])} | {_fmt(a['recall'])} | "
+            f"| {label} | {_fmt(a['precision'])} | {_fmt(a['recall'])} | "
             f"{_fmt(a['f1'])} | {_fmt(a['fpr'])} |"
         )
 
@@ -265,6 +271,11 @@ def main() -> None:
         action="store_true",
         help="Print metrics only; do not rewrite RESULTS.md",
     )
+    parser.add_argument(
+        "--force-patch-results",
+        action="store_true",
+        help="Overwrite the multi-seed RESULTS.md block (drops methodology A/B notes).",
+    )
     args = parser.parse_args()
     detectors = tuple(name.strip() for name in args.detectors.split(",") if name.strip())
     unknown = [name for name in detectors if name not in DETECTORS]
@@ -290,6 +301,17 @@ def main() -> None:
 
     if set(detectors) != set(DETECTORS):
         raise SystemExit("Refusing to patch RESULTS.md with a partial detector set")
+
+    text = RESULTS_MD.read_text()
+    if "Methodology check: live freeze" in text and not args.force_patch_results:
+        print(
+            "Skipped RESULTS.md patch: multi-seed section has methodology notes. "
+            "Re-run with --force-patch-results only if you intend to replace them."
+        )
+        REPORT_JSON.parent.mkdir(parents=True, exist_ok=True)
+        REPORT_JSON.write_text(json.dumps({"per_seed": all_rows, "aggregate": agg}, indent=2))
+        print(f"Wrote {REPORT_JSON}")
+        return
 
     fusion_mean = agg["fusion"]["f1"]["mean"]
     fusion_std = agg["fusion"]["f1"]["std"]

@@ -5,11 +5,12 @@ import numpy as np
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
+from app.constants import (  # noqa: F401 — re-exported
+    AMOUNT_ENTROPY_BINS,
+    MIN_TRANSACTIONS_FOR_SCORING,
+    WINDOW_MINUTES,
+)
 from app.models import Transaction
-
-WINDOW_MINUTES = 15
-MIN_TRANSACTIONS_FOR_SCORING = 3
-AMOUNT_ENTROPY_BINS = 10
 
 
 def _window_bounds(

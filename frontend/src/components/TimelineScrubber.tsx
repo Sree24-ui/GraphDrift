@@ -331,7 +331,7 @@ export default function TimelineScrubber({
               <span>
                 {earliestEndMs
                   ? formatTimelineTimestamp(earliestEndMs)
-                  : '−15 min'}
+                  : `−${REPLAY_WINDOW_MS / 60000} min`}
               </span>
               <span>30s steps · {REPLAY_STEP_MS / 1000}s each</span>
               <span>Now</span>
@@ -341,7 +341,8 @@ export default function TimelineScrubber({
       ) : (
         <p className="text-xs text-on-surface-variant">
           Live mode — graph updates in real time from the WebSocket feed.
-          Switch to Replay to scrub through the last 15 minutes.
+          Switch to Replay to scrub through the last {REPLAY_WINDOW_MS / 60000}{' '}
+          minutes.
         </p>
       )}
     </div>

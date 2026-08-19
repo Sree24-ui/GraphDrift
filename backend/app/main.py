@@ -17,6 +17,7 @@ from app.api.websocket import (
     set_last_cycle_peak_fused_score,
 )
 from app.db import SessionLocal, init_db
+from app.detection.calibration import tick_live_detection_cycle
 from app.detection.fusion import run_detection_cycle
 from app.simulation.generator import run_simulation
 
@@ -34,6 +35,7 @@ async def _run_detection_loop() -> None:
                 alert_actions, diagnostics = run_detection_cycle(
                     db, return_diagnostics=True
                 )
+                tick_live_detection_cycle(db)
                 alert_messages = [
                     build_alert_message(action.alert, action.action)
                     for action in alert_actions

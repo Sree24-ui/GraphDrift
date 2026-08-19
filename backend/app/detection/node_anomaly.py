@@ -17,6 +17,15 @@ from __future__ import annotations
 
 import numpy as np
 
+from app.constants import (
+    GDI_MAX,
+    GDI_MIN,
+    MIN_ACCOUNTS_FOR_FULL_COV,
+    RAW_DISTANCE_CLIP,
+    SHRINKAGE_ALPHA,
+    VARIANCE_FLOOR,
+)
+
 # Features used for Mahalanobis distance. velocity is excluded because it is
 # linearly derived from in_count + out_count and is highly collinear with them.
 SCORING_FEATURE_NAMES: list[str] = [
@@ -31,13 +40,6 @@ SCORING_FEATURE_NAMES: list[str] = [
 ]
 
 DISPLAY_FEATURE_NAMES: list[str] = SCORING_FEATURE_NAMES + ["velocity"]
-
-MIN_ACCOUNTS_FOR_FULL_COV = 10
-VARIANCE_FLOOR = 1e-6
-SHRINKAGE_ALPHA = 0.1
-GDI_MIN = 0.5
-GDI_MAX = 5.0
-RAW_DISTANCE_CLIP = 12.0
 
 
 def _feature_matrix(

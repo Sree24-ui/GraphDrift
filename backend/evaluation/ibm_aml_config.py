@@ -21,6 +21,8 @@ If the source span is already short (<12 IBM hours), compression is skipped
 (scale = 1) so we do not over-squeeze a compact trace.
 """
 
+from app.constants import SECONDARY_WINDOW_MINUTES, WINDOW_MINUTES
+
 # Divide IBM elapsed time by this factor when mapping to eval timestamps.
 # Derived from HI-Small_Patterns.txt (370 labeled instances, median 4484 min).
 IBM_AML_TIME_SCALE = 332
@@ -28,9 +30,9 @@ IBM_AML_TIME_SCALE = 332
 # Wall-clock minutes represented by one IBM hour after compression.
 IBM_AML_COMPRESSED_MINUTES_PER_HOUR = 60 / IBM_AML_TIME_SCALE
 
-# Eval uses the same 15-minute window as production after compression.
-IBM_AML_WINDOW_MINUTES = 15
-IBM_AML_SLOW_WINDOW_MINUTES = 60
+# Eval uses the same windows as production after compression.
+IBM_AML_WINDOW_MINUTES = WINDOW_MINUTES
+IBM_AML_SLOW_WINDOW_MINUTES = SECONDARY_WINDOW_MINUTES
 
 # IBM hours covered by one detection window after compression.
 IBM_AML_WINDOW_SOURCE_HOURS = IBM_AML_WINDOW_MINUTES / IBM_AML_COMPRESSED_MINUTES_PER_HOUR

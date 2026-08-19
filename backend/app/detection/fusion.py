@@ -19,8 +19,17 @@ from sqlalchemy import and_, or_, select, text
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
+from app.constants import (
+    FUSION_GDI_WEIGHT,
+    FUSION_RING_WEIGHT,
+    GDI_MAX,
+    MIN_TRANSACTIONS_FOR_SCORING,
+    SCORE_ESCALATION_RELATIVE_THRESHOLD,
+    SECONDARY_WINDOW_MINUTES,
+    WINDOW_MINUTES,
+)
 from app.detection.community import get_ring_alerts
-from app.detection.features import WINDOW_MINUTES, extract_all_features, MIN_TRANSACTIONS_FOR_SCORING
+from app.detection.features import extract_all_features
 from app.detection.lifecycle import auto_expire_stale_alerts
 from app.detection.node_anomaly import compute_baseline, compute_gdi_scores, explain_score
 from app.detection.ring_id import get_or_create_ring_id
@@ -34,19 +43,10 @@ def _timed_commit(db: Session) -> None:
     with phase("persist_commit"):
         db.commit()
 
-# Default alert percentile when settings store is at its initial value (top 5%).
-DEFAULT_ALERT_TOP_PERCENTILE = 0.95
-
-# Slow-attack scale run in parallel with WINDOW_MINUTES (15). Slow-drip
-# simulations span 12–15 minutes and often fail to form a complete ring in
-# a single 15-minute slice.
-SECONDARY_WINDOW_MINUTES = 60
 
 # In-memory debug flag for demo diagnostics (--debug).
 _DEBUG_ALERT_CREATION = False
-
 CONFIDENCE_ORDER = {"low": 0, "medium": 1, "high": 2}
-SCORE_ESCALATION_RELATIVE_THRESHOLD = 0.10
 
 AlertAction = Literal["CREATE", "ESCALATE"]
 
@@ -55,12 +55,6 @@ AlertAction = Literal["CREATE", "ESCALATE"]
 class AlertActionResult:
     alert: Alert
     action: AlertAction
-
-
-# 50/50 weighting on percentile ranks: fusion reflects relative anomaly within
-# the current window ("how unusual vs peers right now"), not arbitrary absolutes.
-FUSION_GDI_WEIGHT = 0.5
-FUSION_RING_WEIGHT = 0.5
 
 
 def _window_bounds(
@@ -219,7 +213,7 @@ def compute_fused_scores(
 
         fused_results: list[dict] = []
         for row, gdi_pct, ring_pct in zip(raw_rows, gdi_percentiles, ring_percentiles):
-            fused_score = 5.0 * (
+            fused_score = GDI_MAX * (
                 (FUSION_GDI_WEIGHT * gdi_pct) + (FUSION_RING_WEIGHT * ring_pct)
             )
 

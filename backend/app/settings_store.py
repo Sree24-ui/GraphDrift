@@ -2,24 +2,66 @@
 
 from __future__ import annotations
 
-DEFAULT_ALERT_TOP_PERCENTILE = 0.95
+from typing import Literal
 
-_settings: dict[str, float] = {
+from app.constants import (
+    DEFAULT_ALERT_TOP_PERCENTILE,
+    MANUAL_ALERT_TOP_PERCENT_MAX,
+    MANUAL_ALERT_TOP_PERCENT_MIN,
+    percentile_to_top_percent,
+    top_percent_to_percentile,
+)
+
+__all__ = [
+    "DEFAULT_ALERT_TOP_PERCENTILE",
+    "alert_top_percent",
+    "get_alert_top_percentile",
+    "get_calibration_enabled",
+    "set_alert_top_percentile",
+    "set_calibration_enabled",
+]
+
+_settings: dict[str, float | bool] = {
     "alert_top_percentile": DEFAULT_ALERT_TOP_PERCENTILE,
+    "calibration_enabled": False,
 }
 
 
 def get_alert_top_percentile() -> float:
-    return _settings["alert_top_percentile"]
+    return float(_settings["alert_top_percentile"])
 
 
-def set_alert_top_percentile(value: float) -> float:
-    if not 0.5 <= value <= 0.995:
-        raise ValueError("alert_top_percentile must be between 0.5 and 0.995")
-    _settings["alert_top_percentile"] = value
-    return value
+def set_alert_top_percentile(
+    value: float,
+    *,
+    source: Literal["manual", "calibration"] = "manual",
+) -> float:
+    percent = percentile_to_top_percent(value)
+    if not MANUAL_ALERT_TOP_PERCENT_MIN <= percent <= MANUAL_ALERT_TOP_PERCENT_MAX:
+        raise ValueError(
+            "alert_top_percent must be between "
+            f"{MANUAL_ALERT_TOP_PERCENT_MIN} and {MANUAL_ALERT_TOP_PERCENT_MAX}"
+        )
+    previous = float(_settings["alert_top_percentile"])
+    _settings["alert_top_percentile"] = top_percent_to_percentile(percent)
+    if source == "manual" and abs(previous - float(_settings["alert_top_percentile"])) > 1e-12:
+        from app.detection.calibration import on_manual_override
+
+        on_manual_override()
+    return float(_settings["alert_top_percentile"])
 
 
 def alert_top_percent() -> float:
-    """Human-readable top-X% (e.g. 5.0 for the default 0.95 percentile)."""
-    return round((1.0 - get_alert_top_percentile()) * 100.0, 2)
+    """Human-readable top-X% (e.g. 5.0 for the default)."""
+    return percentile_to_top_percent(get_alert_top_percentile())
+
+
+def get_calibration_enabled() -> bool:
+    return bool(_settings["calibration_enabled"])
+
+
+def set_calibration_enabled(enabled: bool) -> bool:
+    from app.detection.calibration import set_calibration_enabled as _set_loop
+
+    _settings["calibration_enabled"] = bool(enabled)
+    return _set_loop(bool(enabled))

@@ -12,6 +12,7 @@ from app.db import SessionLocal
 from app.models import Account, Transaction
 from app.simulation.constants import (
     MULE_ATTACK_PROBABILITY,
+    POOL_SIZE,
     SIMULATION_INTERVAL_SECONDS,
     SLOW_DRIP_ATTACK_PROBABILITY,
 )
@@ -25,7 +26,6 @@ except ImportError:  # pragma: no cover - optional during isolated module tests
 fake = Faker("en_IN")
 
 UPI_HANDLES = ("okhdfc", "okicici", "paytm", "ybl")
-POOL_SIZE = 150
 
 _account_pool: list[str] = []
 

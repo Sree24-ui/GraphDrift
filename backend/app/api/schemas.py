@@ -225,6 +225,58 @@ class ReportSummaryResponse(BaseModel):
     by_confidence: ConfidenceBreakdown
     average_time_to_review_seconds: float | None = None
     daily_counts: list[DailyAlertCount] = []
+    min_reviewed_sample: int
+
+
+class CalibrationLastAdjustment(BaseModel):
+    at: str
+    previous_percent: float
+    new_percent: float
+    action: str
+    confirmed_rate: float
+    sample_size: int
+    reason: str
+
+
+class CalibrationStatus(BaseModel):
+    enabled: bool
+    confirmed_rate: float | None = None
+    sample_size: int = 0
+    confirmed: int = 0
+    false_positive: int = 0
+    min_sample: int
+    window_size: int
+    target_band_low: float
+    target_band_high: float
+    step_percent_points: float
+    clamp_low_percent: float
+    clamp_high_percent: float
+    cycles_per_calibration: int
+    cycles_until_next: int | None = None
+    skipped_reason: str | None = None
+    last_adjustment: CalibrationLastAdjustment | None = None
+    alert_top_percent: float
+    alert_top_percentile: float
+
+
+class SystemKnobs(BaseModel):
+    window_minutes: int
+    secondary_window_minutes: int
+    min_transactions_for_scoring: int
+    gdi_min: float
+    gdi_max: float
+    default_alert_top_percent: float
+    default_alert_top_percentile: float
+    manual_alert_top_percent_min: float
+    manual_alert_top_percent_max: float
+    detection_cycle_interval_seconds: int
+    metrics_broadcast_interval_seconds: int
+    simulation_interval_seconds: float
+    pool_size: int
+    alert_staleness_hours: int
+    min_reviewed_sample: int
+    replay_step_seconds: int
+    min_ring_member_count: int
 
 
 class AppSettingsResponse(BaseModel):
@@ -232,8 +284,12 @@ class AppSettingsResponse(BaseModel):
     alert_top_percent: float
     mule_attack_probability: float
     slow_drip_attack_probability: float
+    calibration_enabled: bool = False
+    calibration: CalibrationStatus | None = None
+    system: SystemKnobs | None = None
 
 
 class AppSettingsUpdate(BaseModel):
     alert_top_percentile: float | None = None
     alert_top_percent: float | None = None
+    calibration_enabled: bool | None = None

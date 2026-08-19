@@ -15,6 +15,7 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
+from app.constants import GDI_MAX, RING_EXTERNAL_WEIGHT, RING_HUB_WEIGHT  # noqa: E402
 from app.detection.community import (  # noqa: E402
     MIN_RING_MEMBER_COUNT,
     build_graph,
@@ -35,10 +36,10 @@ from evaluation.run_ibm_aml_eval import (  # noqa: E402
 
 
 def _structural_score(metrics: dict) -> float:
-    hub = float(metrics["hub_concentration"]) * 5.0 * 0.45
+    hub = float(metrics["hub_concentration"]) * GDI_MAX * RING_HUB_WEIGHT
     capped = min(float(metrics["external_edge_ratio"]), 10.0) / 10.0
-    external = capped * 5.0 * 0.30
-    return min(hub + external, 5.0)
+    external = capped * GDI_MAX * RING_EXTERNAL_WEIGHT
+    return min(hub + external, GDI_MAX)
 
 
 def _report_feature(name: str, pos: np.ndarray, neg: np.ndarray) -> dict:

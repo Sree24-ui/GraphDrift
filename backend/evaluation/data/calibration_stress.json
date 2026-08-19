@@ -1,0 +1,1709 @@
+{
+  "n_cycles": 40,
+  "start_percent": 5.0,
+  "target_band": [
+    0.6,
+    0.85
+  ],
+  "step_pp": 0.5,
+  "clamp": [
+    2.0,
+    15.0
+  ],
+  "min_sample": 20,
+  "window": 50,
+  "consecutive_side_required": 2,
+  "streams": [
+    {
+      "name": "realistic",
+      "description": "p(confirm)=0.64 (32/50), ~window-sized batch/cycle \u2014 should stay in band at 5%",
+      "pass_ok": true,
+      "oscillation_reversals": 0,
+      "min_percent": 5.0,
+      "max_percent": 5.0,
+      "outside_clamp": false,
+      "n_applied": 0,
+      "first_applied_cycle": null,
+      "settled_percent": 5.0,
+      "time_to_stabilize": 0,
+      "notes": [
+        "stable at 5.0% from cycle 0"
+      ],
+      "trajectory": [
+        {
+          "cycle": 1,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 2,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 3,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 4,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 5,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 6,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 7,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 8,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 9,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 10,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 11,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 12,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 13,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 14,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 15,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 16,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 17,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 18,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 19,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 20,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 21,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 22,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 23,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 24,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 25,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 26,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 27,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 28,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 29,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 30,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 31,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 32,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 33,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 34,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 35,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 36,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 37,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 38,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 39,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 40,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.64,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        }
+      ]
+    },
+    {
+      "name": "degenerate_all_confirm",
+      "description": "100% confirmed \u2014 should loosen to 15% and stop",
+      "pass_ok": true,
+      "oscillation_reversals": 0,
+      "min_percent": 5.0,
+      "max_percent": 15.0,
+      "outside_clamp": false,
+      "n_applied": 20,
+      "first_applied_cycle": 3,
+      "settled_percent": 15.0,
+      "time_to_stabilize": 21,
+      "notes": [
+        "walked to 15.0% clamp and held (first step cycle 3)"
+      ],
+      "trajectory": [
+        {
+          "cycle": 1,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 10,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 2,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 20,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 3,
+          "top_percent": 5.5,
+          "confirmed_rate": 1.0,
+          "sample_size": 30,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 4,
+          "top_percent": 6.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 40,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 5,
+          "top_percent": 6.5,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 6,
+          "top_percent": 7.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 7,
+          "top_percent": 7.5,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 8,
+          "top_percent": 8.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 9,
+          "top_percent": 8.5,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 10,
+          "top_percent": 9.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 11,
+          "top_percent": 9.5,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 12,
+          "top_percent": 10.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 13,
+          "top_percent": 10.5,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 14,
+          "top_percent": 11.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 15,
+          "top_percent": 11.5,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 16,
+          "top_percent": 12.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 17,
+          "top_percent": 12.5,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 18,
+          "top_percent": 13.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 19,
+          "top_percent": 13.5,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 20,
+          "top_percent": 14.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 21,
+          "top_percent": 14.5,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 22,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "loosen",
+          "applied": true
+        },
+        {
+          "cycle": 23,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 24,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 25,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 26,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 27,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 28,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 29,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 30,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 31,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 32,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 33,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 34,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 35,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 36,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 37,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 38,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 39,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 40,
+          "top_percent": 15.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        }
+      ]
+    },
+    {
+      "name": "degenerate_all_false_positive",
+      "description": "100% false positive \u2014 should tighten to 2% and stop",
+      "pass_ok": true,
+      "oscillation_reversals": 0,
+      "min_percent": 2.0,
+      "max_percent": 5.0,
+      "outside_clamp": false,
+      "n_applied": 6,
+      "first_applied_cycle": 3,
+      "settled_percent": 2.0,
+      "time_to_stabilize": 7,
+      "notes": [
+        "walked to 2.0% clamp and held (first step cycle 3)"
+      ],
+      "trajectory": [
+        {
+          "cycle": 1,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 10,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 2,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 20,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 3,
+          "top_percent": 4.5,
+          "confirmed_rate": 0.0,
+          "sample_size": 30,
+          "action": "tighten",
+          "applied": true
+        },
+        {
+          "cycle": 4,
+          "top_percent": 4.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 40,
+          "action": "tighten",
+          "applied": true
+        },
+        {
+          "cycle": 5,
+          "top_percent": 3.5,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "tighten",
+          "applied": true
+        },
+        {
+          "cycle": 6,
+          "top_percent": 3.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "tighten",
+          "applied": true
+        },
+        {
+          "cycle": 7,
+          "top_percent": 2.5,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "tighten",
+          "applied": true
+        },
+        {
+          "cycle": 8,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "tighten",
+          "applied": true
+        },
+        {
+          "cycle": 9,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 10,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 11,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 12,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 13,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 14,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 15,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 16,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 17,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 18,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 19,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 20,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 21,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 22,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 23,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 24,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 25,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 26,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 27,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 28,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 29,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 30,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 31,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 32,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 33,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 34,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 35,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 36,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 37,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 38,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 39,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 40,
+          "top_percent": 2.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        }
+      ]
+    },
+    {
+      "name": "adversarial_noisy",
+      "description": "Window flips 100% confirm \u2194 100% FP every cycle",
+      "pass_ok": true,
+      "oscillation_reversals": 0,
+      "min_percent": 5.0,
+      "max_percent": 5.0,
+      "outside_clamp": false,
+      "n_applied": 0,
+      "first_applied_cycle": null,
+      "settled_percent": 5.0,
+      "time_to_stabilize": 0,
+      "notes": [
+        "no steps \u2014 damping absorbed alternating bulk labels"
+      ],
+      "trajectory": [
+        {
+          "cycle": 1,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 2,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 3,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 4,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 5,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 6,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 7,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 8,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 9,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 10,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 11,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 12,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 13,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 14,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 15,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 16,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 17,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 18,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 19,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 20,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 21,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 22,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 23,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 24,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 25,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 26,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 27,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 28,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 29,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 30,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 31,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 32,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 33,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 34,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 35,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 36,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 37,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 38,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 39,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 40,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.0,
+          "sample_size": 50,
+          "action": "hold",
+          "applied": false
+        }
+      ]
+    },
+    {
+      "name": "sparse",
+      "description": "One judgment every other cycle \u2014 no move until n\u226520",
+      "pass_ok": true,
+      "oscillation_reversals": 0,
+      "min_percent": 5.0,
+      "max_percent": 5.0,
+      "outside_clamp": false,
+      "n_applied": 0,
+      "first_applied_cycle": null,
+      "settled_percent": 5.0,
+      "time_to_stabilize": 0,
+      "notes": [
+        "held 5.0% until sample reached 20 at cycle 39"
+      ],
+      "trajectory": [
+        {
+          "cycle": 1,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 1,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 2,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 1,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 3,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 2,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 4,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 2,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 5,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 3,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 6,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 3,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 7,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 4,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 8,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 4,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 9,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 5,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 10,
+          "top_percent": 5.0,
+          "confirmed_rate": 1.0,
+          "sample_size": 5,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 11,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.8333333333333334,
+          "sample_size": 6,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 12,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.8333333333333334,
+          "sample_size": 6,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 13,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.8571428571428571,
+          "sample_size": 7,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 14,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.8571428571428571,
+          "sample_size": 7,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 15,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.875,
+          "sample_size": 8,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 16,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.875,
+          "sample_size": 8,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 17,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.8888888888888888,
+          "sample_size": 9,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 18,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.8888888888888888,
+          "sample_size": 9,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 19,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.8,
+          "sample_size": 10,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 20,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.8,
+          "sample_size": 10,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 21,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.8181818181818182,
+          "sample_size": 11,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 22,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.8181818181818182,
+          "sample_size": 11,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 23,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.8333333333333334,
+          "sample_size": 12,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 24,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.8333333333333334,
+          "sample_size": 12,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 25,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.7692307692307693,
+          "sample_size": 13,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 26,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.7692307692307693,
+          "sample_size": 13,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 27,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.7857142857142857,
+          "sample_size": 14,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 28,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.7857142857142857,
+          "sample_size": 14,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 29,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.7333333333333333,
+          "sample_size": 15,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 30,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.7333333333333333,
+          "sample_size": 15,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 31,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.6875,
+          "sample_size": 16,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 32,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.6875,
+          "sample_size": 16,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 33,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.7058823529411765,
+          "sample_size": 17,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 34,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.7058823529411765,
+          "sample_size": 17,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 35,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.7222222222222222,
+          "sample_size": 18,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 36,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.7222222222222222,
+          "sample_size": 18,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 37,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.7368421052631579,
+          "sample_size": 19,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 38,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.7368421052631579,
+          "sample_size": 19,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 39,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.75,
+          "sample_size": 20,
+          "action": "hold",
+          "applied": false
+        },
+        {
+          "cycle": 40,
+          "top_percent": 5.0,
+          "confirmed_rate": 0.75,
+          "sample_size": 20,
+          "action": "hold",
+          "applied": false
+        }
+      ]
+    }
+  ],
+  "all_pass": true
+}

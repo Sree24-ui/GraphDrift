@@ -56,8 +56,6 @@ const CONFIDENCE_COLORS: Record<string, string> = {
   low: '#7dd3fc',
 }
 
-const MIN_REVIEWED_SAMPLE = 20
-
 function formatDuration(seconds: number | null): string {
   if (seconds == null) {
     return '—'
@@ -339,12 +337,12 @@ export default function Reports() {
                   <p className="mt-3 text-3xl font-semibold tabular-nums text-on-surface">
                     {(precision.rate! * 100).toFixed(1)}%
                   </p>
-                  {precision.reviewedTotal < MIN_REVIEWED_SAMPLE && (
+                  {precision.reviewedTotal < summary.min_reviewed_sample && (
                     <p className="mt-2 rounded-lg border border-tertiary/30 bg-tertiary/10 px-3 py-2 text-xs text-tertiary">
                       Small sample ({precision.reviewedTotal} reviewed alerts) —
                       this rate is indicative only and should not be treated as
                       a stable precision estimate until at least{' '}
-                      {MIN_REVIEWED_SAMPLE} analyst-reviewed cases are available.
+                      {summary.min_reviewed_sample} analyst-reviewed cases are available.
                     </p>
                   )}
                 </>
