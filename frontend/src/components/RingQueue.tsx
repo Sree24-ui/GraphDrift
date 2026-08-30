@@ -100,6 +100,7 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
                 open_alert_count: result.ring.open_alert_count,
                 aggregate_risk_score: result.ring.aggregate_risk_score,
                 last_updated_at: result.ring.last_updated_at,
+                reviewed_by_username: result.ring.reviewed_by_username,
               }
             : item,
         ),
@@ -148,6 +149,7 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
               <th className="px-6 py-4 font-medium">Confidence</th>
               <th className="px-6 py-4 font-medium">Detected</th>
               <th className="px-6 py-4 font-medium">Status</th>
+              <th className="px-6 py-4 font-medium">Reviewed by</th>
               <th className="px-6 py-4 text-right font-medium">Ring actions</th>
             </tr>
           </thead>
@@ -201,6 +203,9 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
                     <td className="px-6 py-4">
                       <StatusBadge status={ring.status} />
                     </td>
+                    <td className="px-6 py-4 text-xs text-on-surface-variant">
+                      {ring.reviewed_by_username ?? '—'}
+                    </td>
                     <td
                       className="px-6 py-4"
                       onClick={(e) => e.stopPropagation()}
@@ -232,7 +237,7 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
                   </tr>
                   {isExpanded && (
                     <tr className="border-b border-primary/5">
-                      <td colSpan={7} className="p-0">
+                      <td colSpan={8} className="p-0">
                         <RingExpanded
                           ringId={ring.ring_id}
                           onMemberStatusChange={fetchRings}
@@ -349,8 +354,10 @@ function RingExpanded({
           </p>
         </div>
         <p className="text-[11px] text-on-surface-variant">
-          Confirm or mark the whole ring above, or review individual members
-          below.
+          {detail.reviewed_by_username
+            ? `Last reviewed by ${detail.reviewed_by_username}. `
+            : ''}
+          Confirm or mark the whole ring above, or review individual members below.
         </p>
       </div>
 

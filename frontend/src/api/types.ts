@@ -10,6 +10,20 @@ export type ConfidenceLevel = 'low' | 'medium' | 'high'
 export type ReportPeriod = '24h' | '7d' | '30d'
 export type TransactionDirection = 'sent' | 'received'
 export type AlertAction = 'CREATE' | 'ESCALATE'
+export type UserRole = 'analyst' | 'admin'
+
+export interface CurrentUser {
+  id: number
+  username: string
+  role: UserRole
+}
+
+export interface AuthSession {
+  access_token: string
+  token_type: 'bearer'
+  username: string
+  role: UserRole
+}
 
 export interface GraphNode {
   account_id: string
@@ -53,6 +67,7 @@ export interface Alert {
   updated_at: string
   is_escalated?: boolean
   ring_id?: string | null
+  reviewed_by_username?: string | null
 }
 
 export interface AlertListResponse {
@@ -82,6 +97,7 @@ export interface AlertDetail {
   feature_breakdown: Record<string, unknown> | null
   escalation_history: EscalationHistoryEntry[]
   ring_id?: string | null
+  reviewed_by_username?: string | null
 }
 
 export interface AlertStatusUpdate {
@@ -324,6 +340,7 @@ export interface RingListItem {
   first_detected_at: string
   last_updated_at: string
   open_alert_count: number
+  reviewed_by_username: string | null
 }
 
 export interface RingListResponse {
@@ -344,6 +361,7 @@ export interface RingDetail {
   open_alert_count: number
   members: RingMember[]
   explanation: RingExplanation
+  reviewed_by_username: string | null
 }
 
 export interface RingStatusUpdate {

@@ -8,6 +8,25 @@ AlertStatus = Literal[
 ]
 ConfidenceLevel = Literal["low", "medium", "high"]
 ReportPeriod = Literal["24h", "7d", "30d"]
+UserRole = Literal["analyst", "admin"]
+
+
+class AuthLoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=64)
+    password: str = Field(min_length=1, max_length=256)
+
+
+class AuthSessionResponse(BaseModel):
+    access_token: str
+    token_type: Literal["bearer"]
+    username: str
+    role: UserRole
+
+
+class CurrentUserResponse(BaseModel):
+    id: int
+    username: str
+    role: UserRole
 
 
 class GraphNodeSnapshot(BaseModel):
@@ -54,6 +73,7 @@ class AlertListItem(BaseModel):
     updated_at: datetime
     is_escalated: bool = False
     ring_id: str | None = None
+    reviewed_by_username: str | None = None
 
 
 class AlertListResponse(BaseModel):
@@ -85,6 +105,7 @@ class AlertDetail(BaseModel):
     feature_breakdown: dict | None = None
     escalation_history: list[EscalationHistoryEntry] = Field(default_factory=list)
     ring_id: str | None = None
+    reviewed_by_username: str | None = None
 
 
 class AlertStatusUpdate(BaseModel):
@@ -126,6 +147,7 @@ class RingListItem(BaseModel):
     first_detected_at: datetime
     last_updated_at: datetime
     open_alert_count: int
+    reviewed_by_username: str | None = None
 
 
 class RingListResponse(BaseModel):
@@ -146,6 +168,7 @@ class RingDetail(BaseModel):
     open_alert_count: int
     members: list[RingMember]
     explanation: RingExplanation
+    reviewed_by_username: str | None = None
 
 
 class RingStatusUpdate(BaseModel):

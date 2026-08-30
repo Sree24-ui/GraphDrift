@@ -8,6 +8,7 @@ layer's absolute score scale dominates the combined result.
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -15,7 +16,7 @@ from typing import Literal
 
 import numpy as np
 from scipy.stats import rankdata
-from sqlalchemy import and_, or_, select, text
+from sqlalchemy import and_, inspect, or_, select, text
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -37,6 +38,8 @@ from app.models import AccountScoreHistory, Alert, Transaction
 
 from app.detection.cycle_timing import phase
 from app.settings_store import get_alert_top_percentile
+
+logger = logging.getLogger("graphdrift.detection")
 
 
 def _timed_commit(db: Session) -> None:
@@ -624,7 +627,7 @@ def create_alert_if_needed(
 
     if fused_score < alert_threshold:
         if _DEBUG_ALERT_CREATION:
-            print(
+            logger.debug(
                 f"[alert-debug] SKIP {account_id}: {rank_text}"
                 f"below threshold fused={fused_score:.3f} < {alert_threshold:.3f}"
             )
@@ -656,7 +659,7 @@ def create_alert_if_needed(
                 db, existing_alert, fused_score, explanation, as_of
             )
             if _DEBUG_ALERT_CREATION:
-                print(
+                logger.debug(
                     f"[alert-debug] ESCALATE {account_id}: {rank_text}"
                     f"alert_id={escalated.id}, status={escalated.status}, "
                     f"detected_at={escalated.detected_at} (unchanged), "
@@ -666,7 +669,7 @@ def create_alert_if_needed(
             return AlertActionResult(alert=escalated, action="ESCALATE")
 
         if _DEBUG_ALERT_CREATION:
-            print(
+            logger.debug(
                 f"[alert-debug] SKIP {account_id}: {rank_text}"
                 f"existing open alert id={existing_alert.id}, "
                 f"status={existing_alert.status}, detected_at={existing_alert.detected_at}, "
@@ -697,7 +700,7 @@ def create_alert_if_needed(
     db.refresh(alert)
 
     if _DEBUG_ALERT_CREATION:
-        print(
+        logger.debug(
             f"[alert-debug] CREATE {account_id}: {rank_text}"
             f"fused={fused_score:.3f}, confidence={new_confidence}, "
             f"alert_id={alert.id}"
@@ -930,8 +933,7 @@ def _slow_drip_synthetic_accounts(
 
 
 def _ensure_alert_schema(db: Session) -> None:
-    columns = db.execute(text("PRAGMA table_info(alerts)")).all()
-    column_names = {row[1] for row in columns}
+    column_names = {column["name"] for column in inspect(db.bind).get_columns("alerts")}
     if "confidence" not in column_names:
         db.execute(
             text(
@@ -941,16 +943,24 @@ def _ensure_alert_schema(db: Session) -> None:
         )
         db.commit()
     if "updated_at" not in column_names:
-        db.execute(text("ALTER TABLE alerts ADD COLUMN updated_at DATETIME"))
+        db.execute(text("ALTER TABLE alerts ADD COLUMN updated_at TIMESTAMP"))
         db.execute(
             text("UPDATE alerts SET updated_at = detected_at WHERE updated_at IS NULL")
         )
         db.commit()
     if "reviewed_at" not in column_names:
-        db.execute(text("ALTER TABLE alerts ADD COLUMN reviewed_at DATETIME"))
+        db.execute(text("ALTER TABLE alerts ADD COLUMN reviewed_at TIMESTAMP"))
         db.commit()
     if "ring_id" not in column_names:
         db.execute(text("ALTER TABLE alerts ADD COLUMN ring_id VARCHAR"))
+        db.commit()
+    if "reviewed_by_user_id" not in column_names:
+        db.execute(
+            text(
+                "ALTER TABLE alerts ADD COLUMN reviewed_by_user_id INTEGER "
+                "REFERENCES users(id)"
+            )
+        )
         db.commit()
 
 
@@ -961,8 +971,9 @@ def ensure_db_schema(db: Session) -> None:
 
 
 def _ensure_transaction_schema(db: Session) -> None:
-    columns = db.execute(text("PRAGMA table_info(transactions)")).all()
-    column_names = {row[1] for row in columns}
+    column_names = {
+        column["name"] for column in inspect(db.bind).get_columns("transactions")
+    }
     if "attack_variant" not in column_names:
         db.execute(text("ALTER TABLE transactions ADD COLUMN attack_variant VARCHAR"))
         db.commit()

@@ -405,9 +405,14 @@ export default function AlertQueue() {
     updateAlertInList(alertId, { status: newStatus })
 
     try {
-      await patchAlert(alertId, {
+      const updated = await patchAlert(alertId, {
         status: newStatus,
         ...(notes !== undefined ? { analyst_notes: notes } : {}),
+      })
+      updateAlertInList(alertId, {
+        status: updated.status,
+        updated_at: updated.updated_at,
+        reviewed_by_username: updated.reviewed_by_username,
       })
 
       if (
@@ -768,6 +773,7 @@ export default function AlertQueue() {
                     </button>
                   </th>
                   <th className="px-6 py-4 font-medium">Status</th>
+                  <th className="px-6 py-4 font-medium">Reviewed by</th>
                   <th className="px-6 py-4 text-right font-medium">Actions</th>
                 </tr>
               </thead>
@@ -861,6 +867,10 @@ export default function AlertQueue() {
                           <StatusBadge status={alert.status} />
                         </td>
 
+                        <td className="px-3 py-3 text-xs text-on-surface-variant">
+                          {alert.reviewed_by_username ?? '—'}
+                        </td>
+
                         <td
                           className="px-3 py-3"
                           onClick={(e) => e.stopPropagation()}
@@ -886,7 +896,7 @@ export default function AlertQueue() {
 
                       {isExpanded && (
                         <tr className="border-b border-primary/5">
-                          <td colSpan={8} className="p-0">
+                          <td colSpan={9} className="p-0">
                             <AlertRowDetail
                               alert={alert}
                               onStatusChange={handleStatusChange}

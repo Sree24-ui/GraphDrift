@@ -9,7 +9,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.api.alerts import (
     ALLOWED_TRANSITIONS,
@@ -18,7 +18,7 @@ from app.api.alerts import (
     apply_alert_status_change,
     _is_escalated,
 )
-from app.api.deps import get_db
+from app.api.deps import get_current_user, get_db
 from app.api.schemas import (
     AlertStatus,
     ConfidenceLevel,
@@ -33,7 +33,7 @@ from app.api.schemas import (
     RingStatusUpdate,
 )
 from app.detection.ring_id import infer_member_role
-from app.models import Alert
+from app.models import Alert, RingReviewAction, User
 
 router = APIRouter(prefix="/api/rings", tags=["rings"])
 
@@ -150,7 +150,28 @@ def _build_members(alerts: list[Alert], hub_account_id: str | None) -> list[Ring
     return members
 
 
-def _build_ring_detail(ring_id: str, alerts: list[Alert]) -> RingDetail:
+def _latest_ring_reviewer(
+    ring_id: str, alerts: list[Alert], db: Session | None = None
+) -> str | None:
+    if db is not None:
+        action = db.scalar(
+            select(RingReviewAction)
+            .options(joinedload(RingReviewAction.reviewed_by))
+            .where(RingReviewAction.ring_id == ring_id)
+            .order_by(RingReviewAction.created_at.desc(), RingReviewAction.id.desc())
+        )
+        if action is not None:
+            return action.reviewed_by.username
+    reviewed = [alert for alert in alerts if alert.reviewed_by is not None]
+    if not reviewed:
+        return None
+    latest = max(reviewed, key=lambda alert: alert.reviewed_at or alert.updated_at)
+    return latest.reviewed_by.username if latest.reviewed_by else None
+
+
+def _build_ring_detail(
+    ring_id: str, alerts: list[Alert], db: Session | None = None
+) -> RingDetail:
     hub = _hub_from_alerts(alerts)
     members = _build_members(alerts, hub)
     first_detected = min(alert.detected_at for alert in alerts)
@@ -168,6 +189,7 @@ def _build_ring_detail(ring_id: str, alerts: list[Alert]) -> RingDetail:
         open_alert_count=sum(1 for alert in alerts if alert.status in OPEN_STATUSES),
         members=members,
         explanation=_merged_explanation(alerts, members),
+        reviewed_by_username=_latest_ring_reviewer(ring_id, alerts, db),
     )
 
 
@@ -183,12 +205,17 @@ def _to_list_item(detail: RingDetail) -> RingListItem:
         first_detected_at=detail.first_detected_at,
         last_updated_at=detail.last_updated_at,
         open_alert_count=detail.open_alert_count,
+        reviewed_by_username=detail.reviewed_by_username,
     )
 
 
 def _load_ring_groups(db: Session) -> dict[str, list[Alert]]:
     alerts = list(
-        db.scalars(select(Alert).where(Alert.ring_id.isnot(None))).all()
+        db.scalars(
+            select(Alert)
+            .options(joinedload(Alert.reviewed_by))
+            .where(Alert.ring_id.isnot(None))
+        ).unique().all()
     )
     groups: dict[str, list[Alert]] = defaultdict(list)
     for alert in alerts:
@@ -210,7 +237,9 @@ def list_rings(
     db: Session = Depends(get_db),
 ) -> RingListResponse:
     groups = _load_ring_groups(db)
-    details = [_build_ring_detail(ring_id, alerts) for ring_id, alerts in groups.items()]
+    details = [
+        _build_ring_detail(ring_id, alerts, db) for ring_id, alerts in groups.items()
+    ]
 
     wanted_statuses: set[str] | None = None
     if statuses:
@@ -252,10 +281,16 @@ def list_rings(
 
 @router.get("/{ring_id}", response_model=RingDetail)
 def get_ring(ring_id: str, db: Session = Depends(get_db)) -> RingDetail:
-    alerts = list(db.scalars(select(Alert).where(Alert.ring_id == ring_id)).all())
+    alerts = list(
+        db.scalars(
+            select(Alert)
+            .options(joinedload(Alert.reviewed_by))
+            .where(Alert.ring_id == ring_id)
+        ).unique().all()
+    )
     if not alerts:
         raise HTTPException(status_code=404, detail="Ring not found")
-    return _build_ring_detail(ring_id, alerts)
+    return _build_ring_detail(ring_id, alerts, db)
 
 
 @router.patch("/{ring_id}", response_model=RingBulkUpdateResponse)
@@ -263,6 +298,7 @@ def update_ring(
     ring_id: str,
     body: RingStatusUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> RingBulkUpdateResponse:
     alerts = list(db.scalars(select(Alert).where(Alert.ring_id == ring_id)).all())
     if not alerts:
@@ -305,16 +341,36 @@ def update_ring(
             )
             continue
         apply_alert_status_change(
-            alert, body.status, body.analyst_notes, now=now
+            alert,
+            body.status,
+            body.analyst_notes,
+            now=now,
+            reviewed_by_user_id=current_user.id if isinstance(current_user, User) else None,
         )
         updated_ids.append(alert.id)
 
+    if updated_ids and isinstance(current_user, User):
+        db.add(
+            RingReviewAction(
+                ring_id=ring_id,
+                target_status=body.status,
+                analyst_notes=body.analyst_notes,
+                reviewed_by_user_id=current_user.id,
+            )
+        )
+
     db.commit()
-    refreshed = list(db.scalars(select(Alert).where(Alert.ring_id == ring_id)).all())
+    refreshed = list(
+        db.scalars(
+            select(Alert)
+            .options(joinedload(Alert.reviewed_by))
+            .where(Alert.ring_id == ring_id)
+        ).unique().all()
+    )
     return RingBulkUpdateResponse(
         ring_id=ring_id,
         target_status=body.status,
         updated_alert_ids=updated_ids,
         skipped=skipped,
-        ring=_build_ring_detail(ring_id, refreshed),
+        ring=_build_ring_detail(ring_id, refreshed, db),
     )

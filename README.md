@@ -24,6 +24,9 @@ Real-time UPI fraud detection system.
    cp backend/.env.example backend/.env
    ```
 
+   `DATABASE_URL`, `ALLOWED_ORIGINS`, and the optional `LIVE_FEED_WS_URL` are
+   environment-configured; do not put deployment URLs in Python code.
+
 4. Start the development server from the `backend/` folder:
 
    ```bash
@@ -32,6 +35,30 @@ Real-time UPI fraud detection system.
    ```
 
 The API will be available at `http://localhost:8000`. Check health at `GET /health`.
+
+### Provision users
+
+There is no public registration endpoint. Create the first administrator from
+the backend directory after the database is configured:
+
+```bash
+python scripts/create_user.py --username your-admin --role admin
+```
+
+The command securely prompts twice and stores an Argon2 password hash. Create
+analysts the same way with `--role analyst`. For one-command local setup only:
+
+```bash
+python scripts/create_user.py --dev-seed
+```
+
+This creates `local-admin` with password `local-development-only` and refuses
+to run when `ENVIRONMENT=production`.
+
+Sessions are signed JWTs with a 12-hour default lifetime. Logout is stateless:
+the frontend discards its token from `sessionStorage`; no refresh token or
+server-side blacklist is used in this scope. Changing `SESSION_SECRET`
+invalidates all outstanding sessions.
 
 ## Pre-demo reset (recommended)
 
@@ -64,11 +91,13 @@ From the `frontend/` folder:
 
 ```bash
 cd frontend
+cp .env.development.example .env.development
 npm install
 npm run dev
 ```
 
-The Vite app will be available at `http://localhost:5173` and proxies `/api` and `/ws` to the backend during local development.
+Set `VITE_DEV_BACKEND_URL` in `.env.development` to the backend URL. The Vite app
+will proxy `/api`, `/health`, and `/ws` to that URL during local development.
 
 ## Deployment
 
@@ -79,6 +108,10 @@ The Vite app will be available at `http://localhost:5173` and proxies `/api` and
 - **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 
 Set `ALLOWED_ORIGINS` to the live frontend URL once it is known (comma-separated if you have more than one origin).
+Also set `ENVIRONMENT=production`, a persistent production `DATABASE_URL`, and
+a long random `SESSION_SECRET`. After the first deployment, open a Render shell
+and run `python scripts/create_user.py --username your-admin --role admin`.
+Startup logs warn if CORS is unset/wildcard or no admin exists.
 
 ### Frontend (Vercel)
 
@@ -89,3 +122,16 @@ Set `ALLOWED_ORIGINS` to the live frontend URL once it is known (comma-separated
 Set `VITE_API_BASE_URL` and `VITE_WS_BASE_URL` in the Vercel project dashboard as shown in `frontend/.env.production.example`.
 
 After both services are deployed, update `ALLOWED_ORIGINS` on the Render backend to the real Vercel URL and redeploy or restart the backend so CORS allows the live frontend to connect.
+
+## Closed-loop calibration verification
+
+The full real-pipeline harness uses the seeded simulator, detector, actual
+per-alert scoring windows, ground-truth judgments, and live calibration tick:
+
+```bash
+cd backend
+python evaluation/closed_loop_calibration.py --cycles 60
+```
+
+It reports the threshold and confirmed-rate trajectory plus whether the run
+settled inside the control band, remained unsettled, or rode a clamp.

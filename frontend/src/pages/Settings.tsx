@@ -8,6 +8,7 @@ import {
   WS_BASE_URL,
 } from '../api/client'
 import type { AlertStatus, AppSettings, ConfidenceLevel } from '../api/types'
+import { useAuth } from '../auth/AuthContext'
 import ErrorBanner from '../components/ErrorBanner'
 import LoadingSpinner from '../components/LoadingSpinner'
 import MaterialIcon from '../components/MaterialIcon'
@@ -56,6 +57,8 @@ function filterChipClass(active: boolean): string {
 type WsStatus = 'connecting' | 'connected' | 'disconnected'
 
 export default function Settings() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [topPercent, setTopPercent] = useState(DEFAULT_ALERT_TOP_PERCENT)
   const [percentile, setPercentile] = useState(DEFAULT_ALERT_TOP_PERCENTILE)
   const [simMule, setSimMule] = useState(0)
@@ -233,6 +236,12 @@ export default function Settings() {
 
       {error && <ErrorBanner message={error} onRetry={fetchSettings} />}
 
+      {!isAdmin && (
+        <div className="rounded-xl border border-amber-soft/30 bg-amber-soft/10 px-4 py-3 text-sm text-amber-soft">
+          <span className="font-semibold">Admin only:</span> detection sensitivity and auto-calibration controls are read-only for analysts.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <section className={`${sectionClass(true)} lg:col-span-2`}>
           <h2 className="mb-6 flex items-center gap-3 text-xl font-semibold text-on-surface">
@@ -255,6 +264,7 @@ export default function Settings() {
                 max={system?.manual_alert_top_percent_max ?? MANUAL_ALERT_TOP_PERCENT_MAX}
                 step={calibration?.step_percent_points ?? 0.5}
                 value={topPercent}
+                disabled={!isAdmin}
                 onChange={(e) => {
                   sliderDirtyRef.current = true
                   setTopPercent(Number(e.target.value))
@@ -273,7 +283,7 @@ export default function Settings() {
             <button
               type="button"
               onClick={handleSaveSensitivity}
-              disabled={saving}
+              disabled={saving || !isAdmin}
               className="rounded-lg border border-primary/30 bg-primary/20 px-6 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/30 disabled:opacity-40"
             >
               {saving ? 'Saving…' : 'Apply Calibrations'}
@@ -343,7 +353,7 @@ export default function Settings() {
                 type="button"
                 role="switch"
                 aria-checked={calibrationOn}
-                disabled={togglingCalibration || loading}
+                disabled={togglingCalibration || loading || !isAdmin}
                 onClick={() => void handleToggleCalibration(!calibrationOn)}
                 className={[
                   'relative h-6 w-11 rounded-full transition-colors',

@@ -2,6 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     Float,
     ForeignKey,
@@ -15,6 +16,29 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint("role IN ('analyst', 'admin')", name="ck_users_role"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
+    role: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    reviewed_alerts: Mapped[list["Alert"]] = relationship(
+        "Alert", back_populates="reviewed_by"
+    )
+    ring_review_actions: Mapped[list["RingReviewAction"]] = relationship(
+        "RingReviewAction", back_populates="reviewed_by"
+    )
 
 
 class Account(Base):
@@ -104,8 +128,36 @@ class Alert(Base):
         DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
     )
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=True, index=True
+    )
 
     account: Mapped["Account"] = relationship("Account", back_populates="alerts")
+    reviewed_by: Mapped["User | None"] = relationship(
+        "User", back_populates="reviewed_alerts"
+    )
+
+
+class RingReviewAction(Base):
+    """Immutable audit record for a bulk ring status change."""
+
+    __tablename__ = "ring_review_actions"
+    __table_args__ = (Index("ix_ring_review_actions_ring_id", "ring_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    ring_id: Mapped[str] = mapped_column(String, nullable=False)
+    target_status: Mapped[str] = mapped_column(String, nullable=False)
+    analyst_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewed_by_user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False, index=True
+    )
+
+    reviewed_by: Mapped["User"] = relationship(
+        "User", back_populates="ring_review_actions"
+    )
 
 
 class AccountScoreHistory(Base):

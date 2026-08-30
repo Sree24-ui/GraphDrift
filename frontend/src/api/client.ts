@@ -7,6 +7,8 @@ import type {
   AlertStatusUpdate,
   AppSettings,
   AppSettingsUpdate,
+  AuthSession,
+  CurrentUser,
   GetAccountDetailParams,
   GetAlertsParams,
   GetRingsParams,
@@ -21,14 +23,16 @@ import type {
 } from './types'
 
 function resolveApiBaseUrl(): string {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL
+  const configuredUrl = import.meta.env.VITE_API_BASE_URL?.trim()
+  if (configuredUrl) {
+    return configuredUrl
   }
-  // In dev, use same-origin requests so Vite proxies to the backend (no CORS issues).
-  if (import.meta.env.DEV) {
+  // A configured dev proxy keeps requests same-origin and avoids browser CORS.
+  if (import.meta.env.DEV && import.meta.env.VITE_DEV_BACKEND_URL?.trim()) {
     return ''
   }
-  return 'http://localhost:8000'
+  // A production deployment may serve its API from the same origin.
+  return ''
 }
 
 function resolveWsBaseUrl(apiBaseUrl: string): string {
@@ -51,6 +55,56 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 })
+
+const TOKEN_KEY = 'graphdrift.sessionToken'
+
+export function getStoredToken(): string | null {
+  return sessionStorage.getItem(TOKEN_KEY)
+}
+
+export function storeToken(token: string): void {
+  sessionStorage.setItem(TOKEN_KEY, token)
+}
+
+export function clearStoredToken(): void {
+  sessionStorage.removeItem(TOKEN_KEY)
+}
+
+api.interceptors.request.use((config) => {
+  const token = getStoredToken()
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      window.dispatchEvent(new Event('graphdrift:unauthorized'))
+    }
+    return Promise.reject(error)
+  },
+)
+
+export async function loginUser(
+  username: string,
+  password: string,
+): Promise<AuthSession> {
+  const { data } = await api.post<AuthSession>('/api/auth/login', {
+    username,
+    password,
+  })
+  return data
+}
+
+export async function getCurrentUser(): Promise<CurrentUser> {
+  const { data } = await api.get<CurrentUser>('/api/auth/me')
+  return data
+}
+
+export async function logoutUser(): Promise<void> {
+  await api.post('/api/auth/logout')
+}
 
 export async function getAlerts(
   params: GetAlertsParams = {},

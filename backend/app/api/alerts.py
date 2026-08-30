@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user, get_db
 from app.api.schemas import (
     AlertAccountRef,
     AlertDetail,
@@ -19,7 +19,7 @@ from app.api.schemas import (
     EscalationHistoryEntry,
     PaginationMeta,
 )
-from app.models import Alert
+from app.models import Alert, User
 
 router = APIRouter(prefix="/api/alerts", tags=["alerts"])
 
@@ -58,6 +58,7 @@ def _alert_to_list_item(alert: Alert) -> AlertListItem:
         updated_at=alert.updated_at,
         is_escalated=_is_escalated(alert),
         ring_id=alert.ring_id,
+        reviewed_by_username=alert.reviewed_by.username if alert.reviewed_by else None,
     )
 
 
@@ -98,6 +99,7 @@ def _alert_to_detail(alert: Alert) -> AlertDetail:
         feature_breakdown=alert.feature_breakdown,
         escalation_history=_extract_escalation_history(alert),
         ring_id=alert.ring_id,
+        reviewed_by_username=alert.reviewed_by.username if alert.reviewed_by else None,
     )
 
 
@@ -107,6 +109,7 @@ def apply_alert_status_change(
     analyst_notes: str | None,
     *,
     now: datetime | None = None,
+    reviewed_by_user_id: int | None = None,
 ) -> None:
     """Mutate ``alert`` in place. Caller is responsible for commit."""
     as_of = now or datetime.now()
@@ -134,6 +137,8 @@ def apply_alert_status_change(
             alert.reviewed_at = as_of
 
         alert.status = new_status
+        if reviewed_by_user_id is not None:
+            alert.reviewed_by_user_id = reviewed_by_user_id
 
     if analyst_notes is not None:
         alert.analyst_notes = analyst_notes
@@ -155,7 +160,7 @@ def list_alerts(
     page_size: int = Query(25, ge=1, le=100),
     db: Session = Depends(get_db),
 ) -> AlertListResponse:
-    stmt = select(Alert).options(joinedload(Alert.account))
+    stmt = select(Alert).options(joinedload(Alert.account), joinedload(Alert.reviewed_by))
 
     if statuses:
         stmt = stmt.where(Alert.status.in_(statuses))
@@ -206,7 +211,9 @@ def list_alerts(
 
 @router.get("/{alert_id}", response_model=AlertDetail)
 def get_alert(alert_id: int, db: Session = Depends(get_db)) -> AlertDetail:
-    alert = db.get(Alert, alert_id)
+    alert = db.scalar(
+        select(Alert).options(joinedload(Alert.reviewed_by)).where(Alert.id == alert_id)
+    )
     if alert is None:
         raise HTTPException(status_code=404, detail="Alert not found")
     return _alert_to_detail(alert)
@@ -217,6 +224,7 @@ def update_alert(
     alert_id: int,
     body: AlertStatusUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> AlertDetail:
     alert = db.get(Alert, alert_id)
     if alert is None:
@@ -224,9 +232,17 @@ def update_alert(
 
     if body.status != alert.status or body.analyst_notes is not None:
         apply_alert_status_change(
-            alert, body.status, body.analyst_notes, now=datetime.now()
+            alert,
+            body.status,
+            body.analyst_notes,
+            now=datetime.now(),
+            reviewed_by_user_id=current_user.id,
         )
 
     db.commit()
     db.refresh(alert)
-    return _alert_to_detail(alert)
+    refreshed = db.scalar(
+        select(Alert).options(joinedload(Alert.reviewed_by)).where(Alert.id == alert.id)
+    )
+    assert refreshed is not None
+    return _alert_to_detail(refreshed)

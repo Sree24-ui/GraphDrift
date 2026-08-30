@@ -3,19 +3,28 @@
 
 import asyncio
 import json
+import os
 import sys
 
 import websockets
 
-URL = "ws://localhost:8000/ws/live-feed"
-DURATION_SECONDS = 60
+DEFAULT_DURATION_SECONDS = 60
+
+
+def live_feed_url() -> str:
+    """Return the configured live-feed endpoint for manual testing."""
+    url = os.getenv("LIVE_FEED_WS_URL", "").strip()
+    if not url:
+        raise RuntimeError("LIVE_FEED_WS_URL must be set")
+    return url
 
 
 async def main() -> None:
-    duration = int(sys.argv[1]) if len(sys.argv) > 1 else DURATION_SECONDS
-    print(f"Connecting to {URL} for {duration}s...")
+    duration = int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_DURATION_SECONDS
+    url = live_feed_url()
+    print(f"Connecting to {url} for {duration}s...")
 
-    async with websockets.connect(URL) as websocket:
+    async with websockets.connect(url) as websocket:
         print("Connected. Waiting for messages...\n")
 
         async def _reader() -> None:

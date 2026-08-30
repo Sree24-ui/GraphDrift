@@ -1,5 +1,6 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 
+import { useAuth } from '../auth/AuthContext'
 import AppBackground from './AppBackground'
 import MaterialIcon from './MaterialIcon'
 
@@ -11,6 +12,14 @@ const navItems = [
 ]
 
 export default function Layout() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login', { replace: true })
+  }
+
   return (
     <div className="relative flex min-h-screen overflow-hidden">
       <AppBackground />
@@ -57,14 +66,24 @@ export default function Layout() {
         </nav>
 
         <div className="mt-auto px-6">
-          <div className="glass-panel flex items-center gap-3 rounded-xl p-3 transition-colors hover:bg-primary/5">
+          <div className="glass-panel rounded-xl p-3 transition-colors hover:bg-primary/5">
+            <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-gradient-to-br from-primary/20 to-tertiary/10 text-primary">
               <MaterialIcon name="shield_person" size={20} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-on-surface">Analyst</p>
-              <p className="text-xs text-on-surface-variant">Demo session</p>
+              <p className="text-sm font-semibold text-on-surface">{user?.username}</p>
+              <p className="text-xs capitalize text-on-surface-variant">{user?.role}</p>
             </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-primary/15 px-3 py-2 text-xs text-on-surface-variant transition hover:border-primary/30 hover:text-primary"
+            >
+              <MaterialIcon name="logout" size={16} />
+              Log out
+            </button>
           </div>
         </div>
       </aside>
@@ -78,19 +97,14 @@ export default function Layout() {
             </span>
           </div>
           <div className="flex items-center gap-2 text-on-surface-variant">
+            <span className="hidden text-xs capitalize sm:inline">{user?.username} · {user?.role}</span>
             <button
               type="button"
+              onClick={() => void handleLogout()}
               className="rounded-full p-2 transition-colors hover:bg-surface-bright/50 hover:text-on-surface"
-              aria-label="Notifications"
+              aria-label="Log out"
             >
-              <MaterialIcon name="notifications" size={20} />
-            </button>
-            <button
-              type="button"
-              className="rounded-full p-2 transition-colors hover:bg-surface-bright/50 hover:text-on-surface"
-              aria-label="Help"
-            >
-              <MaterialIcon name="help" size={20} />
+              <MaterialIcon name="logout" size={20} />
             </button>
           </div>
         </header>

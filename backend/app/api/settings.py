@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_current_admin, get_db
 from app.api.schemas import (
     AppSettingsResponse,
     AppSettingsUpdate,
@@ -25,6 +25,7 @@ from app.settings_store import (
     set_alert_top_percentile,
     set_calibration_enabled,
 )
+from app.models import User
 from app.simulation.constants import (
     MULE_ATTACK_PROBABILITY,
     SLOW_DRIP_ATTACK_PROBABILITY,
@@ -53,7 +54,10 @@ def get_settings() -> AppSettingsResponse:
 
 
 @router.patch("", response_model=AppSettingsResponse)
-def update_settings(body: AppSettingsUpdate) -> AppSettingsResponse:
+def update_settings(
+    body: AppSettingsUpdate,
+    _: User = Depends(get_current_admin),
+) -> AppSettingsResponse:
     if body.calibration_enabled is not None:
         set_calibration_enabled(body.calibration_enabled)
 
@@ -82,7 +86,10 @@ def update_settings(body: AppSettingsUpdate) -> AppSettingsResponse:
 
 
 @router.post("/calibration/tick", response_model=AppSettingsResponse)
-def force_calibration_tick(db: Session = Depends(get_db)) -> AppSettingsResponse:
+def force_calibration_tick(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin),
+) -> AppSettingsResponse:
     """Run one calibration step now (still no-ops if auto is off or sample is small)."""
     if not get_calibration_enabled():
         raise HTTPException(

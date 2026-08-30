@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import random
 from collections.abc import AsyncIterator
 from datetime import datetime, timedelta
@@ -16,6 +17,8 @@ from app.simulation.constants import (
     SIMULATION_INTERVAL_SECONDS,
     SLOW_DRIP_ATTACK_PROBABILITY,
 )
+
+logger = logging.getLogger("graphdrift.simulation")
 
 try:
     from app.api.websocket import build_transaction_message, live_feed_manager
@@ -409,7 +412,7 @@ async def run_simulation(
 async def _run_standalone() -> None:
     async for tx in run_simulation():
         attack_flag = "ATTACK" if tx.is_synthetic_attack else "normal"
-        print(
+        logger.info(
             f"[{attack_flag}] tx#{tx.id} {tx.sender_id} -> {tx.receiver_id} "
             f"₹{tx.amount:,.2f} @ {tx.timestamp}"
         )
