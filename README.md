@@ -91,13 +91,28 @@ From the `frontend/` folder:
 
 ```bash
 cd frontend
-cp .env.development.example .env.development
 npm install
+```
+
+> **Required:** Configure the local API proxy before starting Vite. Without this
+> file, every `/api/*` request will return Vite's own 404 response.
+>
+> ```bash
+> cp .env.development.example .env.development
+> ```
+>
+> Double-check that `VITE_DEV_BACKEND_URL` in `.env.development` points to your
+> running backend (the example uses `http://localhost:8000`).
+
+Then start the frontend:
+
+```bash
 npm run dev
 ```
 
-Set `VITE_DEV_BACKEND_URL` in `.env.development` to the backend URL. The Vite app
-will proxy `/api`, `/health`, and `/ws` to that URL during local development.
+The Vite app will proxy `/api`, `/health`, and `/ws` to that URL during local
+development. If the env file or value is missing, Vite prints a prominent startup
+warning with the exact copy command above.
 
 ## Deployment
 
