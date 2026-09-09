@@ -38,6 +38,20 @@ The API will be available at `http://localhost:8000`. Check health at `GET /heal
 
 ### Provision users
 
+**Every API endpoint requires authentication — reads as well as writes.** A
+request without a valid bearer token gets `401`, including `GET /api/alerts`,
+`/api/rings`, `/api/settings`, `/api/accounts/{id}`, `/api/graph/current` and
+the CSV at `/api/reports/export`. Both `analyst` and `admin` can read; only
+`admin` may change settings or run a calibration tick. `/health` is the sole
+unauthenticated route, so deployment health checks keep working.
+
+The `/ws/live-feed` WebSocket is authenticated too. A browser cannot set an
+`Authorization` header on a WebSocket handshake, so the same JWT is passed as
+a `?token=` query parameter and validated identically. An absent or invalid
+token is refused during the handshake, before the connection is accepted, so
+the client sees the upgrade rejected with `HTTP 403` rather than a connected
+socket that closes.
+
 There is no public registration endpoint. Create the first administrator from
 the backend directory after the database is configured:
 

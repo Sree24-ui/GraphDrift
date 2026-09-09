@@ -438,6 +438,73 @@ We tried attributing slope 2.18 to SQLite first; persist sub-timing showed **exp
 Reproduce: `python -m evaluation.bench_perf`.
 
 <!-- /perf-bench -->
+## Analyst-feedback calibration (control loop on alert top-share)
+
+Closed control loop on the **alert top-share**, not a post-hoc filter. Confirmed
+rate = `confirmed / (confirmed + false_positive)` over the last N judged alerts
+(`new`, `reviewing` and `auto_closed` excluded, matching Reports). Band
+**60-85%**: below tightens, above loosens. Fixed **±0.5 pp** per step, never
+proportional. Two consecutive same-side ticks are required before any step, and
+the auto clamp is **2-15%**. Default **off**; the live tick runs from
+`app/main.py`, never inside `run_detection_cycle`, so evaluation and perf
+numbers stay comparable.
+
+### Synthetic stress streams (40 cycles, start 5.0%)
+
+Five adversarial input streams against the controller alone. All pass, with no
+oscillation reversals and no clamp overshoot.
+
+| Stream | Settled | Steps | First step | Behaviour |
+|--------|---------|-------|-----------|-----------|
+| `realistic` (p(confirm)=0.64) | 5.0% | 0 | - | in band, never moves |
+| `degenerate_all_confirm` | 15.0% | 20 | cycle 3 | walks up, holds at clamp |
+| `degenerate_all_false_positive` | 2.0% | 6 | cycle 3 | walks down, holds at clamp |
+| `adversarial_noisy` (100% <-> 0% each tick) | 5.0% | 0 | - | side gate absorbs the flip |
+| `sparse` (1 judgment / 2 ticks) | 5.0% | 0 | - | no move until n>=20 (cycle 39) |
+
+Reproduce: `python -m evaluation.bench_calibration` -> `data/calibration_stress.json`.
+Re-run on 2026-09-09 reproduced the committed JSON **byte-identically**.
+
+### Closed loop against the real detector - negative result
+
+`evaluation/closed_loop_calibration.py` drives the real `run_detection_cycle`
+and `tick_live_detection_cycle` over a seeded simulator trace, judging each new
+alert from synthetic-attack transactions on that alert's account inside that
+alert's own scoring window.
+
+| Cycles | Adjustments | Final top-% | Clamp-riding cycles | Equilibrium |
+|--------|-------------|-------------|---------------------|-------------|
+| 60 | 14 | 12.0% | 0 | `not-settled` |
+| 120 | 20 | 15.0% | 37 | `clamp-bound` |
+
+**The loop does not find an interior equilibrium on this trace — it saturates at
+the upper clamp.** Every applied step is `loosen`: the synthetic ground truth
+returns a confirmed rate of **0.96-1.00** at every tick, permanently above the
+85% band, so the law loosens on every evaluation until the 15% clamp stops it
+(reached at cycle 84, then held for 37 cycles).
+
+This is the controller obeying its documented law, not a controller bug — high
+precision *should* loosen. What it shows is that the harness's ground truth is
+too generous to exert any restoring force: an alert counts as confirmed whenever
+the account saw an attack transaction in-window, so almost nothing is ever
+judged a false positive. Interpreting this as "calibration converges" would be
+wrong. Cite the synthetic stress streams above for controller stability; cite
+this section for the honest limitation of the closed-loop harness.
+
+Note that `test_closed_loop_adjusts_without_riding_a_clamp` stops at 24 cycles
+and passes for that reason — the clamp is not reached until cycle 84. The test
+name claims more than the test establishes; treat it as a short-horizon
+regression, not evidence of convergence.
+
+Reproduce: `python -m evaluation.closed_loop_calibration --cycles 120`.
+
+### Tests
+
+| Test | Covers |
+|------|--------|
+| `tests/test_calibration.py` (10 tests) | band/step/clamp law, two-tick side gate, DB status exclusion, manual override reset, live tick cadence |
+| `tests/test_closed_loop_calibration.py` (2 tests) | ground truth uses the alert's own scoring window (15m vs 60m); short-horizon adjustment without clamp riding |
+
 ## Interpretation
 
 - **Synthetic snapshot (cite this):** 15-min fusion F1 = **0.284 ± 0.051** (n=5 seeds, ≥3-tx). Multi-scale **union** fusion F1 = **0.336 ± 0.072**. Hybrid (union+peripheral, all-active) F1 = **0.691 ± 0.065**. Do not cite retired max-merge 0.304 / 0.644 or the historical single-snapshot fusion 0.625.
@@ -567,4 +634,6 @@ python -m evaluation.freeze_snapshot
 python -m evaluation.run_eval --skip-paysim-load --skip-snapshot
 python -m evaluation.generate_adversarial_snapshot
 python -m evaluation.eval_adversarial
+python -m evaluation.bench_calibration
+python -m evaluation.closed_loop_calibration --cycles 120
 ```

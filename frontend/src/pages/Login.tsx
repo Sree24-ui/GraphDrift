@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import AppBackground from '../components/AppBackground'
 import MaterialIcon from '../components/MaterialIcon'
 

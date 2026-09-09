@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user, get_db
 from app.api.schemas import (
     ConfidenceBreakdown,
     DailyAlertCount,
@@ -18,7 +18,11 @@ from app.api.schemas import (
 from app.constants import MIN_REVIEWED_SAMPLE
 from app.models import Alert
 
-router = APIRouter(prefix="/api/reports", tags=["reports"])
+router = APIRouter(
+    prefix="/api/reports",
+    tags=["reports"],
+    dependencies=[Depends(get_current_user)],
+)
 
 PERIOD_DELTAS: dict[ReportPeriod, timedelta] = {
     "24h": timedelta(hours=24),

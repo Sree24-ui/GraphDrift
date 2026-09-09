@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { WS_BASE_URL } from '../api/client'
+import { getStoredToken, WS_BASE_URL } from '../api/client'
 import type {
   LiveAlertMessage,
   LiveTransactionMessage,
   MetricsUpdate,
 } from '../api/types'
 
-const WS_URL = `${WS_BASE_URL}/ws/live-feed`
+// The handshake cannot carry an Authorization header, so the session token
+// travels as a query parameter and is validated like the REST bearer token.
+function liveFeedUrl(): string {
+  const token = getStoredToken()
+  const base = `${WS_BASE_URL}/ws/live-feed`
+  return token ? `${base}?token=${encodeURIComponent(token)}` : base
+}
 const MAX_BUFFER = 50
 const INITIAL_BACKOFF_MS = 1000
 const MAX_BACKOFF_MS = 30000
@@ -47,7 +53,7 @@ export function useLiveFeed() {
     }
 
     setConnectionStatus('connecting')
-    const ws = new WebSocket(WS_URL)
+    const ws = new WebSocket(liveFeedUrl())
     wsRef.current = ws
 
     ws.onopen = () => {

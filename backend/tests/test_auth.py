@@ -6,6 +6,7 @@ from datetime import datetime
 
 import jwt
 import pytest
+from fastapi import WebSocketDisconnect
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
@@ -178,3 +179,43 @@ def test_ring_bulk_review_records_alert_and_ring_audit(auth_env):
         action = db.scalar(select(RingReviewAction))
         reviewer = db.scalar(select(User).where(User.username == "admin"))
         assert action.reviewed_by_user_id == reviewer.id
+
+
+# Every read used to be public. These assert they are not, so the gap cannot
+# silently reopen.
+READ_ENDPOINTS = (
+    "/api/alerts",
+    "/api/alerts/1",
+    "/api/rings",
+    "/api/settings",
+    "/api/accounts/case@ybl",
+    "/api/graph/current",
+    "/api/reports/summary",
+    "/api/reports/export",
+)
+
+
+@pytest.mark.parametrize("path", READ_ENDPOINTS)
+def test_reads_require_authentication(auth_env, path):
+    client, _ = auth_env
+    assert client.get(path).status_code == 401
+
+
+@pytest.mark.parametrize("path", READ_ENDPOINTS)
+def test_reads_succeed_for_analyst_and_admin(auth_env, path):
+    client, _ = auth_env
+    for username in ("analyst", "admin"):
+        response = client.get(path, headers=bearer(login(client, username)))
+        assert response.status_code == 200, (path, username, response.text)
+
+
+def test_live_feed_websocket_requires_a_valid_token(auth_env):
+    client, _ = auth_env
+    for query in ("", "?token=not-a-jwt"):
+        with pytest.raises(WebSocketDisconnect):
+            with client.websocket_connect(f"/ws/live-feed{query}"):
+                pass
+
+    token = login(client, "analyst")
+    with client.websocket_connect(f"/ws/live-feed?token={token}") as ws:
+        assert ws is not None

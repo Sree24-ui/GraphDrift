@@ -35,7 +35,11 @@ from app.api.schemas import (
 from app.detection.ring_id import infer_member_role
 from app.models import Alert, RingReviewAction, User
 
-router = APIRouter(prefix="/api/rings", tags=["rings"])
+router = APIRouter(
+    prefix="/api/rings",
+    tags=["rings"],
+    dependencies=[Depends(get_current_user)],
+)
 
 OPEN_STATUSES = frozenset({"new", "reviewing"})
 

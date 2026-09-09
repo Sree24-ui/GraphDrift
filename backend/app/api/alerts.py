@@ -21,7 +21,11 @@ from app.api.schemas import (
 )
 from app.models import Alert, User
 
-router = APIRouter(prefix="/api/alerts", tags=["alerts"])
+router = APIRouter(
+    prefix="/api/alerts",
+    tags=["alerts"],
+    dependencies=[Depends(get_current_user)],
+)
 
 CONFIDENCE_ORDER = {"low": 0, "medium": 1, "high": 2}
 

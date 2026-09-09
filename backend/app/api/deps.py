@@ -28,18 +28,29 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+def user_from_token(token: str | None, db: Session) -> User | None:
+    """Resolve a bearer token to a user, or None if it is not valid.
+
+    Shared by HTTP dependencies and the WebSocket handshake so both accept
+    exactly the same tokens.
+    """
+    if not token:
+        return None
+    try:
+        payload = decode_access_token(token)
+        user_id = int(payload.get("sub", ""))
+    except (jwt.PyJWTError, TypeError, ValueError):
+        return None
+    return db.get(User, user_id)
+
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> User:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise _unauthorized()
-    try:
-        payload = decode_access_token(credentials.credentials)
-        user_id = int(payload.get("sub", ""))
-    except (jwt.PyJWTError, TypeError, ValueError):
-        raise _unauthorized()
-    user = db.get(User, user_id)
+    user = user_from_token(credentials.credentials, db)
     if user is None:
         raise _unauthorized()
     return user

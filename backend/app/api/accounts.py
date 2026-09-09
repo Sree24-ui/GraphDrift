@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user, get_db
 from app.api.schemas import (
     AccountDetail,
     ConfidenceLevel,
@@ -18,7 +18,11 @@ from app.detection.features import WINDOW_MINUTES
 from app.detection.fusion import compute_fused_scores
 from app.models import Account, AccountScoreHistory, Transaction
 
-router = APIRouter(prefix="/api/accounts", tags=["accounts"])
+router = APIRouter(
+    prefix="/api/accounts",
+    tags=["accounts"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 def _fused_for_account(

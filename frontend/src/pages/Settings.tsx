@@ -8,7 +8,7 @@ import {
   WS_BASE_URL,
 } from '../api/client'
 import type { AlertStatus, AppSettings, ConfidenceLevel } from '../api/types'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import ErrorBanner from '../components/ErrorBanner'
 import LoadingSpinner from '../components/LoadingSpinner'
 import MaterialIcon from '../components/MaterialIcon'

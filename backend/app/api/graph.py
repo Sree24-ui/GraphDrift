@@ -4,13 +4,17 @@ import networkx as nx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user, get_db
 from app.api.schemas import GraphEdgeSnapshot, GraphNodeSnapshot, GraphSnapshotResponse
 from app.detection.community import build_graph, build_graph_for_range
 from app.detection.features import WINDOW_MINUTES
 from app.detection.fusion import compute_fused_scores
 
-router = APIRouter(prefix="/api/graph", tags=["graph"])
+router = APIRouter(
+    prefix="/api/graph",
+    tags=["graph"],
+    dependencies=[Depends(get_current_user)],
+)
 
 MAX_REPLAY_WINDOW = timedelta(hours=24)
 

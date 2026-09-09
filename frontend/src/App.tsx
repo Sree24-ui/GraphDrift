@@ -1,7 +1,8 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
-import { AuthProvider, useAuth } from './auth/AuthContext'
+import { AuthProvider } from './auth/AuthContext'
+import { useAuth } from './auth/useAuth'
 import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import LoadingSpinner from './components/LoadingSpinner'

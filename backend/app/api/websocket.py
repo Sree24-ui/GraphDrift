@@ -2,10 +2,18 @@ import asyncio
 import json
 from datetime import datetime
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    Depends,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_db, user_from_token
 from app.constants import (
     DETECTION_CYCLE_INTERVAL_SECONDS,
     METRICS_BROADCAST_INTERVAL_SECONDS,
@@ -145,7 +153,16 @@ async def broadcast_metrics() -> None:
 
 
 @router.websocket("/ws/live-feed")
-async def live_feed(websocket: WebSocket) -> None:
+async def live_feed(
+    websocket: WebSocket,
+    token: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> None:
+    # Browsers cannot set headers on a WebSocket handshake, so the same JWT the
+    # REST client sends as a bearer header arrives here as a query parameter.
+    if user_from_token(token, db) is None:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
     await live_feed_manager.connect(websocket)
     try:
         while True:

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_admin, get_db
+from app.api.deps import get_current_admin, get_current_user, get_db
 from app.api.schemas import (
     AppSettingsResponse,
     AppSettingsUpdate,
@@ -31,7 +31,11 @@ from app.simulation.constants import (
     SLOW_DRIP_ATTACK_PROBABILITY,
 )
 
-router = APIRouter(prefix="/api/settings", tags=["settings"])
+router = APIRouter(
+    prefix="/api/settings",
+    tags=["settings"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 def _build_settings_response() -> AppSettingsResponse:

@@ -248,7 +248,6 @@ def evaluate() -> dict:
                 "n_caught_peripheral_only": sum(
                     1 for r in rows if r["peripheral_only"]["caught_any"]
                 ),
-                "recall_fusion_multiscale": frac("fusion_multiscale"),
                 "recall_peripheral_only": frac("peripheral_only"),
                 "recall_hybrid_hub": (
                     sum(1 for r in rows if r["hybrid"]["caught_hub"]) / n if n else 0.0

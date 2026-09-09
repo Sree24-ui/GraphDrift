@@ -1,4 +1,3 @@
-import math
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -261,8 +260,6 @@ def _print_feature_table(features: list[dict]) -> None:
 
 
 if __name__ == "__main__":
-    from datetime import datetime
-
     from app.db import SessionLocal
 
     db = SessionLocal()
