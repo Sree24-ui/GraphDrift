@@ -20,6 +20,20 @@ const MAX_BACKOFF_MS = 30000
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected'
 
+// Sockets we closed on purpose (replacing one, or unmounting). Their onclose is
+// not a dropped connection, so it must not schedule a reconnect. Without this,
+// React StrictMode's dev double-mount reconnects forever: the first socket is
+// closed during cleanup, but its onclose fires after the remount has already
+// set mountedRef back to true, so the guard below lets it through and each new
+// socket is torn down by the previous one's reconnect.
+const deliberatelyClosed = new WeakSet<WebSocket>()
+
+function closeDeliberately(ws: WebSocket | null): void {
+  if (!ws) return
+  deliberatelyClosed.add(ws)
+  ws.close()
+}
+
 function appendRolling<T>(prev: T[], item: T, max: number): T[] {
   const next = [...prev, item]
   return next.length > max ? next.slice(next.length - max) : next
@@ -47,10 +61,8 @@ export function useLiveFeed() {
   const connect = useCallback(() => {
     clearReconnectTimer()
 
-    if (wsRef.current) {
-      wsRef.current.close()
-      wsRef.current = null
-    }
+    closeDeliberately(wsRef.current)
+    wsRef.current = null
 
     setConnectionStatus('connecting')
     const ws = new WebSocket(liveFeedUrl())
@@ -99,7 +111,7 @@ export function useLiveFeed() {
     }
 
     ws.onclose = () => {
-      if (!mountedRef.current) return
+      if (!mountedRef.current || deliberatelyClosed.has(ws)) return
       setConnectionStatus('disconnected')
 
       const delay = backoffRef.current
@@ -124,10 +136,8 @@ export function useLiveFeed() {
     return () => {
       mountedRef.current = false
       clearReconnectTimer()
-      if (wsRef.current) {
-        wsRef.current.close()
-        wsRef.current = null
-      }
+      closeDeliberately(wsRef.current)
+      wsRef.current = null
     }
   }, [connect, clearReconnectTimer])
 
