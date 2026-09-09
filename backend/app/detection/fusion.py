@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
 from app.constants import (
+    CONFIDENCE_STRONG_PERCENTILE,
     FUSION_GDI_WEIGHT,
     FUSION_RING_WEIGHT,
     GDI_MAX,
@@ -132,8 +133,8 @@ def select_top_anomaly_accounts(
 
 
 def _confidence_label(gdi_percentile: float, ring_percentile: float) -> str:
-    gdi_strong = gdi_percentile > 0.9
-    ring_strong = ring_percentile > 0.9
+    gdi_strong = gdi_percentile > CONFIDENCE_STRONG_PERCENTILE
+    ring_strong = ring_percentile > CONFIDENCE_STRONG_PERCENTILE
 
     if gdi_strong and ring_strong:
         return "high"

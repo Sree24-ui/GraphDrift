@@ -33,3 +33,18 @@ def test_manual_range_contains_auto_clamp():
     assert MANUAL_ALERT_TOP_PERCENT_MIN <= float(KNOBS["calibration_clamp_low_percent"])
     assert MANUAL_ALERT_TOP_PERCENT_MAX >= float(KNOBS["calibration_clamp_high_percent"])
     assert DEFAULT_ALERT_TOP_PERCENT == 5.0
+
+
+def test_detection_modules_read_knobs_not_local_literals():
+    """Guards the re-export aliases: these used to be literals in the modules."""
+    from app.detection import structural_pass as sp
+    from app.constants import CONFIDENCE_STRONG_PERCENTILE, GDI_MAX
+
+    assert sp.HUB_CONNECTION_BASE == float(KNOBS["peripheral_hub_connection_base"])
+    assert sp.PATTERN_CONSISTENCY_BONUS == float(
+        KNOBS["peripheral_pattern_consistency_bonus"]
+    )
+    assert sp.MIN_QUALIFYING_SCORE == float(KNOBS["peripheral_min_qualifying_score"])
+    assert CONFIDENCE_STRONG_PERCENTILE == float(KNOBS["confidence_strong_percentile"])
+    # the peripheral score clamp is the GDI display ceiling, not a stray 5.0
+    assert GDI_MAX == float(KNOBS["gdi_max"])

@@ -1,5 +1,12 @@
 import MaterialIcon from './MaterialIcon'
 import type { ConfidenceLevel } from '../api/types'
+import { GDI_MAX } from '../knobs'
+
+// Fallback bands for when the backend sent no confidence label. Expressed as a
+// share of the GDI display scale so they follow gdi_max instead of silently
+// going stale if that knob changes.
+const HIGH_SCORE = GDI_MAX * 0.9
+const MEDIUM_SCORE = GDI_MAX * 0.6
 
 interface RiskScorePillProps {
   score: number
@@ -8,13 +15,13 @@ interface RiskScorePillProps {
 }
 
 function pillStyle(score: number, confidence?: ConfidenceLevel) {
-  if (confidence === 'high' || score >= 4.5) {
+  if (confidence === 'high' || score >= HIGH_SCORE) {
     return {
       wrap: 'bg-error/10 border-error/20 text-error shadow-[0_0_10px_rgba(255,107,107,0.1)]',
       icon: 'warning' as const,
     }
   }
-  if (confidence === 'medium' || score >= 3) {
+  if (confidence === 'medium' || score >= MEDIUM_SCORE) {
     return {
       wrap: 'bg-secondary/10 border-secondary/20 text-secondary',
       icon: 'trending_up' as const,

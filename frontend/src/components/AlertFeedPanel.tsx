@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import type { LiveAlertMessage } from '../api/types'
+import { GDI_MAX } from '../knobs'
 import { formatPatternType, formatRelativeTime, isPeripheralStructural } from '../utils/format'
 import AlertExplainability from './AlertExplainability'
 import ConfidenceBadge from './ConfidenceBadge'
@@ -14,9 +15,14 @@ interface AlertFeedPanelProps {
   alerts: LiveAlertMessage[]
 }
 
+// Shares of the GDI display scale, so these track gdi_max. Deliberately wider
+// than RiskScorePill's bands: this only tints a feed row's left border.
+const FEED_HIGH_SCORE = GDI_MAX * 0.8
+const FEED_MEDIUM_SCORE = GDI_MAX * 0.5
+
 function riskBorderClass(score: number): string {
-  if (score >= 4) return 'border-l-error'
-  if (score >= 2.5) return 'border-l-tertiary'
+  if (score >= FEED_HIGH_SCORE) return 'border-l-error'
+  if (score >= FEED_MEDIUM_SCORE) return 'border-l-tertiary'
   return 'border-l-primary'
 }
 

@@ -574,6 +574,8 @@ def simulate_feedback_stream(
             labels=labels,
             state=state,
             cfg=cfg,
+            # Fixed on purpose: a frozen clock keeps bench_calibration's output
+            # byte-reproducible. Do not replace with datetime.now().
             now=datetime(2026, 8, 19, tzinfo=timezone.utc),
         )
         if decision.applied:

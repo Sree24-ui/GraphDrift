@@ -62,6 +62,17 @@ RING_HUB_WEIGHT: float = float(KNOBS["ring_hub_weight"])
 RING_EXTERNAL_WEIGHT: float = float(KNOBS["ring_external_weight"])
 RING_RECENT_WEIGHT: float = float(KNOBS["ring_recent_weight"])
 
+CONFIDENCE_STRONG_PERCENTILE: float = float(KNOBS["confidence_strong_percentile"])
+PERIPHERAL_HUB_CONNECTION_BASE: float = float(
+    KNOBS["peripheral_hub_connection_base"]
+)
+PERIPHERAL_PATTERN_CONSISTENCY_BONUS: float = float(
+    KNOBS["peripheral_pattern_consistency_bonus"]
+)
+PERIPHERAL_MIN_QUALIFYING_SCORE: float = float(
+    KNOBS["peripheral_min_qualifying_score"]
+)
+
 MIN_REVIEWED_SAMPLE: int = int(KNOBS["min_reviewed_sample"])
 CALIBRATION_WINDOW: int = int(KNOBS["calibration_window"])
 TARGET_BAND_LOW: float = float(KNOBS["target_band_low"])

@@ -14,6 +14,12 @@ from datetime import datetime, timedelta
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
+from app.constants import (  # noqa: F401 — re-exported
+    GDI_MAX,
+    PERIPHERAL_HUB_CONNECTION_BASE as HUB_CONNECTION_BASE,
+    PERIPHERAL_MIN_QUALIFYING_SCORE as MIN_QUALIFYING_SCORE,
+    PERIPHERAL_PATTERN_CONSISTENCY_BONUS as PATTERN_CONSISTENCY_BONUS,
+)
 from app.detection.features import (
     WINDOW_MINUTES,
     get_active_accounts,
@@ -22,11 +28,6 @@ from app.models import Transaction
 
 DETECTION_METHOD = "peripheral_structural"
 PATTERN_TYPE = "peripheral_structural"
-
-# Score components on 0–5 scale (aligned with fused_score display range).
-HUB_CONNECTION_BASE = 3.5
-PATTERN_CONSISTENCY_BONUS = 1.0
-MIN_QUALIFYING_SCORE = 3.5
 
 
 def _window_bounds(
@@ -122,7 +123,7 @@ def _compute_peripheral_score(
     score = HUB_CONNECTION_BASE
     if leg_pattern in ("fan_in_sender", "fan_out_receiver"):
         score += PATTERN_CONSISTENCY_BONUS
-    return min(5.0, score)
+    return min(GDI_MAX, score)
 
 
 def score_peripheral_accounts(

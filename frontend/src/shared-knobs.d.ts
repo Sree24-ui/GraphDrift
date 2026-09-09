@@ -31,6 +31,10 @@ declare module '../../shared/detection_knobs.json' {
     ring_hub_weight: number
     ring_external_weight: number
     ring_recent_weight: number
+    confidence_strong_percentile: number
+    peripheral_hub_connection_base: number
+    peripheral_pattern_consistency_bonus: number
+    peripheral_min_qualifying_score: number
     min_reviewed_sample: number
     calibration_window: number
     target_band_low: number
