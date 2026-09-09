@@ -484,12 +484,37 @@ returns a confirmed rate of **0.96-1.00** at every tick, permanently above the
 (reached at cycle 84, then held for 37 cycles).
 
 This is the controller obeying its documented law, not a controller bug — high
-precision *should* loosen. What it shows is that the harness's ground truth is
-too generous to exert any restoring force: an alert counts as confirmed whenever
-the account saw an attack transaction in-window, so almost nothing is ever
-judged a false positive. Interpreting this as "calibration converges" would be
-wrong. Cite the synthetic stress streams above for controller stability; cite
-this section for the honest limitation of the closed-loop harness.
+precision *should* loosen.
+
+**The confirmation logic is not at fault, and this is not a reason to distrust
+it.** Each alert is judged strictly inside its own scoring window
+(`detected_at - detection_window <= timestamp <= detected_at`), and that scoping
+is correct and covered by a dedicated regression test:
+`test_ground_truth_uses_the_alerts_actual_scoring_window` builds one attack
+transaction 30 minutes before `detected_at` and asserts it is **excluded** for a
+15-minute alert and **included** for a 60-minute one. Window-scoped confirmation
+works as intended.
+
+The cause is upstream of confirmation, in the **trace's attack-injection
+design**. `generate_offline_trace` rolls a fresh `random.random()` against
+constant `MULE_ATTACK_PROBABILITY` (0.015) and `SLOW_DRIP_ATTACK_PROBABILITY`
+(0.005) on **every** step. The injection rate never varies with time and the
+trace has no organic quiet period, so fraud density stays roughly constant for
+the whole evaluated horizon — measured at 0.0142 / 0.0058 (fast / slow-drip per
+step) over 60 cycles and 0.0133 / 0.0055 over 120. A near-constant supply of
+genuine in-window attack activity means a top-share widening from 5% to 15% is
+still mostly landing on real fraud, so the confirmed rate stays pinned near
+1.00 and the loop is never given the false positives that would push it back
+down. There is no restoring force to find because the environment never
+supplies one — not because confirmations are decided wrongly.
+
+Testing convergence therefore needs a trace whose fraud density *varies* (a
+time-varying or burst-then-quiet injection rate), so that widening the
+top-share actually starts admitting benign accounts. Interpreting the present
+result as "calibration converges" would be wrong; so would reading it as "the
+ground-truth logic can't be trusted." Cite the synthetic stress streams above
+for controller stability; cite this section for the limitation of the
+closed-loop *trace*.
 
 Note that `test_closed_loop_adjusts_without_riding_a_clamp` stops at 24 cycles
 and passes for that reason — the clamp is not reached until cycle 84. The test
