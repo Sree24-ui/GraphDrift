@@ -360,17 +360,30 @@ def test_build_explanation_reuses_scoring_baseline(monkeypatch, db_session):
     assert explanation["fused_score"] == 4.0
 
 
-def test_co_hub_detects_split_mule_role_but_not_benign_shapes():
-    """Dilution evasion: 3 co-mules each score 0.38 alone, ~1.0 as one hub."""
+def test_co_hub_is_off_by_default():
+    """The shipped default must be plain single-node hub_concentration."""
+    from app.constants import ENABLE_COHUB_SCORING
     from app.detection.community import _detect_co_hub
 
+    assert ENABLE_COHUB_SCORING is False
     diluted = {**{f"m{i}": 8 for i in range(3)}, **{f"s{i}": 1 for i in range(18)}}
-    members, share = _detect_co_hub(diluted, 21)
+    assert _detect_co_hub(diluted, 21) == ([], 0.0)
+
+
+def test_co_hub_detects_split_mule_role_but_not_benign_shapes(monkeypatch):
+    """Opt-in mode: 3 co-mules score 0.38 alone, ~1.0 as one logical hub."""
+    from app.detection import community
+
+    monkeypatch.setattr(community, "ENABLE_COHUB_SCORING", True)
+    detect = community._detect_co_hub
+
+    diluted = {**{f"m{i}": 8 for i in range(3)}, **{f"s{i}": 1 for i in range(18)}}
+    members, share = detect(diluted, 21)
     assert len(members) == 3
     assert share > 0.9  # vs 8/21 = 0.381 for any single co-mule
 
     # A real single-hub star already scores 1.0; do not double-count it.
-    assert _detect_co_hub({"hub": 10, **{f"s{i}": 1 for i in range(10)}}, 10) == ([], 0.0)
+    assert detect({"hub": 10, **{f"s{i}": 1 for i in range(10)}}, 10) == ([], 0.0)
     # Benign communities must not trip the gates (this is the false-positive risk).
-    assert _detect_co_hub({"a": 3, "b": 3, "c": 2, "d": 2, "e": 2, "f": 2}, 7) == ([], 0.0)
-    assert _detect_co_hub({"a": 6, "b": 5, "c": 4, "d": 3, "e": 2, "f": 1}, 11) == ([], 0.0)
+    assert detect({"a": 3, "b": 3, "c": 2, "d": 2, "e": 2, "f": 2}, 7) == ([], 0.0)
+    assert detect({"a": 6, "b": 5, "c": 4, "d": 3, "e": 2, "f": 1}, 11) == ([], 0.0)

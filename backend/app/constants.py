@@ -73,6 +73,10 @@ PERIPHERAL_MIN_QUALIFYING_SCORE: float = float(
     KNOBS["peripheral_min_qualifying_score"]
 )
 
+# Off by default: co-hub scoring closes the diluted_hub evasion but measurably
+# lowers baseline accuracy. See "Co-hub scoring (optional, off by default)" in
+# evaluation/RESULTS.md for the full measured trade-off.
+ENABLE_COHUB_SCORING: bool = bool(KNOBS["enable_cohub_scoring"])
 CO_HUB_MAX_SET_SIZE: int = int(KNOBS["co_hub_max_set_size"])
 CO_HUB_SIMILARITY_RATIO: float = float(KNOBS["co_hub_similarity_ratio"])
 CO_HUB_SEPARATION_RATIO: float = float(KNOBS["co_hub_separation_ratio"])

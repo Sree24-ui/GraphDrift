@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.constants import (
     CO_HUB_MAX_SET_SIZE,
+    ENABLE_COHUB_SCORING,
     CO_HUB_SEPARATION_RATIO,
     CO_HUB_SIMILARITY_RATIO,
     COMMUNITY_SIMILARITY_THRESHOLD,
@@ -184,6 +185,10 @@ def _detect_co_hub(
 ) -> tuple[list[str], float]:
     """Treat a small set of coordinated high-degree nodes as one logical hub.
 
+    Off by default (``enable_cohub_scoring`` in ``detection_knobs.json``). It
+    closes the ``diluted_hub`` evasion but costs baseline accuracy; the measured
+    trade-off is in evaluation/RESULTS.md.
+
     Splitting the mule role across 2-4 co-mules dilutes every individual
     ``hub_concentration`` below threshold while the *group* still carries the
     ring's edges. This finds that group without lowering any threshold, which
@@ -202,6 +207,11 @@ def _detect_co_hub(
     Returns the member list and their combined share of internal edges. Edges
     *between* co-hubs are counted from both ends, so the share is capped at 1.0.
     """
+    # Gated at the single point every caller routes through, so the default
+    # pipeline is byte-identical to single-node hub_concentration scoring.
+    if not ENABLE_COHUB_SCORING:
+        return [], 0.0
+
     ranked = sorted(incidents.items(), key=lambda kv: -kv[1])
     if len(ranked) < 2 or n_internal <= 0:
         return [], 0.0

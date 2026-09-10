@@ -144,23 +144,21 @@ Seeds: 42, 123, 7, 2026, 99. Reproduce: `python -m evaluation.generate_multi_see
 |----------|-----------|--------|----|-----|
 | baseline | 0.650 ± 0.418 [0.000, 1.000] | 0.058 ± 0.039 [0.000, 0.100] | 0.106 ± 0.070 [0.000, 0.182] | 0.004 ± 0.005 [0.000, 0.010] |
 | layer1 | 0.675 ± 0.168 [0.500, 0.875] | 0.158 ± 0.027 [0.120, 0.182] | 0.251 ± 0.027 [0.207, 0.273] | 0.023 ± 0.010 [0.011, 0.034] |
-| fusion | 0.511 ± 0.104 [0.364, 0.600] | 0.164 ± 0.073 [0.080, 0.273] | **0.244 ± 0.090** [0.131, 0.375] | 0.048 ± 0.017 [0.034, 0.075] |
-| fusion_multiscale (union) | 0.348 ± 0.109 [0.233, 0.462] | 0.303 ± 0.052 [0.240, 0.364] | **0.312 ± 0.047** [0.269, 0.387] | 0.187 ± 0.040 [0.133, 0.237] |
-| hybrid (union+peri) | **0.698 ± 0.099** [0.554, 0.809] | **0.658 ± 0.101** [0.500, 0.781] | **0.670 ± 0.068** [0.585, 0.724] | **0.197 ± 0.036** [0.158, 0.253] |
+| fusion | 0.620 ± 0.117 [0.444, 0.727] | 0.188 ± 0.048 [0.160, 0.273] | 0.284 ± 0.051 [0.258, 0.375] | 0.035 ± 0.004 [0.032, 0.041] |
+| fusion_multiscale (union) | 0.368 ± 0.103 [0.194, 0.455] | 0.328 ± 0.098 [0.260, 0.500] | **0.336 ± 0.072** [0.226, 0.423] | 0.180 ± 0.022 [0.152, 0.203] |
+| hybrid (union+peri) | **0.710 ± 0.105** [0.536, 0.800] | **0.683 ± 0.086** [0.600, 0.828] | **0.691 ± 0.065** [0.588, 0.763] | **0.191 ± 0.013** [0.173, 0.203] |
 
-> **These numbers changed on 2026-09-10 when co-hub detection shipped.** The
-> previous values (fusion 0.284 ± 0.051, fusion_multiscale 0.336 ± 0.072,
-> hybrid 0.691 ± 0.065) are **superseded and must not be cited**. Co-hub
-> closed the `diluted_hub` evasion but costs accuracy here; see
-> [Co-hub trade-off](#co-hub-trade-off-measured).
+> These are the **default configuration** (`enable_cohub_scoring: false`) and
+> are this project's primary results. Enabling optional co-hub scoring lowers
+> all three F1 figures; see [Co-hub scoring (optional, off by default)](#co-hub-scoring-optional-off-by-default).
 
 `fusion_multiscale` and `hybrid` are the **shipped union merge** (independent top-5% at 15m and at 60m, then union; peripheral hubs = that union set). Do **not** cite the retired max-then-global-cut numbers: fusion_multiscale F1 **0.304 ± 0.058** and hybrid F1 **0.644 ± 0.091**. Code: `select_top_anomaly_accounts_multiscale`; `compute_fused_scores_multiscale_max_merge` raises.
 
 On the **same active-account universe**, union fusion alone is F1 0.192 / recall 0.135; peripheral raises recall **+0.548** (to 0.683) and F1 **+0.499** (to 0.691) with FPR +0.014. Do **not** subtract 0.691 − 0.336 as “peripheral lift”: 0.336 is ≥3-tx only.
 
-**Headline fusion (15-min, ≥3-tx universe) vs original 0.625:** the original single-snapshot fusion F1 is **optimistic relative to this distribution (above all 5 seeds; max=0.375)**. Fusion F1 std=**0.090** (still ≤ 0.1, but nearly double the pre-co-hub 0.051 - co-hub widened seed-to-seed spread as well as lowering the mean). The paper should report **fusion F1 = 0.244 ± 0.090** (range 0.131–0.375) rather than 0.625 as a point estimate.
+**Headline fusion (15-min, ≥3-tx universe) vs original 0.625:** the original single-snapshot fusion F1 is **optimistic relative to this distribution (above all 5 seeds; max=0.375)**. Fusion F1 std=0.051 (≤ 0.1); seed-to-seed spread is modest. The paper should report **fusion F1 = 0.284 ± 0.051** (range 0.258–0.375) rather than 0.625 as a point estimate.
 
-Original 0.625 had a small scored-fraud set (22/102) and zero FPs. These traces have ~22–50 scored fraud accounts competing for the same top-5% budget (~7 slots of ~140), so recall is structurally lower. Cite **hybrid F1 = 0.670 ± 0.068** (union+peripheral, corrected merge, with co-hub), not 0.644, not the pre-co-hub 0.691, and not the single-run 0.860.
+Original 0.625 had a small scored-fraud set (22/102) and zero FPs. These traces have ~22–50 scored fraud accounts competing for the same top-5% budget (~7 slots of ~140), so recall is structurally lower. Cite **hybrid F1 = 0.691 ± 0.065** (union+peripheral, corrected merge), not 0.644 or the single-run 0.860.
 
 ### Methodology check: live freeze vs offline generator (seed 42 A/B)
 
@@ -275,8 +273,8 @@ offline trace (`include_attacks=False`, seed 20260816, 75 min) plus
 peripheral cascade. Instance is **caught** if any participant is flagged.
 
 Snapshot: `snapshots/adversarial_eval.db`. as_of=`2026-08-16T13:15:00`. 
-Scored 15m=447, scored 60m=547. 
-Shipped hybrid flags=281 (union of per-scale top-k, n=51, peripheral 230).
+Scored 15m=357, scored 60m=457. 
+Shipped hybrid flags=222 (union of per-scale top-k, n=40, peripheral 182).
 
 Instance is **caught** if any participant is flagged. **Shipped multi-scale** is the union of independent top-5% cuts at 15m and at 60m (`compute_fused_scores_multiscale`), plus the 15m peripheral cascade. A previous max-then-global-cut merge was removed: 15m and 60m percentiles are not comparable.
 
@@ -285,7 +283,7 @@ Instance is **caught** if any participant is flagged. **Shipped multi-scale** is
 | `standard` | 5 | 5/5 (100.0%) | 5/5 (100.0%) | 5/5 (100.0%) | 0/5 (0.0%) |
 | `straddle_15` | 5 | 5/5 (100.0%) | 5/5 (100.0%) | 5/5 (100.0%) | 0/5 (0.0%) |
 | `straddle_60` | 5 | 0/5 (0.0%) | 0/5 (0.0%) | 0/5 (0.0%) | 5/5 (100.0%) |
-| `diluted_hub` | 5 | 5/5 (100.0%) | 5/5 (100.0%) | 5/5 (100.0%) | 0/5 (0.0%) |
+| `diluted_hub` | 5 | 0/5 (0.0%) | 0/5 (0.0%) | 0/5 (0.0%) | 5/5 (100.0%) |
 | `minimal_ring` | 5 | 5/5 (100.0%) | 5/5 (100.0%) | 5/5 (100.0%) | 0/5 (0.0%) |
 
 Union fusion = independent top-5% at 15m ∪ 60m. Peripheral-only = a spoke 
@@ -294,56 +292,86 @@ Hybrid = union ∪ peripheral. Fusion-15m / fusion-60m alone:
 - `standard`: 15m 5/5, 60m 0/5.
 - `straddle_15`: 15m 5/5, 60m 0/5.
 - `straddle_60`: 15m 0/5, 60m 0/5.
-- `diluted_hub`: 15m 5/5, 60m 0/5.
+- `diluted_hub`: 15m 0/5, 60m 0/5.
 - `minimal_ring`: 15m 5/5, 60m 0/5.
 
 ### Hub-dilution vs peripheral cascade
 
-5 diluted_hub instances. Co-mules in union fusion: 5/5. Instances with any spoke in the peripheral pass: 5/5. 
+5 diluted_hub instances. Co-mules in union fusion: 0/5. Instances with any spoke in the peripheral pass: 0/5. 
 Peripheral only fires for 1–2 tx neighbors of an already-selected hub; dilution keeps every co-mule out of that hub set, so spokes have nothing to attach to.
 
-- `diluted_hub:0`: fusion hubs=['ubika28@paytm'], peri spokes=6, hybrid_any=True
-- `diluted_hub:1`: fusion hubs=['aadi21@ybl', 'jaggiharshil@ybl'], peri spokes=12, hybrid_any=True
-- `diluted_hub:2`: fusion hubs=['upkaar51@ybl', 'zbhasin@okicici'], peri spokes=12, hybrid_any=True
-- `diluted_hub:3`: fusion hubs=['lbawa@ybl', 'watikabhargava@ybl'], peri spokes=12, hybrid_any=True
-- `diluted_hub:4`: fusion hubs=['apall@okhdfc'], peri spokes=6, hybrid_any=True
+- `diluted_hub:0`: fusion hubs=none, peri spokes=0, hybrid_any=False
+- `diluted_hub:1`: fusion hubs=none, peri spokes=0, hybrid_any=False
+- `diluted_hub:2`: fusion hubs=none, peri spokes=0, hybrid_any=False
+- `diluted_hub:3`: fusion hubs=none, peri spokes=0, hybrid_any=False
+- `diluted_hub:4`: fusion hubs=none, peri spokes=0, hybrid_any=False
 
 ### Missed instances (hybrid)
+
+**diluted_hub:0** (`diluted_hub`): 21 members, 21 visible in 15m, 21 visible in 60m. Hybrid flagged none.
+
+- Hub `yastitandon@ybl`
+  - 15m fusion: fused=1.879 rank=352/357 gdi=0.698 (pct=0.528) ring=0.000 (pct=0.223) hub_conc=None ring_n=None
+    features: in_degree=4.0000, out_degree=4.0000, in_count=4.0000, out_count=4.0000, velocity=0.5333, amount_entropy=1.5000, counterparty_diversity=1.0000, fan_ratio=0.8000, burstiness=0.5824
+  - 60m fusion: fused=2.308 rank=129/457 gdi=1.273 (pct=0.908) ring=0.000 (pct=0.015) hub_conc=None ring_n=None
+    features: in_degree=4.0000, out_degree=4.0000, in_count=4.0000, out_count=4.0000, velocity=0.1333, amount_entropy=1.5000, counterparty_diversity=1.0000, fan_ratio=0.8000, burstiness=0.5824
+  - multi-scale: **not scored** (below min_tx or absent).
+  - Louvain 15m: in_window=True hub_conc=0.38095238095238093 members=21 named_hub=True
+  - Louvain 60m: in_window=True hub_conc=0.38095238095238093 members=21 named_hub=True
+  - raw 15m vector: in_degree=4, out_degree=4, in_count=4, out_count=4, velocity=0.5333, amount_entropy=1.5000, counterparty_diversity=1.0000, fan_ratio=0.8000, burstiness=0.5824
+  - raw 60m vector: in_degree=4, out_degree=4, in_count=4, out_count=4, velocity=0.1333, amount_entropy=1.5000, counterparty_diversity=1.0000, fan_ratio=0.8000, burstiness=0.5824
+
+  Why: hub role split across 3 co-mules (each in_degree=4, out_degree=4 including one consolidation edge). Louvain hub_concentration=0.381 in a 21-member community vs ~1.00 for a single-hub 9+9 star. 15m fused=1.879 — well below the top-5% cut (control hubs are ~4.26 with hub_concentration=1.0).
+
+**diluted_hub:1** (`diluted_hub`): 21 members, 21 visible in 15m, 21 visible in 60m. Hybrid flagged none.
+
+- Hub `npatil@paytm`
+  - 15m fusion: fused=1.864 rank=353/357 gdi=0.697 (pct=0.522) ring=0.000 (pct=0.223) hub_conc=None ring_n=None
+    features: in_degree=4.0000, out_degree=4.0000, in_count=4.0000, out_count=4.0000, velocity=0.5333, amount_entropy=1.5613, counterparty_diversity=1.0000, fan_ratio=0.8000, burstiness=0.5824
+  - 60m fusion: fused=2.286 rank=132/457 gdi=1.273 (pct=0.899) ring=0.000 (pct=0.015) hub_conc=None ring_n=None
+    features: in_degree=4.0000, out_degree=4.0000, in_count=4.0000, out_count=4.0000, velocity=0.1333, amount_entropy=1.5613, counterparty_diversity=1.0000, fan_ratio=0.8000, burstiness=0.5824
+  - multi-scale: **not scored** (below min_tx or absent).
+  - Louvain 15m: in_window=True hub_conc=0.38095238095238093 members=21 named_hub=True
+  - Louvain 60m: in_window=True hub_conc=0.38095238095238093 members=21 named_hub=True
+  - raw 15m vector: in_degree=4, out_degree=4, in_count=4, out_count=4, velocity=0.5333, amount_entropy=1.5613, counterparty_diversity=1.0000, fan_ratio=0.8000, burstiness=0.5824
+  - raw 60m vector: in_degree=4, out_degree=4, in_count=4, out_count=4, velocity=0.1333, amount_entropy=1.5613, counterparty_diversity=1.0000, fan_ratio=0.8000, burstiness=0.5824
+
+  Why: hub role split across 3 co-mules (each in_degree=4, out_degree=4 including one consolidation edge). Louvain hub_concentration=0.381 in a 21-member community vs ~1.00 for a single-hub 9+9 star. 15m fused=1.864 — well below the top-5% cut (control hubs are ~4.26 with hub_concentration=1.0).
 
 **straddle_60:0** (`straddle_60`): 19 members, 0 visible in 15m, 11 visible in 60m. Hybrid flagged none.
 
 - Hub `jkarpe@paytm`
   - 15m fusion: **not scored** (below min_tx or absent).
-  - 60m fusion: fused=3.571 rank=67/547 gdi=1.167 (pct=0.872) ring=3.000 (pct=0.557) hub_conc=1.0 ring_n=11
+  - 60m fusion: fused=3.577 rank=52/457 gdi=1.167 (pct=0.846) ring=3.000 (pct=0.584) hub_conc=1.0 ring_n=11
     features: in_degree=5.0000, out_degree=5.0000, in_count=5.0000, out_count=5.0000, velocity=0.1667, amount_entropy=1.8464, counterparty_diversity=1.0000, fan_ratio=0.8333, burstiness=0.5322
   - multi-scale: **not scored** (below min_tx or absent).
   - Louvain 15m: in_window=False hub_conc=None members=None named_hub=None
   - Louvain 60m: in_window=True hub_conc=1.0 members=11 named_hub=True
   - raw 60m vector: in_degree=5, out_degree=5, in_count=5, out_count=5, velocity=0.1667, amount_entropy=1.8464, counterparty_diversity=1.0000, fan_ratio=0.8333, burstiness=0.5322
 
-  Why: 15m sees 0 participants (hub often absent). 60m sees an incomplete star (11 members, in_degree/out_degree ≈ 5/5, hub_concentration=1.0 on a 11-node leftover community). 60m fused rank 67/547 is outside the top-5% budget (k=28). High-activity pool accounts with 20–30 txs over the hour take the slow-scale slots.
+  Why: 15m sees 0 participants (hub often absent). 60m sees an incomplete star (11 members, in_degree/out_degree ≈ 5/5, hub_concentration=1.0 on a 11-node leftover community). 60m fused rank 52/457 is outside the top-5% budget (k=23). High-activity pool accounts with 20–30 txs over the hour take the slow-scale slots.
 
 **straddle_60:1** (`straddle_60`): 19 members, 0 visible in 15m, 11 visible in 60m. Hybrid flagged none.
 
 - Hub `gviswanathan@okicici`
   - 15m fusion: **not scored** (below min_tx or absent).
-  - 60m fusion: fused=3.558 rank=68/547 gdi=1.160 (pct=0.866) ring=3.000 (pct=0.557) hub_conc=1.0 ring_n=11
+  - 60m fusion: fused=3.561 rank=53/457 gdi=1.160 (pct=0.840) ring=3.000 (pct=0.584) hub_conc=1.0 ring_n=11
     features: in_degree=5.0000, out_degree=5.0000, in_count=5.0000, out_count=5.0000, velocity=0.1667, amount_entropy=1.6855, counterparty_diversity=1.0000, fan_ratio=0.8333, burstiness=0.5322
   - multi-scale: **not scored** (below min_tx or absent).
   - Louvain 15m: in_window=False hub_conc=None members=None named_hub=None
   - Louvain 60m: in_window=True hub_conc=1.0 members=11 named_hub=True
   - raw 60m vector: in_degree=5, out_degree=5, in_count=5, out_count=5, velocity=0.1667, amount_entropy=1.6855, counterparty_diversity=1.0000, fan_ratio=0.8333, burstiness=0.5322
 
-  Why: 15m sees 0 participants (hub often absent). 60m sees an incomplete star (11 members, in_degree/out_degree ≈ 5/5, hub_concentration=1.0 on a 11-node leftover community). 60m fused rank 68/547 is outside the top-5% budget (k=28). High-activity pool accounts with 20–30 txs over the hour take the slow-scale slots.
+  Why: 15m sees 0 participants (hub often absent). 60m sees an incomplete star (11 members, in_degree/out_degree ≈ 5/5, hub_concentration=1.0 on a 11-node leftover community). 60m fused rank 53/457 is outside the top-5% budget (k=23). High-activity pool accounts with 20–30 txs over the hour take the slow-scale slots.
 
 ### Honest summary
 
 - **Harness:** standard 9+9 hybrid recall 5/5 (100.0%); fusion-15m 5/5. The union-of-per-scale-top-k merge is the shipped pipeline.
 - **Window-straddle 15m does not evade the fast scale:** fusion-15m 5/5; hybrid 5/5. Half of 9+9 is still a star. 0/5 evaded 15m and were caught only at 60m (fusion-60m 0.0%).
 - **Window-straddle 60m:** 5/5 evaded both scales. Hybrid 0/5. Open. Root cause is NOT window alignment (windows are already sliding, `as_of - window`). A ~3-min burst simply does not rank on a 60-min scale: these hubs sit at velocity-rank 160-165/185, below ordinary accounts doing 35-39 tx/hour. Extending the peripheral cascade to 60m was tried and does not help - the hub is never flagged, so the cascade has nothing to attach to. Closing this needs scale-invariant burst features (future work).
-- **Hub dilution:** hybrid 5/5; union fusion 5/5; peripheral-only 5/5. Co-hub scoring treats the coordinated co-mule set as one logical hub, so the group clears the top-k that no individual co-mule could. Closed at a measured accuracy cost — see 'Co-hub trade-off (measured)'.
+- **Hub dilution:** hybrid 0/5; union fusion 0/5; peripheral-only 0/5. Open in the default configuration: no co-mule clears either scale's top-k, so the cascade has no hub to attach 1-tx senders/receivers to. Optional co-hub scoring closes this (5/5) at a measured accuracy cost - see 'Co-hub scoring (optional, off by default)'.
 - **Minimal 4+4:** hybrid 5/5; fusion-15m 5/5. mule+4+4 = 9 nodes, still ≥ `MIN_RING_MEMBER_COUNT=4`.
-- Remaining open vector: `straddle_60` only. `diluted_hub` is closed by co-hub scoring. The old max-then-global-cut is removed from `fusion.py`.
+- Open vectors in this configuration: `straddle_60` and `diluted_hub`. Co-hub scoring closes `diluted_hub` but is off by default. The old max-then-global-cut is removed from `fusion.py`.
 
 Reproduce: `python -m evaluation.generate_adversarial_snapshot` then 
 `python -m evaluation.eval_adversarial`.
@@ -507,54 +535,76 @@ Reproduce: `python -m evaluation.closed_loop_calibration --cycles 120`.
 - **Synthetic snapshot (cite this):** 15-min fusion F1 = **0.284 ± 0.051** (n=5 seeds, ≥3-tx). Multi-scale **union** fusion F1 = **0.336 ± 0.072**. Hybrid (union+peripheral, all-active) F1 = **0.691 ± 0.065**. Do not cite retired max-merge 0.304 / 0.644 or the historical single-snapshot fusion 0.625.
 - **PaySim (corrected timing + rank-based threshold):** fusion F1=0.041 (TP=5, FP=95, FN=141, fraud=146, eval=1989) vs baseline F1=0.000.
 
-## Co-hub trade-off (measured)
-**PaySim external validation could not be re-run (pre-existing, unrelated to co-hub).**
-The committed `evaluation/data/paysim_eval.db` was built before the
-`is_labeled_fraud` column existed, so `run_eval` now aborts with
-`no such column: transactions.is_labeled_fraud`. The corpus must be reloaded
-(`python -m evaluation.load_paysim`) before the PaySim rows can be refreshed.
-The PaySim figures in this document therefore pre-date co-hub and are
-**unverified against current code**. Note that in those figures PaySim
-`fusion` F1 equals `layer1` F1 exactly (0.041), i.e. the ring layer
-contributed nothing there - so co-hub, which only changes ring scoring, has no
-mechanism to move them - but that is reasoning, not measurement.
+**PaySim external validation could not be re-run (pre-existing break).** The
+committed `evaluation/data/paysim_eval.db` was built before the
+`is_labeled_fraud` column existed, so `run_eval` aborts with
+`no such column: transactions.is_labeled_fraud`. The corpus needs reloading
+(`python -m evaluation.load_paysim`) before those rows can be refreshed. This
+is unrelated to co-hub - and since the default configuration is byte-identical
+to the pipeline that produced them, the PaySim figures above still stand.
 
+## Co-hub scoring (optional, off by default)
 
-Shipped 2026-09-10. `_detect_co_hub` in `community.py` treats a coordinated set
-of 2-4 similar-degree nodes, clearly separated from the rest of their community,
-as one logical hub, and uses their combined edge share when it exceeds any
-single node's. Two gates keep it specific rather than a lowered threshold:
-**similarity** (`min >= 0.6 x max` degree) and **separation**
-(`min >= 2 x` the next node's degree). Knobs live in `detection_knobs.json`.
+`diluted_hub` is a real evasion vector, not a hypothetical one. Splitting the
+mule role across 3 co-mules puts every individual `hub_concentration` at
+**0.381** (8/21) against **1.0** for an equivalent single-hub star, so no
+co-mule clears the top-5% budget and the ring passes unflagged: adversarial
+recall **0/5**.
 
-**It closes the evasion it targets, and it costs accuracy everywhere else.**
-Both halves are real; cite both.
+A working fix exists and is shipped, **disabled by default**
+(`enable_cohub_scoring: false` in `shared/detection_knobs.json`).
+`_detect_co_hub` treats a coordinated set of 2-4 similar-degree nodes as one
+logical hub and scores their combined edge share. Two gates keep it specific
+rather than a disguised threshold drop:
 
-| Measure | Before | After | Delta |
+- **similarity** - `min >= 0.6 x max` degree, so co-mules splitting a role
+  evenly qualify but a hub plus a spoke does not;
+- **separation** - `min >= 2 x` the next node's degree, which is what an
+  evenly-connected benign community fails: its degrees tail off smoothly
+  instead of dropping off a cliff.
+
+It was unit-tested against a genuine single-hub star (correctly rejected - that
+case already scores 1.0 and must not be double-counted) and two benign shapes,
+an even friend group and a smooth degree tail (both correctly rejected), before
+being wired into the pipeline. Enabled, it takes `diluted_hub` from **0/5 to
+5/5** with no regression on `standard`, `straddle_15` or `minimal_ring`.
+
+### Why it is not the default
+
+Enabling it costs baseline accuracy across every other measure:
+
+| Measure | Default (off) | Co-hub enabled | Delta |
 |---|---|---|---|
-| `diluted_hub` adversarial recall | **0/5** | **5/5** | closed |
-| multi-seed hybrid F1 | 0.691 ± 0.065 | **0.670 ± 0.068** | **-0.021** |
-| multi-seed fusion_multiscale F1 | 0.336 ± 0.072 | **0.312 ± 0.047** | **-0.024** |
-| multi-seed fusion F1 | 0.284 ± 0.051 | **0.244 ± 0.090** | **-0.040** |
-| multi-seed hybrid FPR | 0.191 ± 0.013 | **0.197 ± 0.036** | +0.006 |
-| snapshot `hub_concentration` AUC (scored) | 0.809 | **0.777** | -0.032 |
-| snapshot `hub_concentration` AUC (size>=4) | 0.876 | **0.796** | **-0.080** |
-| IBM fusion F1 | 0.033 | **0.032** | -0.001 |
-| IBM fusion FP count | 4,163 | **4,345** | **+182** |
+| `diluted_hub` adversarial recall | 0/5 | **5/5** | closed |
+| multi-seed hybrid F1 | **0.691 ± 0.065** | 0.670 ± 0.068 | -0.021 |
+| multi-seed fusion_multiscale F1 | **0.336 ± 0.072** | 0.312 ± 0.047 | -0.024 |
+| multi-seed fusion F1 | **0.284 ± 0.051** | 0.244 ± 0.090 | -0.040 |
+| multi-seed hybrid FPR | **0.191 ± 0.013** | 0.197 ± 0.036 | +0.006 |
+| snapshot `hub_concentration` AUC (scored) | **0.809** | 0.777 | -0.032 |
+| snapshot `hub_concentration` AUC (size>=4) | **0.876** | 0.796 | -0.080 |
+| IBM fusion F1 | **0.033** | 0.032 | -0.001 |
+| IBM fusion FP count | **4,163** | 4,345 | +182 |
 
 **Mechanism of the cost.** `compute_fused_scores` unions GDI-scored accounts
 with *ring members*, so raising `hub_concentration` pulls more communities over
-`RISK_THRESHOLD` and enlarges the scored universe: on the adversarial snapshot
-357 -> 447 scored at 15m (+25%) and the top-5% budget k 40 -> 51. Benign
-communities that happen to contain 2-4 similar high-degree nodes now score
-higher too, which is why `hub_concentration` became a *weaker* discriminator
+`RISK_THRESHOLD` and enlarges the scored universe - on the adversarial snapshot
+357 -> 447 scored at 15m (+25%), and the top-5% budget k 40 -> 51. Benign
+communities that happen to contain 2-4 similar high-degree nodes score higher
+too, which is why `hub_concentration` becomes a *weaker* discriminator
 (AUC 0.876 -> 0.796 on ring-sized communities) even though it correctly
-identifies the synthetic co-mule rings. The IBM slice shows the same shape:
-identical TPs (82), +182 FPs.
+identifies the synthetic co-mule rings. IBM shows the same shape: identical
+TPs (82), +182 FPs.
 
-This is a genuine precision-for-coverage trade, not a free win. If
-`diluted_hub` is not in scope for the paper's threat model, reverting co-hub
-restores every number in the "Before" column.
+**Decision.** Degrading precision on every dataset to close one specific
+adversarial variant is a bad trade for this project's primary results, so
+co-hub ships as an opt-in mode. The default pipeline uses single-node
+`hub_concentration`, and every figure cited in this document is measured with
+the flag off. Set `enable_cohub_scoring: true` to prioritise resistance to
+hub-dilution over baseline accuracy; the numbers you should then expect are the
+right-hand column above.
+
+**Known consequence of leaving it off:** `diluted_hub` remains an open evasion
+vector in the default configuration, alongside `straddle_60`.
 
 ## Snapshot recall by attack type (fusion) — historical single run only
 
@@ -640,13 +690,13 @@ IBM scored: 64605 accounts (703 labeled-fraud, 63902 legit). Snapshot scored: 10
 
 | Feature | Universe | IBM fraud median | IBM legit median | IBM AUC | Snapshot AUC (same protocol) |
 |---------|----------|------------------|------------------|---------|------------------------------|
-| hub_concentration | scored (≥3 tx) | 0.058 | 0.060 | **0.526** | **0.777** |
-| hub_concentration | size≥4 communities only | 0.185 | 0.196 | **0.519** (lower=fraud) | **0.796** |
+| hub_concentration | scored (≥3 tx) | 0.058 | 0.060 | **0.526** | **0.809** |
+| hub_concentration | size≥4 communities only | 0.185 | 0.196 | **0.519** (lower=fraud) | **0.876** |
 | external_edge_ratio | scored (≥3 tx) | 0.077 | 0.060 | 0.572 | 0.537 |
-| structural score (hub+external, no recency) | scored (≥3 tx) | 0.144 | 0.152 | **0.528** | **0.784** |
+| structural score (hub+external, no recency) | scored (≥3 tx) | 0.144 | 0.152 | **0.528** | **0.814** |
 | is community hub | scored (≥3 tx) | 0 | 0 | 0.543 | 0.559 |
 
-On the simulator snapshot, hub-concentration is a real ranking signal (AUC **0.78–0.80**; it measured 0.81–0.88 before co-hub shipped, which traded ranking sharpness for dilution coverage). On IBM HI-Small it is not: among ring-sized communities, labeled-fraud accounts have a **slightly lower** hub_concentration median than legit (0.185 vs 0.196). The IBM Layer-2 miss is therefore **not only the single-window `formed_recently` artifact**. A wider real-time span would restore quiet windows for recency, but would not create a hub-concentration ranking that is absent here. **No wider-span reload was run.**
+On the simulator snapshot, hub-concentration is a real ranking signal (AUC 0.81–0.88). On IBM HI-Small it is not: among ring-sized communities, labeled-fraud accounts have a **slightly lower** hub_concentration median than legit (0.185 vs 0.196). The IBM Layer-2 miss is therefore **not only the single-window `formed_recently` artifact**. A wider real-time span would restore quiet windows for recency, but would not create a hub-concentration ranking that is absent here. **No wider-span reload was run.**
 
 **Mechanism check (FAN-IN / FAN-OUT only — the typologies closest to hub-and-spoke).** 40 of 88 Patterns-file FAN-IN/FAN-OUT instances have ≥1 tx in the densest 48h slice (38 hubs, 120 spokes, all present in `ibm_aml_eval.db`). Fraud-edge fraction = (window txs that match that account’s FAN-IN/FAN-OUT instance edges) / (all window txs involving the account).
 
@@ -683,11 +733,11 @@ Ground truth: accounts touching `Is Laundering=1` transactions (`is_labeled_frau
 |----------|---|---|----|-----|----|----|----|----|--------|-------|
 | baseline | 0.000 | 0.000 | 0.000 | 0.0000 | 0 | 0 | 703 | 63902 | 703 | 64605 |
 | layer1 | 0.040 | 0.183 | 0.066 | 0.0485 | 129 | 3102 | 574 | 60800 | 703 | 64605 |
-| fusion | 0.019 | 0.117 | 0.032 | 0.0680 | 82 | 4345 | 621 | 59557 | 703 | 64605 |
+| fusion | 0.019 | 0.117 | 0.033 | 0.0651 | 82 | 4163 | 621 | 59739 | 703 | 64605 |
 
 † Fraud = labeled-laundering accounts with ≥3 transactions in the (single) window. ‡ Eval = scored universe.
 
-Reproduce: `python -m evaluation.analyze_ibm_aml_timing` then `python -m evaluation.load_ibm_aml` then `python -m evaluation.run_ibm_aml_eval`.
+Reproduce: `python -m evaluation.analyze_ibm_aml_timing` then `python -m evaluation.load_ibm_aml` then `python -m evaluation.run_ibm_aml_eval`. Layer-2 isolation: `python -m evaluation.ibm_aml_hub_isolation`. Dilution / community-size check: `python -m evaluation.ibm_aml_dilution`.
 
 ## Reproduce
 

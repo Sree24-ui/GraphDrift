@@ -35,6 +35,7 @@ declare module '../../shared/detection_knobs.json' {
     peripheral_hub_connection_base: number
     peripheral_pattern_consistency_bonus: number
     peripheral_min_qualifying_score: number
+    enable_cohub_scoring: boolean
     co_hub_max_set_size: number
     co_hub_similarity_ratio: number
     co_hub_separation_ratio: number

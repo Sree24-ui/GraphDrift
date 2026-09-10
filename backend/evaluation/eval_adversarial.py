@@ -676,15 +676,23 @@ def _honest_summary(report: dict) -> list[str]:
             "could. Closed at a measured accuracy cost — see "
             "'Co-hub trade-off (measured)'."
             if dil["recall_hybrid"] >= 0.5
-            else "No co-mule clears either scale's top-k, so the cascade has "
-            "no hub to attach 1-tx senders/receivers to."
+            else "Open in the default configuration: no co-mule clears either "
+            "scale's top-k, so the cascade has no hub to attach 1-tx "
+            "senders/receivers to. Optional co-hub scoring closes this (5/5) "
+            "at a measured accuracy cost - see 'Co-hub scoring (optional, off "
+            "by default)'."
         ),
         f"- **Minimal 4+4:** hybrid {mini['n_caught_hybrid']}/{mini['n_instances']}; "
         f"fusion-15m {mini['n_caught_fusion_15']}/{mini['n_instances']}. "
         "mule+4+4 = 9 nodes, still ≥ `MIN_RING_MEMBER_COUNT=4`.",
-        "- Remaining open vector: `straddle_60` only. `diluted_hub` is closed "
-        "by co-hub scoring. The old max-then-global-cut is removed from "
-        "`fusion.py`.",
+        "- Open vectors in this configuration: "
+        + (
+            "`straddle_60` only (`diluted_hub` closed by co-hub scoring)."
+            if dil["recall_hybrid"] >= 0.5
+            else "`straddle_60` and `diluted_hub`. Co-hub scoring closes "
+            "`diluted_hub` but is off by default."
+        )
+        + " The old max-then-global-cut is removed from `fusion.py`.",
     ]
 
 
