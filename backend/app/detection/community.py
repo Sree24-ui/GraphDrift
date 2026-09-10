@@ -12,6 +12,9 @@ from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from app.constants import (
+    CO_HUB_MAX_SET_SIZE,
+    CO_HUB_SEPARATION_RATIO,
+    CO_HUB_SIMILARITY_RATIO,
     COMMUNITY_SIMILARITY_THRESHOLD,
     GDI_MAX,
     LOUVAIN_RESOLUTION,
@@ -176,6 +179,47 @@ def _store_partition_snapshot(as_of: datetime, partition: dict[str, int]) -> Non
         _PARTITION_SNAPSHOTS = _PARTITION_SNAPSHOTS[-MAX_PARTITION_SNAPSHOTS:]
 
 
+def _detect_co_hub(
+    incidents: dict[str, int], n_internal: int
+) -> tuple[list[str], float]:
+    """Treat a small set of coordinated high-degree nodes as one logical hub.
+
+    Splitting the mule role across 2-4 co-mules dilutes every individual
+    ``hub_concentration`` below threshold while the *group* still carries the
+    ring's edges. This finds that group without lowering any threshold, which
+    would raise false positives across every ordinary community instead.
+
+    Two gates keep it specific to coordinated rings:
+
+    * **similarity** - members must have comparable degree
+      (``min >= CO_HUB_SIMILARITY_RATIO * max``). Co-mules split the role
+      roughly evenly; a genuine single hub plus a spoke does not.
+    * **separation** - the smallest member must stand clearly above the rest of
+      the community (``>= CO_HUB_SEPARATION_RATIO x`` the next node's degree).
+      This is what a benign, evenly-connected group fails: its degrees tail off
+      smoothly rather than dropping off a cliff.
+
+    Returns the member list and their combined share of internal edges. Edges
+    *between* co-hubs are counted from both ends, so the share is capped at 1.0.
+    """
+    ranked = sorted(incidents.items(), key=lambda kv: -kv[1])
+    if len(ranked) < 2 or n_internal <= 0:
+        return [], 0.0
+
+    for size in range(2, min(CO_HUB_MAX_SET_SIZE, len(ranked)) + 1):
+        candidate = ranked[:size]
+        degrees = [deg for _, deg in candidate]
+        if min(degrees) < CO_HUB_SIMILARITY_RATIO * max(degrees):
+            continue
+        next_degree = ranked[size][1] if size < len(ranked) else 0
+        if min(degrees) < CO_HUB_SEPARATION_RATIO * max(next_degree, 1):
+            continue
+        share = min(sum(degrees) / n_internal, 1.0)
+        return [account for account, _ in candidate], share
+
+    return [], 0.0
+
+
 def compute_community_metrics(
     graph: nx.DiGraph,
     partition: dict[str, int],
@@ -210,6 +254,7 @@ def compute_community_metrics(
             external_edges[cs] += 1
             external_edges[ct] += 1
 
+
     metrics_list: list[dict] = []
     for community_id, members in communities.items():
         member_accounts = sorted(members)
@@ -222,9 +267,18 @@ def compute_community_metrics(
             hub_account_id = max(incidents, key=incidents.get)
             max_node_degree = incidents[hub_account_id]
             hub_concentration = max_node_degree / n_internal
+            co_hub_accounts, co_hub_concentration = _detect_co_hub(
+                incidents, n_internal
+            )
+            # A coordinated co-hub set is one logical hub, so take whichever
+            # view concentrates more of the community's edges.
+            if co_hub_concentration > hub_concentration:
+                hub_concentration = co_hub_concentration
         else:
             hub_account_id = None
             hub_concentration = 0.0
+            co_hub_accounts = []
+            co_hub_concentration = 0.0
 
         possible_internal = member_count * (member_count - 1)
         internal_density = (
@@ -248,6 +302,8 @@ def compute_community_metrics(
                 "internal_density": internal_density,  # diagnostic only, not used in scoring
                 "hub_concentration": hub_concentration,
                 "hub_account_id": hub_account_id,
+                "co_hub_accounts": co_hub_accounts,
+                "co_hub_concentration": co_hub_concentration,
                 "avg_internal_weight": avg_internal_weight,
                 "external_edge_ratio": external_edge_ratio,
                 "formed_recently": formed_recently,

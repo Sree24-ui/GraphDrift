@@ -1181,17 +1181,17 @@
       "ground_truth_fraud_in_window": 1566,
       "ground_truth_fraud_scored": 703,
       "ground_truth_filtered_out": 863,
-      "precision": 0.019316843345111898,
+      "precision": 0.018522701603794895,
       "recall": 0.1166429587482219,
-      "f1": 0.03314470493128537,
-      "fpr": 0.0651466307783794,
+      "f1": 0.03196881091617934,
+      "fpr": 0.06799474194860881,
       "tp": 82,
-      "fp": 4163,
+      "fp": 4345,
       "fn": 621,
-      "tn": 59739,
+      "tn": 59557,
       "positives": 703,
       "negatives": 63902,
-      "predicted_positive": 4245
+      "predicted_positive": 4427
     }
   ]
 }

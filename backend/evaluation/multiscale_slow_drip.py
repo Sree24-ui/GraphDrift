@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Time multi-scale fusion and measure slow-drip recall vs 15-minute-only.
 
+Multi-scale here is the shipped UNION of independent per-scale top-k cuts, not
+the retired max-then-global-cut merge.
+
 Uses a frozen copy of the live DB so scoring does not mutate production alerts.
 """
 
@@ -268,7 +271,7 @@ def run_eval(snapshot: Path) -> None:
             predicted=pred_60,
         )
         missed_multi = _print_recall_block(
-            "Multi-scale fusion (max of 15 and 60)",
+            "Multi-scale fusion (union of per-scale top-k)",
             slow=slow_60,
             universe=universe_60,
             predicted=pred_multi,

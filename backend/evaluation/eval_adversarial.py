@@ -657,21 +657,34 @@ def _honest_summary(report: dict) -> list[str]:
         f"{s60['n_instances']} evaded both scales. Hybrid "
         f"{s60['n_caught_hybrid']}/{s60['n_instances']}. "
         + (
-            "Still a genuine signal gap (no complete window; leftover 5+5 loses the 60m budget)."
+            "Open. Root cause is NOT window alignment (windows are already "
+            "sliding, `as_of - window`). A ~3-min burst simply does not rank "
+            "on a 60-min scale: these hubs sit at velocity-rank 160-165/185, "
+            "below ordinary accounts doing 35-39 tx/hour. Extending the "
+            "peripheral cascade to 60m was tried and does not help - the hub "
+            "is never flagged, so the cascade has nothing to attach to. "
+            "Closing this needs scale-invariant burst features (future work)."
             if s60["recall_hybrid"] < 0.5
             else "Partially recovered after the merge fix."
         ),
         f"- **Hub dilution:** hybrid {dil['n_caught_hybrid']}/{dil['n_instances']}; "
         f"union fusion {dil['n_caught_fusion_ms']}/{dil['n_instances']}; "
         f"peripheral-only {dil['n_caught_peripheral_only']}/{dil['n_instances']}. "
-        "No co-mule clears either scale's top-k, so the cascade has no hub to "
-        "attach 1-tx senders/receivers to — spokes are not rescued by a side path.",
+        + (
+            "Co-hub scoring treats the coordinated co-mule set as one logical "
+            "hub, so the group clears the top-k that no individual co-mule "
+            "could. Closed at a measured accuracy cost — see "
+            "'Co-hub trade-off (measured)'."
+            if dil["recall_hybrid"] >= 0.5
+            else "No co-mule clears either scale's top-k, so the cascade has "
+            "no hub to attach 1-tx senders/receivers to."
+        ),
         f"- **Minimal 4+4:** hybrid {mini['n_caught_hybrid']}/{mini['n_instances']}; "
         f"fusion-15m {mini['n_caught_fusion_15']}/{mini['n_instances']}. "
         "mule+4+4 = 9 nodes, still ≥ `MIN_RING_MEMBER_COUNT=4`.",
-        "- Working evasion vectors after the merge fix should be structural "
-        "(`straddle_60`, `diluted_hub`), not the control group. The old "
-        "max-then-global-cut is removed from `fusion.py`.",
+        "- Remaining open vector: `straddle_60` only. `diluted_hub` is closed "
+        "by co-hub scoring. The old max-then-global-cut is removed from "
+        "`fusion.py`.",
     ]
 
 

@@ -73,6 +73,10 @@ PERIPHERAL_MIN_QUALIFYING_SCORE: float = float(
     KNOBS["peripheral_min_qualifying_score"]
 )
 
+CO_HUB_MAX_SET_SIZE: int = int(KNOBS["co_hub_max_set_size"])
+CO_HUB_SIMILARITY_RATIO: float = float(KNOBS["co_hub_similarity_ratio"])
+CO_HUB_SEPARATION_RATIO: float = float(KNOBS["co_hub_separation_ratio"])
+
 MIN_REVIEWED_SAMPLE: int = int(KNOBS["min_reviewed_sample"])
 CALIBRATION_WINDOW: int = int(KNOBS["calibration_window"])
 TARGET_BAND_LOW: float = float(KNOBS["target_band_low"])
