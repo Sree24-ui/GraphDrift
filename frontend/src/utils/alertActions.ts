@@ -1,11 +1,5 @@
 import type { AlertStatus } from '../api/types'
 
-export const TERMINAL_STATUSES: AlertStatus[] = [
-  'confirmed',
-  'false_positive',
-  'auto_closed',
-]
-
 const ALLOWED_TRANSITIONS: Record<AlertStatus, AlertStatus[]> = {
   new: ['reviewing', 'confirmed', 'false_positive'],
   reviewing: ['confirmed', 'false_positive'],

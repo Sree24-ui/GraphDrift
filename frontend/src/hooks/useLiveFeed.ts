@@ -1,22 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { getStoredToken, WS_BASE_URL } from '../api/client'
+import { liveFeedUrl, UNAUTHORIZED_EVENT } from '../api/client'
 import type {
   LiveAlertMessage,
   LiveTransactionMessage,
   MetricsUpdate,
 } from '../api/types'
 
-// The handshake cannot carry an Authorization header, so the session token
-// travels as a query parameter and is validated like the REST bearer token.
-function liveFeedUrl(): string {
-  const token = getStoredToken()
-  const base = `${WS_BASE_URL}/ws/live-feed`
-  return token ? `${base}?token=${encodeURIComponent(token)}` : base
-}
 const MAX_BUFFER = 50
 const INITIAL_BACKOFF_MS = 1000
 const MAX_BACKOFF_MS = 30000
+const WS_POLICY_VIOLATION = 1008
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected'
 
@@ -110,9 +104,15 @@ export function useLiveFeed() {
       }
     }
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       if (!mountedRef.current || deliberatelyClosed.has(ws)) return
       setConnectionStatus('disconnected')
+      // 1008: the server ended the session (e.g. the token expired). Retrying
+      // with the same token cannot succeed, so sign out like a REST 401 does.
+      if (event.code === WS_POLICY_VIOLATION) {
+        window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+        return
+      }
 
       const delay = backoffRef.current
       backoffRef.current = Math.min(backoffRef.current * 2, MAX_BACKOFF_MS)

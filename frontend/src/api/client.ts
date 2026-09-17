@@ -57,6 +57,8 @@ const api = axios.create({
 })
 
 const TOKEN_KEY = 'graphdrift.sessionToken'
+// Fired whenever the server rejects the session (REST 401 or WebSocket 1008).
+export const UNAUTHORIZED_EVENT = 'graphdrift:unauthorized'
 
 export function getStoredToken(): string | null {
   return sessionStorage.getItem(TOKEN_KEY)
@@ -70,6 +72,15 @@ export function clearStoredToken(): void {
   sessionStorage.removeItem(TOKEN_KEY)
 }
 
+// The WebSocket handshake cannot carry an Authorization header, so the session
+// token travels as a query parameter and is validated like the REST bearer.
+// Every live-feed connection must be built here so none can omit the token.
+export function liveFeedUrl(): string {
+  const token = getStoredToken()
+  const base = `${WS_BASE_URL}/ws/live-feed`
+  return token ? `${base}?token=${encodeURIComponent(token)}` : base
+}
+
 api.interceptors.request.use((config) => {
   const token = getStoredToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
@@ -80,7 +91,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401) {
-      window.dispatchEvent(new Event('graphdrift:unauthorized'))
+      window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
     }
     return Promise.reject(error)
   },

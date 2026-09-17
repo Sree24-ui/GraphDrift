@@ -4,7 +4,6 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -15,7 +14,6 @@ import {
   getAccountDetail,
   getAccountScoreHistory,
   getAlerts,
-  getSettings,
 } from '../api/client'
 import type {
   AccountDetail,
@@ -37,21 +35,13 @@ import {
 } from '../utils/format'
 import MaterialIcon from '../components/MaterialIcon'
 import PeripheralStructuralBadge from '../components/PeripheralStructuralBadge'
-import { GDI_MAX } from '../knobs'
 
 const TX_PAGE_SIZE = 15
-const FUSED_SCORE_SCALE = GDI_MAX
 
 type TxSortKey = 'timestamp' | 'amount'
 type TxSortDir = 'asc' | 'desc'
 
-function ScoreTrendChart({
-  points,
-  thresholdScore,
-}: {
-  points: ScoreHistoryPoint[]
-  thresholdScore: number | null
-}) {
+function ScoreTrendChart({ points }: { points: ScoreHistoryPoint[] }) {
   const chartData = useMemo(
     () =>
       points.map((point) => ({
@@ -112,19 +102,6 @@ function ScoreTrendChart({
               'Risk score',
             ]}
           />
-          {thresholdScore != null && (
-            <ReferenceLine
-              y={thresholdScore}
-              stroke="#c8a0f0"
-              strokeDasharray="6 4"
-              label={{
-                value: `Alert threshold (${thresholdScore.toFixed(2)})`,
-                position: 'insideTopRight',
-                fill: '#c8a0f0',
-                fontSize: 10,
-              }}
-            />
-          )}
           <Line
             type="monotone"
             dataKey="score"
@@ -192,9 +169,6 @@ export default function AccountDetail() {
   const [account, setAccount] = useState<AccountDetail | null>(null)
   const [scoreHistory, setScoreHistory] = useState<ScoreHistoryPoint[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
-  const [activeAlertAccountIds, setActiveAlertAccountIds] = useState<Set<string>>(
-    new Set(),
-  )
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -202,9 +176,6 @@ export default function AccountDetail() {
   const [txSortKey, setTxSortKey] = useState<TxSortKey>('timestamp')
   const [txSortDir, setTxSortDir] = useState<TxSortDir>('desc')
   const [expandedAlertId, setExpandedAlertId] = useState<number | null>(null)
-  const [alertThresholdScore, setAlertThresholdScore] = useState<number | null>(
-    null,
-  )
 
   const fetchAccountPage = useCallback(async () => {
     if (!accountId) {
@@ -215,7 +186,7 @@ export default function AccountDetail() {
     setError(null)
 
     try {
-      const [detail, history, alertResponse, openNew, openReviewing, settings] =
+      const [detail, history, alertResponse] =
         await Promise.all([
           getAccountDetail(accountId, { page: txPage, page_size: TX_PAGE_SIZE }),
           getAccountScoreHistory(accountId),
@@ -225,21 +196,11 @@ export default function AccountDetail() {
             sort_by: 'detected_at',
             sort_dir: 'desc',
           }),
-          getAlerts({ status: 'new', page_size: 100 }),
-          getAlerts({ status: 'reviewing', page_size: 100 }),
-          getSettings(),
         ])
 
       setAccount(detail)
       setScoreHistory(history.points)
       setAlerts(alertResponse.items)
-      setAlertThresholdScore(settings.alert_top_percentile * FUSED_SCORE_SCALE)
-
-      const activeIds = new Set<string>()
-      for (const item of [...openNew.items, ...openReviewing.items]) {
-        activeIds.add(item.account.account_id)
-      }
-      setActiveAlertAccountIds(activeIds)
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to load account detail',
@@ -313,6 +274,10 @@ export default function AccountDetail() {
   const { pagination } = account
   const hasActiveScore =
     account.fused_score != null && account.confidence != null
+  const openAlertPeers = new Set(account.connected_accounts_with_open_alerts)
+  const openAlertCount = alerts.filter(
+    (a) => a.status === 'new' || a.status === 'reviewing',
+  ).length
 
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto">
@@ -378,10 +343,9 @@ export default function AccountDetail() {
             </div>
           )}
         </div>
-        <ScoreTrendChart
-          points={scoreHistory}
-          thresholdScore={alertThresholdScore}
-        />
+        {/* No threshold line: alerts come from a population-relative top-k cut
+            per detection cycle, so there is no fixed score an account crosses. */}
+        <ScoreTrendChart points={scoreHistory} />
       </section>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -403,7 +367,7 @@ export default function AccountDetail() {
               <p className="text-xs uppercase tracking-wider text-on-surface-variant">
                 Open alerts
               </p>
-              <p className="font-medium text-on-surface">{alerts.length}</p>
+              <p className="font-medium text-on-surface">{openAlertCount}</p>
             </li>
           </ul>
         </section>
@@ -420,8 +384,10 @@ export default function AccountDetail() {
               </div>
             ) : (
               <div className="flex items-center justify-between rounded border border-primary/10 bg-surface-container/50 p-2">
-                <span className="text-sm text-on-surface-variant">Current status</span>
-                <span className="text-xs font-semibold text-primary">CLEAR</span>
+                <span className="text-sm text-on-surface-variant">Current window</span>
+                <span className="text-xs font-semibold text-on-surface-variant">
+                  {openAlertCount > 0 ? 'Not active now — open alert on record' : 'Not scored'}
+                </span>
               </div>
             )}
           </div>
@@ -577,7 +543,7 @@ export default function AccountDetail() {
                 </p>
               ) : (
                 account.connected_accounts.map((peerId) => {
-                  const hasActiveAlert = activeAlertAccountIds.has(peerId)
+                  const hasActiveAlert = openAlertPeers.has(peerId)
                   return (
                     <Link
                       key={peerId}

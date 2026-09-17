@@ -30,6 +30,9 @@ export default defineConfig(({ command, mode }) => {
         ? {
             '/api': backendTarget,
             '/health': backendTarget,
+            // FastAPI's interactive docs, linked from Settings.
+            '/docs': backendTarget,
+            '/openapi.json': backendTarget,
             '/ws': {
               target: backendTarget.replace(/^http/, 'ws'),
               ws: true,

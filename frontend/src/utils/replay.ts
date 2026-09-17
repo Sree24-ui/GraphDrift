@@ -17,10 +17,6 @@ export function endMsToStep(endMs: number, nowMs: number = Date.now()): number {
   return Math.max(0, Math.min(REPLAY_STEPS, raw))
 }
 
-export function snapEndMs(endMs: number, nowMs: number = Date.now()): number {
-  return stepToEndMs(endMsToStep(endMs, nowMs), nowMs)
-}
-
 export function formatTimelineTimestamp(ms: number): string {
   return new Date(ms).toLocaleString('en-IN', {
     month: 'short',

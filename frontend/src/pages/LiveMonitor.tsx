@@ -191,7 +191,7 @@ export default function LiveMonitor() {
     timelineMode === 'replay' ? 'replay' : connectionStatus
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] flex-col gap-5 overflow-hidden md:h-[calc(100vh-3rem)]">
+    <div className="flex h-[calc(100vh-5rem)] flex-col gap-5 overflow-y-auto md:h-[calc(100vh-3rem)] xl:overflow-hidden">
       <div className="flex shrink-0 items-center justify-between gap-4">
         <div>
           <h1 className="page-title glacier-text-glow">Live Monitor</h1>
@@ -232,7 +232,13 @@ export default function LiveMonitor() {
         />
         <MetricCard
           label="Anomalies Detected"
-          value={displayMetrics.active_alert_count.toLocaleString()}
+          value={
+            // The graph fallback cannot know the open-alert count, so show it as
+            // unknown until the first metrics message instead of a false 0.
+            metrics || timelineMode === 'replay'
+              ? displayMetrics.active_alert_count.toLocaleString()
+              : '—'
+          }
           icon="gpp_maybe"
           accent="error"
           trend={newAlertCount > 0 ? `${newAlertCount} new` : undefined}
@@ -244,7 +250,7 @@ export default function LiveMonitor() {
         <ErrorBanner message="Live feed disconnected — graph may be stale. Reconnecting automatically…" />
       )}
 
-      <div className="relative grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]">
+      <div className="relative grid min-w-0 shrink-0 grid-cols-1 gap-5 xl:min-h-0 xl:flex-1 xl:shrink xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]">
         {!graphLoaded && timelineMode === 'live' && (
           <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl glass-panel-elevated xl:right-[calc(320px+1.25rem)]">
             <div className="text-center">
@@ -256,8 +262,8 @@ export default function LiveMonitor() {
           </div>
         )}
 
-        <div className="flex min-h-0 min-w-0 flex-col gap-3">
-          <div className="glass-panel-elevated flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
+        <div className="flex min-w-0 flex-col gap-3 xl:min-h-0">
+          <div className="glass-panel-elevated flex flex-1 flex-col overflow-hidden rounded-2xl xl:min-h-0">
             <div className="z-20 flex items-center justify-between border-b border-primary/10 bg-surface/40 px-4 py-3">
               <h2 className="flex items-center gap-2 text-base font-semibold text-on-surface">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
@@ -288,7 +294,7 @@ export default function LiveMonitor() {
           />
         </div>
 
-        <div className="min-h-[320px] min-w-0 xl:min-h-0">
+        <div className="h-[480px] min-w-0 xl:h-auto xl:min-h-0">
           <AlertFeedPanel alerts={alerts} />
         </div>
       </div>

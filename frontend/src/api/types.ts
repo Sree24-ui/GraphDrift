@@ -111,7 +111,6 @@ export interface TransactionItem {
   counterparty_id: string
   amount: number
   timestamp: string
-  is_synthetic_attack: boolean
 }
 
 export interface AccountDetail {
@@ -122,6 +121,7 @@ export interface AccountDetail {
   confidence: ConfidenceLevel | null
   transactions: TransactionItem[]
   connected_accounts: string[]
+  connected_accounts_with_open_alerts: string[]
   pagination: PaginationMeta
 }
 
@@ -174,7 +174,6 @@ export interface LiveTransaction {
   receiver: string
   amount: number
   timestamp: string
-  is_synthetic_attack: boolean
 }
 
 export interface LiveTransactionMessage {

@@ -42,13 +42,14 @@ source of truth for any figure you intend to cite.
 | | |
 |---|---|
 | Repository | https://github.com/Sree24-ui/GraphDrift (branch `main`) |
-| Backend tests | **73 passing** |
+| Backend tests | **97 passing** |
 | Frontend | `npm run build`, `tsc --noEmit`, `oxlint` all clean |
 | CI | GitHub Actions — backend (pytest) and frontend (build) jobs |
 | Python | **3.14** (pinned in CI to match development) |
 | Node | **24.20.0** — Active LTS "Krypton" line (pinned in CI) |
-| Backend deps | all 20 pinned to exact versions |
+| Backend deps | 21 direct pins in `requirements.txt`; full transitive lock in `requirements.lock` (CI installs from it) |
 | Detection default | single-node hub concentration; co-hub scoring **off** |
+| Frontend bundle | initial load 292 KB (95 KB gzip); every authenticated page is lazy-loaded |
 
 ---
 
@@ -160,6 +161,10 @@ by accident. Never re-cut a union result with `select_top_anomaly_accounts`.
 All windows are **sliding**, `[as_of − window, as_of]`, recomputed each cycle.
 Nothing is aligned to clock boundaries.
 
+The top-k budget is `ceil(n × top-share)`, rounded to 9 decimals first: in
+floating point `1 − 0.95 = 0.05000000000000004`, which used to flag one extra
+account whenever `n` was a multiple of 20.
+
 ### 3.5 Peripheral structural cascade
 
 `app/detection/structural_pass.py`. Accounts with only 1–2 transactions cannot
@@ -239,17 +244,32 @@ Settings are **in memory** and reset when the process restarts.
   same JWT is passed as `?token=`. HTTP and WebSocket validate through one
   shared function, `user_from_token`, so they cannot drift apart. A missing or
   invalid token is refused before the connection is accepted (the client sees
-  `HTTP 403`).
-- **Rate limiting:** login is limited to 10 requests/minute per IP.
+  `HTTP 403`). The check runs off the event loop and releases its DB
+  connection immediately, so open sockets never hold pool connections (40
+  concurrent sockets verified). **Session expiry is enforced on open sockets
+  too:** the server closes with code 1008 when the token expires, and the
+  client signs out.
+- **No ground truth on the wire:** `is_synthetic_attack` is never sent by the
+  REST API or the WebSocket, so analysts reviewing alerts cannot see labels.
+- **Rate limiting:** login is limited per client IP (`LOGIN_RATE_LIMIT`,
+  default `10/minute`). Behind a reverse proxy, set `FORWARDED_ALLOW_IPS` so
+  uvicorn sees real client IPs; otherwise every user shares one bucket and a
+  few failed logins lock out the whole team.
 - **Headers:** `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
   `Referrer-Policy: strict-origin-when-cross-origin`.
-- **Production guards:** startup refuses to run without `SESSION_SECRET` when
-  `ENVIRONMENT=production`, and logs warnings for wildcard/unset CORS or a
-  missing admin user. `--dev-seed` refuses to run in production.
+- **Production guards:** with `ENVIRONMENT=production`, startup refuses a
+  missing `SESSION_SECRET`, the published example secret, a secret shorter than
+  32 characters, and `*` in `ALLOWED_ORIGINS` (with credentials enabled,
+  Starlette would echo any origin). It warns on unset CORS (valid for
+  same-origin hosting) and on a missing admin. `--dev-seed` refuses to run in
+  production. `.env.example` ships an **empty** secret: copying it verbatim
+  previously gave production a publicly known signing key, which let anyone
+  forge an admin session without a password.
 
 Regression tests assert that every read endpoint returns `401` without a token
-and `200` for both roles, and that the WebSocket rejects absent and malformed
-tokens.
+and `200` for both roles, that the WebSocket rejects absent and malformed
+tokens and closes on expiry, that labels never reach the API, and that each
+unsafe production configuration is refused.
 
 ---
 
@@ -310,8 +330,21 @@ Notable implementation details:
   the operator is dragging it.
 - Risk colour bands are expressed as fractions of `gdi_max`, so they track the
   knobs file.
-- `LiveMonitor` is lazy-loaded; `useAuth` lives in its own module so
-  `AuthContext.tsx` exports only a component (keeps Fast Refresh working).
+- Every authenticated page is lazy-loaded, so the login screen ships only the
+  292 KB shell (was 753 KB); `recharts` (333 KB) loads with Reports or Account
+  Detail, and the force graph with Live Monitor.
+- Every WebSocket URL is built by one function, `liveFeedUrl()`, so no socket
+  can omit the token. A 401 or a WebSocket close with 1008 both fire the same
+  sign-out event.
+- Below 1280 px Live Monitor stacks and scrolls, with the graph kept at a
+  usable height (it previously collapsed to 2 px on laptop and tablet widths).
+  Queue action columns are sticky, so review buttons stay visible.
+- Account Detail gets "which counterparties have open alerts" from the server
+  rather than paging through every open alert, counts only open alerts, and
+  shows no threshold line: alerts come from a population-relative top-k cut,
+  so no fixed score threshold exists.
+- `useAuth` lives in its own module so `AuthContext.tsx` exports only a
+  component (keeps Fast Refresh working).
 
 ---
 
@@ -345,9 +378,11 @@ than local literals.
 |---|---|---|
 | `DATABASE_URL` | `sqlite:///./graphdrift.db` | |
 | `ENVIRONMENT` | `development` | `production` enables startup guards |
-| `SESSION_SECRET` | random per process in dev | **required** in production |
-| `SESSION_TTL_SECONDS` | 43200 | 12 h |
-| `ALLOWED_ORIGINS` | *(empty)* | comma-separated CORS origins |
+| `SESSION_SECRET` | random per process in dev | **required** in production, ≥ 32 chars, not the example value |
+| `SESSION_TTL_SECONDS` | 43200 | 12 h; must be > 0 |
+| `ALLOWED_ORIGINS` | *(empty)* | comma-separated CORS origins; `*` refused in production |
+| `LOGIN_RATE_LIMIT` | `10/minute` | per client IP; invalid syntax fails at startup |
+| `FORWARDED_ALLOW_IPS` | `127.0.0.1` | read by uvicorn; set to `*` behind a proxy that is the only way in (e.g. Render) |
 | `LIVE_FEED_WS_URL` | — | used only by `test_ws_client.py` |
 
 ### 8.3 Environment — frontend
@@ -362,7 +397,10 @@ than local literals.
 
 Kept as literals on purpose: CSS/layout values and chart colours, page sizes
 (`PAGE_SIZE` 25, `TX_PAGE_SIZE` 15), WebSocket buffer and backoff, the HS256
-algorithm name, UPI handle suffixes and the Faker locale, evaluation-corpus
+algorithm name (configurable algorithms invite alg-confusion), the 12-character
+password floor, Argon2 library defaults (they track RFC 9106), the 256-character
+password cap (bounds hashing work per request), UPI handle suffixes and the Faker
+locale, simulator attack shapes (e.g. the 2–5% mule skim), evaluation-corpus
 compression factors (PaySim ÷20, IBM ÷332, IBM 48 h slice), and the frozen
 clock in the calibration stress harness — which is what keeps
 `bench_calibration` byte-reproducible.
@@ -423,8 +461,8 @@ tracked.
 cd graphdrift/backend
 python3.14 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
+pip install -r requirements.lock      # exact environment behind the cited results
+cp .env.example .env                  # leaves SESSION_SECRET empty: random per process
 python scripts/create_user.py --dev-seed      # local-admin / local-development-only
 uvicorn app.main:app --reload --port 8000
 ```
@@ -445,6 +483,14 @@ this happens.
 **Expect a fresh login after each backend restart** unless `SESSION_SECRET` is
 set: development generates a new secret per process, so old tokens are
 rejected.
+
+**Stopping servers.** Stop them by port rather than by name: a `--reload`
+worker's command line doesn't mention uvicorn, so `pkill -f uvicorn` can leave
+it running (one survived seven days during development).
+
+```bash
+lsof -tiTCP:8000 -sTCP:LISTEN | xargs kill; lsof -tiTCP:5173 -sTCP:LISTEN | xargs kill
+```
 
 ### Resetting demo data
 
@@ -471,8 +517,9 @@ npx tsc --noEmit && npm run lint && npm run build
 
 | Test file | Covers |
 |---|---|
-| `test_auth.py` | login, `/me`, expiry, rate limit, role gates, **read endpoints require auth**, WebSocket token, review audit |
-| `test_scoring.py` | Mahalanobis, GDI ordering, ring risk (hub vs distributed), fusion, multi-scale union, explanation cache, **co-hub off-by-default and gate cases** |
+| `test_auth.py` | login, `/me`, expiry, rate limit (and its override), role gates, **read endpoints require auth**, WebSocket token and **expiry close**, **no labels on the wire**, **production config refusals**, review audit |
+| `test_scoring.py` | Mahalanobis, GDI ordering, ring risk (hub vs distributed), fusion, multi-scale union, explanation cache, co-hub off-by-default and gate cases, **exact top-k budget** |
+| `test_eval_tooling.py` | tie diagnostics, `run_eval` patches only its own rows, **every RESULTS.md section still exists** |
 | `test_rings.py` | stable ring IDs, peripheral inheritance, bulk ring review |
 | `test_calibration.py` | stress streams, damping, clamps, status exclusion, manual override, live tick cadence |
 | `test_closed_loop_calibration.py` | per-alert window scoping of ground truth; short-horizon closed loop |
@@ -483,7 +530,7 @@ npx tsc --noEmit && npm run lint && npm run build
 | `test_simulation_seed.py` | seeded reproducibility |
 
 CI (`.github/workflows/ci.yml`) runs on every push and pull request: Python
-3.14 → `pip install -r requirements.txt` → `pytest -q`; Node 24.20.0 →
+3.14 → `pip install -r requirements.lock` → `pytest -q`; Node 24.20.0 →
 `npm ci` → `npm run build`.
 
 ---
@@ -498,38 +545,50 @@ false`). Full tables, per-seed breakdowns and methodology notes are in
 
 | Detector | Universe | F1 | Precision | Recall | FPR |
 |---|---|---|---|---|---|
-| Layer 1 (GDI) | ≥ 3 tx | 0.251 ± 0.027 | 0.675 | 0.158 | 0.023 |
+| Layer 1 (GDI) | ≥ 3 tx | 0.253 ± 0.029 | 0.689 | 0.158 | 0.022 |
 | Fusion, 15 min | ≥ 3 tx | **0.284 ± 0.051** | 0.620 | 0.188 | 0.035 |
 | Fusion, multi-scale union | ≥ 3 tx | **0.336 ± 0.072** | 0.368 | 0.328 | 0.180 |
 | Hybrid (union + peripheral) | all active | **0.691 ± 0.065** | 0.710 | 0.683 | 0.191 |
 
 The multi-scale and hybrid detectors trade precision for recall: flagging a
-top-share at two scales roughly doubles the alert budget.
+top-share at two scales roughly doubles the alert budget. Layer 1 was 0.251
+before the top-k rounding fix (§3.4); nothing else in this table moved.
+
+None of these figures are tie artifacts: at every cutoff the k-th score is
+unique.
 
 ### 12.2 Baselines — Isolation Forest (sklearn defaults, same 5 seeds)
 
 | | F1 | Compared with |
 |---|---|---|
-| IF on the 8 Layer-1 features | 0.222 ± 0.027 | GDI 0.251 |
-| IF on Layer-1 + structural features | 0.235 ± 0.056 | fusion 0.284 |
+| IF on the 8 Layer-1 features | 0.223 ± 0.031 | GDI 0.253 |
+| IF on Layer-1 + structural features | 0.237 ± 0.061 | fusion 0.284 |
 
 GraphDrift is ahead on every configuration of a sensitivity sweep
-(IF-L1 0.215–0.222, IF-all 0.235–0.249). The margin is modest — about one
-standard deviation.
+(IF-L1 0.216–0.223, IF-all 0.237–0.244). The margin is modest — about one
+standard deviation — but GDI never loses a seed to IF-L1 (wins 3, ties 2).
+These comparison numbers are now read from `multiseed_eval.json` rather than
+typed into the scripts.
 
 ### 12.3 External datasets (weak, reported honestly)
 
 | Dataset | Fusion F1 | Notes |
 |---|---|---|
 | IBM AML HI-Small (dense slice, single window) | 0.033 | P 0.019, R 0.117, FP 4,163 of 64,605 accounts |
-| PaySim | 0.041 | step-based time compression |
+| PaySim | 0.032 | **no detection signal** — see below |
 
 On IBM, `hub_concentration` barely separates fraud from legitimate accounts
 (AUC ≈ 0.53). On the synthetic snapshot it does (AUC 0.809 on scored accounts,
 0.876 on ring-sized communities). The synthetic gap should be read accordingly.
 
-The PaySim evaluation database predates the `is_labeled_fraud` column and must
-be reloaded (`python -m evaluation.load_paysim`) before it can be re-run.
+**PaySim carries no signal.** At its `min_transactions=1` setting, 1,040 of
+2,079 scored accounts share one GDI score at the cutoff, and 103 of the 104
+alert slots are filled from that tie. The one account ranked above it is not
+fraud. Every true positive is a tie-break artifact, and a random tie-break
+would do better (expected F1 ≈ 0.058). Report PaySim as a structural
+limitation, not a weak positive result. The corpus was reloaded (the old one
+predated the current schema and cannot be regenerated); the loader is now
+verified deterministic.
 
 ### 12.4 Slow-drip recall (corrected)
 
@@ -594,15 +653,29 @@ Measured with `run_detection_cycle(profile=True)`:
   probability with no quiet periods, so widening the top-share keeps landing on
   real fraud and never produces the false positives that would pull it back.
   Window-scoped confirmation is separately verified by a regression test.
+- **Live:** with real judgments below the band, the running system held on its
+  first tick (damping) and lowered the top-share 5.0% → 4.5% on the next.
 
-### 12.8 Figures not to cite
+### 12.8 Live end-to-end run
+
+29,932-transaction seeded trace growing to 38,065 transactions and 3,540 alerts
+during a live run with a real browser. One alert was traced through every stage
+and matched an independent recomputation exactly. **Live alert precision
+67.9%** (in line with the multi-seed 0.710), but **78% of alerts come from the
+peripheral cascade**, `fan_in_fan_out` alerts are right only 37.5% of the time,
+and the simulator's attack density is far above real base rates. The traced
+alert was itself a false positive.
+
+### 12.9 Figures not to cite
 
 | Don't cite | Why | Cite instead |
 |---|---|---|
 | fusion F1 0.625 | single historical snapshot | 0.284 ± 0.051 |
 | hybrid F1 0.860 | single historical snapshot | 0.691 ± 0.065 |
 | 0.304 / 0.644 | retired max-merge | 0.336 / 0.691 |
-| IF F1 0.249 | best-of-sweep | 0.235 (defaults) |
+| IF F1 0.249 / 0.244 | best-of-sweep | 0.237 (defaults) |
+| Layer 1 F1 0.251 | pre-rounding-fix | 0.253 |
+| PaySim F1 0.041 / 0.032 | tie-break artifact | "no signal" |
 | slope 2.18, 107 s | pre-fix bug | 1.39, 8.0 s |
 | slow-drip 1/1 | n = 1 | 7/33 (60 m), 11/33 (union) |
 
@@ -627,7 +700,9 @@ Measured with `run_detection_cycle(profile=True)`:
 4. **The peripheral cascade is not selective.** Within its real candidate set
    it flags every benign hub neighbour; its low global FPR reflects how few
    benign neighbours exist, not discrimination.
-5. **Weak external validation.** IBM F1 0.033, PaySim 0.041.
+5. **Weak external validation.** IBM F1 0.033; **PaySim shows no detection
+   signal at all** (every true positive is a tie-break artifact, §12.3). PaySim
+   fraud is mostly single-hop pairs, which neither layer can represent.
 6. **Prototype storage.** SQLite ingest tops out in the hundreds of
    transactions per second.
 7. **Coverage gap.** Accounts with < 3 transactions are only reachable through
@@ -636,6 +711,15 @@ Measured with `run_detection_cycle(profile=True)`:
 8. **In-memory settings.** The top-share and calibration state reset on
    restart.
 9. **Closed-loop calibration is unproven on realistic traffic** (§12.7).
+10. **Most live alerts are guilt-by-association.** 78% of alerts in the live
+    run came from the peripheral cascade, and fan-in/fan-out-labelled alerts
+    were right 37.5% of the time (§12.8).
+11. **Fusion inflates weak Layer-1 scores.** Ring members without enough
+    transactions enter fusion with GDI 0, so a scored account with an
+    unremarkable GDI still ranks high on the Layer-1 percentile.
+12. **Sessions cannot be revoked early.** JWTs are stateless: deleting a user
+    blocks new requests (the user lookup fails), but there is no per-token
+    revocation list, and a WebSocket is only closed at token expiry.
 
 ---
 
@@ -660,15 +744,23 @@ Measured with `run_detection_cycle(profile=True)`:
 
 ## 15. Known tooling issues and follow-ups
 
-- **`bench_perf.py` emits stale conclusions.** It hardcodes pre-fix text
-  ("at 5,000 accounts mean cycle already exceeds the 45s live interval",
-  "79.6 s / 74.3 s") alongside whatever it measures. Running it overwrites the
-  correct analysis in RESULTS.md with that stale text. Fix the generator
-  before re-running the benchmark.
-- **`run_ibm_aml_eval` deletes RESULTS.md's Layer-2 hub-isolation section**
-  when it auto-patches. Restore it afterwards, or fix the patcher.
-- **PaySim evaluation DB needs reloading** (schema predates
-  `is_labeled_fraud`).
+- **`bench_perf.py` still emits stale conclusions (open).** It hardcodes
+  pre-fix text ("at 5,000 accounts mean cycle already exceeds the 45s live
+  interval", "79.6 s / 74.3 s") alongside whatever it measures. Fix the
+  generator before re-running the benchmark. The cited performance table was
+  also measured before the top-k rounding fix, so its alert counts may differ
+  by one at population sizes that are multiples of 20; timings are unaffected.
+- **Fixed:** `run_eval` rebuilt the whole RESULTS.md from stale template prose
+  (following RESULTS.md's own reproduce steps would have erased most of it);
+  it now patches only its own table rows. `run_ibm_aml_eval` deleted the
+  Layer-2 section; it now owns a marked block and refuses to run without the
+  marker. The Isolation Forest scripts hardcoded GraphDrift's comparison
+  figures; they now read `multiseed_eval.json`. `test_eval_tooling.py` fails CI
+  if any RESULTS.md section disappears.
+- **Fixed:** the PaySim corpus was reloaded with the current schema.
+- **`/docs` and `/openapi.json` are public**, including in production. The API
+  itself is authenticated, but the schema is visible; disable them in
+  production if that matters for your deployment.
 - **`eval_multi_seed` only patches RESULTS.md with
   `--force-patch-results`** — intentional, to protect methodology notes.
 - **GitHub Actions warns** that `actions/checkout@v4` and
@@ -677,21 +769,35 @@ Measured with `run_detection_cycle(profile=True)`:
   StrictMode's discarded first socket. It does not recur.
 - **Suggested next work:** persist settings across restarts; expose the
   calibration band/step/clamp in the UI; scale-invariant burst features;
-  a fraud-density-varying trace for closed-loop calibration.
+  a fraud-density-varying trace for closed-loop calibration; record each
+  cycle's actual top-k cutoff so the account chart can show a real threshold.
 
 ---
 
 ## 16. Deployment
 
 **Backend (Render)** — root `backend`; build `pip install -r
-requirements.txt`; start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
-Set `ENVIRONMENT=production`, a persistent `DATABASE_URL`, a long random
-`SESSION_SECRET`, and `ALLOWED_ORIGINS` set to the frontend URL. Then run
-`python scripts/create_user.py --username <name> --role admin` from a Render
-shell.
+requirements.lock`; start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+Then run `python scripts/create_user.py --username <name> --role admin` from a
+Render shell.
+
+| Variable | Required | If missing or wrong |
+|---|---|---|
+| `ENVIRONMENT=production` | **yes** | none of the production guards below run; a random per-process secret silently logs everyone out on every restart |
+| `SESSION_SECRET` | **yes** | startup refuses. Must be ≥ 32 chars and not the example value — otherwise anyone can forge an admin token |
+| `DATABASE_URL` | **yes** | defaults to SQLite in the container's working directory; on an ephemeral disk every alert, review and user is lost on redeploy |
+| `ALLOWED_ORIGINS` | yes, for a separate frontend origin | unset: startup warns and the browser blocks every cross-origin API call. `*` is refused |
+| `FORWARDED_ALLOW_IPS=*` | **yes, behind Render's proxy** | every user shares one login rate-limit bucket; a few failed logins lock out the whole team (verified) |
+| `SESSION_TTL_SECONDS` | no (12 h) | must be a positive integer or startup refuses |
+| `LOGIN_RATE_LIMIT` | no (`10/minute`) | invalid syntax: startup refuses |
+
+Only set `FORWARDED_ALLOW_IPS=*` when the app can be reached solely through the
+proxy, as on Render; otherwise clients could spoof their IP.
 
 **Frontend (Vercel)** — root `frontend`; build `npm run build`; output
-`dist`. Set `VITE_API_BASE_URL` and `VITE_WS_BASE_URL` (`wss://`). After both
+`dist`. Set `VITE_API_BASE_URL` and `VITE_WS_BASE_URL` (`wss://`); both are baked
+in at build time, so a missing value makes the app call its own origin and
+every request fails. After both
 are live, set the backend's `ALLOWED_ORIGINS` to the real Vercel URL and
 restart it.
 

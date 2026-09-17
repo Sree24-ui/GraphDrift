@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import type { LiveAlertMessage } from '../api/types'
-import { GDI_MAX } from '../knobs'
+import { DETECTION_CYCLE_INTERVAL_SECONDS, GDI_MAX } from '../knobs'
 import { formatPatternType, formatRelativeTime, isPeripheralStructural } from '../utils/format'
 import AlertExplainability from './AlertExplainability'
 import ConfidenceBadge from './ConfidenceBadge'
@@ -59,7 +59,7 @@ export default function AlertFeedPanel({ alerts }: AlertFeedPanelProps) {
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
         {sortedAlerts.length === 0 ? (
           <p className="px-2 py-8 text-center text-xs text-on-surface-variant">
-            No alerts yet — detection runs every few minutes. New cases will
+            No alerts yet — detection runs every {DETECTION_CYCLE_INTERVAL_SECONDS}s. New cases will
             appear here as they are raised.
           </p>
         ) : (

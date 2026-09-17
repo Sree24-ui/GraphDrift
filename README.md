@@ -7,7 +7,7 @@ Real-time UPI fraud detection system.
 1. Create and activate a virtual environment:
 
    ```bash
-   python -m venv venv
+   python3.14 -m venv venv   # the version CI and the cited results use
    source venv/bin/activate   # macOS/Linux
    # venv\Scripts\activate    # Windows
    ```
@@ -15,8 +15,12 @@ Real-time UPI fraud detection system.
 2. Install dependencies:
 
    ```bash
-   pip install -r backend/requirements.txt
+   pip install -r backend/requirements.lock
    ```
+
+   `requirements.lock` pins every transitive dependency of the environment that
+   produced the cited evaluation results; `requirements.txt` lists the direct
+   dependencies you edit.
 
 3. Copy the example env file and adjust if needed:
 
@@ -24,8 +28,10 @@ Real-time UPI fraud detection system.
    cp backend/.env.example backend/.env
    ```
 
-   `DATABASE_URL`, `ALLOWED_ORIGINS`, and the optional `LIVE_FEED_WS_URL` are
-   environment-configured; do not put deployment URLs in Python code.
+   `DATABASE_URL`, `ALLOWED_ORIGINS`, `LOGIN_RATE_LIMIT` and the optional
+   `LIVE_FEED_WS_URL` are environment-configured; do not put deployment URLs in
+   Python code. `SESSION_SECRET` is deliberately empty in the example: local
+   development then generates a random secret per process.
 
 4. Start the development server from the `backend/` folder:
 
@@ -50,7 +56,9 @@ The `/ws/live-feed` WebSocket is authenticated too. A browser cannot set an
 a `?token=` query parameter and validated identically. An absent or invalid
 token is refused during the handshake, before the connection is accepted, so
 the client sees the upgrade rejected with `HTTP 403` rather than a connected
-socket that closes.
+socket that closes. Because the token is only presented at the handshake, the
+server closes an open socket with code 1008 when the session expires, and the
+frontend treats that exactly like a REST `401` and signs the user out.
 
 There is no public registration endpoint. Create the first administrator from
 the backend directory after the database is configured:
@@ -133,14 +141,29 @@ warning with the exact copy command above.
 ### Backend (Render)
 
 - **Root directory:** `backend`
-- **Build command:** `pip install -r requirements.txt`
+- **Build command:** `pip install -r requirements.lock`
 - **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 
-Set `ALLOWED_ORIGINS` to the live frontend URL once it is known (comma-separated if you have more than one origin).
-Also set `ENVIRONMENT=production`, a persistent production `DATABASE_URL`, and
-a long random `SESSION_SECRET`. After the first deployment, open a Render shell
-and run `python scripts/create_user.py --username your-admin --role admin`.
-Startup logs warn if CORS is unset/wildcard or no admin exists.
+Required environment variables:
+
+- `ENVIRONMENT=production`
+- `SESSION_SECRET` — at least 32 characters, generated with
+  `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Startup refuses
+  a missing, short, or example secret: anyone who knows the signing secret can
+  forge an admin session.
+- `DATABASE_URL` — persistent storage; the SQLite default is lost on an
+  ephemeral disk.
+- `ALLOWED_ORIGINS` — the live frontend URL (comma-separated for several).
+  `*` is refused in production.
+- `FORWARDED_ALLOW_IPS=*` — Render terminates traffic at its proxy. Without
+  this, uvicorn sees the proxy's IP for every user, so all logins share one
+  rate-limit bucket. Only set it when the app is reachable solely through the
+  proxy.
+
+Optional: `SESSION_TTL_SECONDS` (default 43200) and `LOGIN_RATE_LIMIT`
+(default `10/minute`). After the first deployment, open a Render shell and run
+`python scripts/create_user.py --username your-admin --role admin`. Startup
+logs warn if CORS is unset or no admin exists.
 
 ### Frontend (Vercel)
 

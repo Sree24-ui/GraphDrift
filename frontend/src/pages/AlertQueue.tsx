@@ -774,7 +774,7 @@ export default function AlertQueue() {
                   </th>
                   <th className="px-6 py-4 font-medium">Status</th>
                   <th className="px-6 py-4 font-medium">Reviewed by</th>
-                  <th className="px-6 py-4 text-right font-medium">Actions</th>
+                  <th className="sticky right-0 z-10 bg-surface shadow-[-10px_0_12px_-10px_rgba(0,0,0,0.7)] px-6 py-4 text-right font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-primary/5">
@@ -872,7 +872,7 @@ export default function AlertQueue() {
                         </td>
 
                         <td
-                          className="px-3 py-3"
+                          className="sticky right-0 z-10 bg-surface shadow-[-10px_0_12px_-10px_rgba(0,0,0,0.7)] px-3 py-3"
                           onClick={(e) => e.stopPropagation()}
                           onKeyDown={(e) => e.stopPropagation()}
                         >

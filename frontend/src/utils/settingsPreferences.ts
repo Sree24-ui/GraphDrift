@@ -50,8 +50,3 @@ export function saveDefaultConfidenceFilter(
 ): void {
   localStorage.setItem(CONFIDENCE_FILTER_KEY, filter)
 }
-
-export function resetDefaultFilters(): void {
-  saveDefaultStatusFilter(new Set(DEFAULT_STATUS_FILTER))
-  saveDefaultConfidenceFilter('all')
-}

@@ -5,7 +5,7 @@ import {
   getHealthStatus,
   getSettings,
   patchSettings,
-  WS_BASE_URL,
+  liveFeedUrl,
 } from '../api/client'
 import type { AlertStatus, AppSettings, ConfidenceLevel } from '../api/types'
 import { useAuth } from '../auth/useAuth'
@@ -19,6 +19,7 @@ import {
   saveDefaultStatusFilter,
 } from '../utils/settingsPreferences'
 import {
+  CALIBRATION_STEP_PERCENT_POINTS,
   DEFAULT_ALERT_TOP_PERCENT,
   DEFAULT_ALERT_TOP_PERCENTILE,
   MANUAL_ALERT_TOP_PERCENT_MAX,
@@ -151,7 +152,7 @@ export default function Settings() {
   }, [])
 
   useEffect(() => {
-    const ws = new WebSocket(`${WS_BASE_URL}/ws/live-feed`)
+    const ws = new WebSocket(liveFeedUrl())
     setWsStatus('connecting')
     ws.onopen = () => setWsStatus('connected')
     ws.onclose = () => setWsStatus('disconnected')
@@ -262,7 +263,7 @@ export default function Settings() {
                 type="range"
                 min={system?.manual_alert_top_percent_min ?? MANUAL_ALERT_TOP_PERCENT_MIN}
                 max={system?.manual_alert_top_percent_max ?? MANUAL_ALERT_TOP_PERCENT_MAX}
-                step={calibration?.step_percent_points ?? 0.5}
+                step={calibration?.step_percent_points ?? CALIBRATION_STEP_PERCENT_POINTS}
                 value={topPercent}
                 disabled={!isAdmin}
                 onChange={(e) => {

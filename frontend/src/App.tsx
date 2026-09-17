@@ -6,13 +6,16 @@ import { useAuth } from './auth/useAuth'
 import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import LoadingSpinner from './components/LoadingSpinner'
-import AccountDetail from './pages/AccountDetail'
-import AlertQueue from './pages/AlertQueue'
 import Login from './pages/Login'
-import Reports from './pages/Reports'
-import Settings from './pages/Settings'
 
+// Every authenticated page is split out so the first load only ships the
+// shell and the login form. Charts (recharts) and the force graph load with
+// the page that needs them.
 const LiveMonitor = lazy(() => import('./pages/LiveMonitor'))
+const AlertQueue = lazy(() => import('./pages/AlertQueue'))
+const AccountDetail = lazy(() => import('./pages/AccountDetail'))
+const Reports = lazy(() => import('./pages/Reports'))
+const Settings = lazy(() => import('./pages/Settings'))
 
 function ProtectedLayout() {
   const { user, checking } = useAuth()

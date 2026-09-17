@@ -13,6 +13,7 @@ import {
   loginUser,
   logoutUser,
   storeToken,
+  UNAUTHORIZED_EVENT,
 } from '../api/client'
 import type { CurrentUser } from '../api/types'
 import { AuthContext } from './useAuth'
@@ -28,8 +29,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onUnauthorized = () => clearSession()
-    window.addEventListener('graphdrift:unauthorized', onUnauthorized)
-    return () => window.removeEventListener('graphdrift:unauthorized', onUnauthorized)
+    window.addEventListener(UNAUTHORIZED_EVENT, onUnauthorized)
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized)
   }, [clearSession])
 
   useEffect(() => {
