@@ -379,61 +379,65 @@ Reproduce: `python -m evaluation.generate_adversarial_snapshot` then
 <!-- /adversarial -->
 ## Performance benchmarks
 
-Wall-clock via `time.perf_counter()` inside `run_detection_cycle(..., profile=True)`. 
-Each cycle measurement: 2 warmup + 20 timed runs on the baseline snapshot (12 timed runs at 500/1k accounts, 4 at 2.5k/5k). Alerts/score history are cleared between runs so persist cost is the create path. Sub-phases: features, Layer 1 (Mahalanobis), Layer 2 (graph + Louvain + hub concentration), 
-fusion/merge (per-scale percentiles + union top-k), peripheral cascade, persist (expire + 
-score history + alert writes, including explanation assembly).
+Wall-clock via `time.perf_counter()` inside `run_detection_cycle(..., profile=True)`.
+Cite the **after-fix** tables below. The original 2.18 slope was an algorithmic bug, not an inherent SQLite scaling law.
 
-### Detection cycle latency — baseline `multiseed_seed42.db`
+### Persist sub-phase breakdown (before the explanation-cache fix)
 
-Snapshot: 998 accounts, 7449 txs, active 15m=199, active 60m=424.
+Same frozen scale DBs as the original curve. Mean seconds; 2 timed runs after 1 warmup. `build_explanation` re-ran `extract_all_features` + `compute_baseline` once **per union candidate**.
 
-| Phase | mean / median / p95 / p99 (ms) |
-|-------|--------------------------------|
-| total cycle | 547 / 513 / 633 / 923 |
-| feature extraction (15m+60m) | 47 / 43 / 72 / 92 |
-| Layer 1 Mahalanobis (15m+60m) | 1 / 1 / 2 / 2 |
-| Layer 2 Louvain + hub conc. (15m+60m) | 100 / 92 / 131 / 150 |
-| fusion + union merge | 2 / 2 / 2 / 3 |
-| peripheral cascade | 339 / 316 / 426 / 616 |
-| alert/history persist | 53 / 48 / 66 / 103 |
+| Pool | Active 15m | Alerts | Total | Explain | History writes | Alert ORM | DB commit | Layer 2 |
+|------|------------|--------|-------|---------|----------------|-----------|-----------|---------|
+| 1,000 | 684 | 136 | 3.72 | **2.83** | 0.007 | 0.12 | 0.20 | 0.22 |
+| 2,500 | 1,602 | 271 | 21.75 | **18.75** | 0.021 | 0.27 | 0.56 | 1.23 |
+| 5,000 | 3,162 | 526 | 88.92 | **80.46** | 0.042 | 0.88 | 1.30 | 4.00 |
 
-### Scalability vs active-account count
+Explain is ~76–90% of the cycle. History inserts are tens of milliseconds. Per-row Alert commits are ~1.3s at 5k — real SQLite cost, but not the 2.18 exponent.
 
-| Target pool | Active 15m | Active 60m | Txs | Alerts | Cycle mean (ms) | Cycle p95 (ms) | Persist mean (ms) | Layer 2 mean (ms) |
-|-------------|------------|------------|-----|--------|-----------------|----------------|-------------------|-------------------|
-| 500 | 372 | 506 | 1037 | 87 | 396 | 441 | 51 | 64 |
-| 1000 | 684 | 1002 | 2038 | 152 | 799 | 838 | 85 | 163 |
-| 2500 | 1602 | 2486 | 5036 | 320 | 2305 | 2537 | 202 | 717 |
-| 5000 | 3162 | 4927 | 10035 | 603 | 7125 | 10465 | 558 | 2711 |
+Mechanism: `build_explanation` called `extract_all_features(db, as_of, window)` (full window scan) then `compute_baseline` for every alerted account. Candidate count tracks top-percentile of active accounts (~K ∝ N), each call is O(window txs) ∝ N → **O(N²)**. `explain_score` itself is cheap given a baseline; the waste was recomputing population statistics and re-extracting features.
 
-Log-log slope of mean cycle time vs 15m-active accounts: **1.34** (somewhat worse than linear (typical of graph/community work)). Slope 1 is linear. The superlinear term is **persist** (per-alert `build_explanation` + SQLite commits), not Louvain: alert count tracks the union top-percentile of active accounts. A 10,000-account target was not fully timed; at 5,000 accounts mean cycle already exceeds the 45s live interval.
+Fix: `compute_gdi_scores` attaches the single per-window `layer1_baseline` to each scored row; `build_explanation` reuses it (and the already-scored `feature_vector`) instead of scanning the window again. Fallback recompute remains for callers that do not pass through scoring.
 
-At 5,000 accounts, a **steady-state** pair of cycles that did not clear existing alerts still took **79.6s / 74.3s** (0 new alert actions) vs **74.9s** cold-create (526 CREATEs). Persist stayed ~69–74s in both cases: `build_explanation` plus score-history writes, not the INSERT of new Alert rows, dominate. Production would not get a free pass after the first tick without changing those paths.
+### Detection cycle latency — baseline `multiseed_seed42.db` (after fix)
+
+Snapshot: 998 accounts, 7449 txs, active 15m=199, active 60m=424. After-fix means (n=8 timed runs): total **429 ms**, persist **92 ms**, explain **3 ms**, Layer 2 **120 ms**, peripheral **154 ms**. Pre-fix (n=20): total 1453 / 1340 / 2148 / 2447 ms, persist 1035 ms — the extra second was the same redundant window scan.
+
+### Scalability vs active-account count (after fix)
+
+| Target pool | Active 15m | Alerts | Cycle mean (ms) | Cycle p95 (ms) | Explain mean (ms) | Persist mean (ms) | Commit mean (ms) | Layer 2 mean (ms) |
+|-------------|------------|--------|-----------------|----------------|-------------------|-------------------|------------------|-------------------|
+| 500 | 372 | 61 | 385 | 467 | 1 | 64 | 77 | 84 |
+| 1,000 | 684 | 136 | 1,065 | 1,433 | 4 | 153 | 203 | 274 |
+| 2,500 | 1,602 | 271 | 3,019 | 3,265 | 8 | 354 | 486 | 1,224 |
+| 5,000 | 3,162 | 526 | 7,971 | 8,825 | 23 | 819 | 1,028 | 4,212 |
+
+Log-log slope of mean cycle vs 15m-active accounts: **1.39** (somewhat worse than linear; typical of graph/community work). Pre-fix slope was **2.18**. At 5k, mean cycle dropped **107s → 8.0s**. Layer 2 is now the largest term (~4.2s / 8.0s). Commit-per-alert is ~1s at 5k and scales roughly with alert count, not with N². Batching Alert commits was **not** applied: the quadratic term was the explanation recompute, not SQLite.
+
+A 10,000-account target remains untimed; at 5k the cycle is well inside the 45s live interval after the fix.
 
 ### Transaction ingest throughput (write path only)
 
 5000 legitimate simulator writes, pool=2000.
 
-- Commit-per-tx (live simulator path): **446 tx/s** (11.22s).
-- Batched commit every 100: **334 tx/s** (14.95s).
+- Commit-per-tx (live simulator path): **356 tx/s** (14.05s).
+- Batched commit every 100: **1061 tx/s** (4.71s).
 - Demo loop injects 1 event / 2s (**0.5 events/s**); ingest is not the demo bottleneck.
 
 UPI nationally peaks at tens of thousands of tx/s; a single bank still sees hundreds to thousands tx/s at busy hours. SQLite's measured commit-per-tx rate substantiates the paper's prototype-not-production claim if ingest were required at bank scale on this process.
 
 ### End-to-end alert latency
 
-Live detection interval = **45s**. Observed cycle compute on the e2e fixture = **1851 ms**. Hub `qdey@paytm` alerted=True.
+Live detection interval = **45s**. Observed cycle compute on the e2e fixture = **1101 ms**. Hub `qdey@paytm` alerted=True.
 
-- Theoretical **best** (attack completes just before a cycle): ≈ **1851 ms** (compute only).
-- Theoretical **worst** (just after a cycle starts): ≈ **46.9 s** (45s wait + compute).
-- Expected wait if arrival is uniform in the interval: ≈ **24.4 s**.
+- Theoretical **best** (attack completes just before a cycle): ≈ **1101 ms** (compute only).
+- Theoretical **worst** (just after a cycle starts): ≈ **46.1 s** (45s wait + compute).
+- Expected wait if arrival is uniform in the interval: ≈ **23.6 s**.
 
-Immediate post-write cycle (best-case test) took **1858 ms** and produced the hub alert, matching the compute-bound best case. A 2s mid-interval wait then a cycle measured **3531 ms** write-to-alert (hub alerted=True), consistent with wait + compute. The 45s interval, not SQLite, dominates analyst-visible delay at current demo scale. At the 5k-account constructed snapshot, cycle compute already exceeds 45s, so the worst case becomes 2×cycle (overlap / skipped ticks) rather than interval+compute.
+Immediate post-write cycle (best-case test) took **1101 ms** and produced the hub alert, matching the compute-bound best case. A 2s mid-interval wait then a cycle measured **2709 ms** write-to-alert (hub alerted=True), consistent with wait + compute. The 45s interval, not SQLite, dominates analyst-visible delay at current demo scale and at the 5k constructed snapshot after the explanation-cache fix (mean cycle 8.0s).
 
 ### Honest read
 
-At the frozen baseline snapshot, mean cycle **547 ms** (p95 **633 ms**) is well under the **45s** loop, so cycles do not overlap. Persist is the largest slice (**53 ms** mean, ~10% of the cycle) because this bench clears alerts and re-creates them, including `build_explanation`. Layer 2 is **100 ms** mean. At the largest generated scale (15m-active=3162), mean cycle is **7.13s**. Scale exponent (log-log) **1.34**. Ingest at **446 commit-per-tx/s** is far above the 0.5 event/s demo, and far **below** national UPI. SQLite is a measured prototype ceiling, not a theoretical aside. End-to-end alert delay is **interval-dominated (~22s typical, ~45s+compute worst)**, not compute-dominated at current graph size. Performance is a **demo-scale strength** and a **production-scale limitation** — both belong in the paper.
+We tried attributing slope 2.18 to SQLite first; persist sub-timing showed **explain 80s vs commit 1.3s vs history 42ms at 5k**. Root cause was redundant `extract_all_features` + `compute_baseline` per alert (**O(K·N)** with K∝N). Caching the scoring-pass baseline dropped the exponent to **1.39** and 5k cycle time from **107s to 8.0s**. Residual scaling is Layer 2 (Louvain / hub concentration), somewhat superlinear, still inside the 45s loop at 5k. SQLite remains a **separate** ingest limitation (**356 commit-per-tx/s** vs bank/UPI volume), not the cycle-latency exponent. Do not cite 2.18 or 107s as the architecture's scaling law.
 
 Reproduce: `python -m evaluation.bench_perf`.
 
