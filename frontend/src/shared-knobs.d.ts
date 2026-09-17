@@ -27,7 +27,6 @@ declare module '../../shared/detection_knobs.json' {
     risk_threshold: number
     louvain_resolution: number
     community_similarity_threshold: number
-    max_partition_snapshots: number
     ring_hub_weight: number
     ring_external_weight: number
     ring_recent_weight: number

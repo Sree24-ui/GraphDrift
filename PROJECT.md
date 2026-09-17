@@ -42,7 +42,7 @@ source of truth for any figure you intend to cite.
 | | |
 |---|---|
 | Repository | https://github.com/Sree24-ui/GraphDrift (branch `main`) |
-| Backend tests | **109 passing** |
+| Backend tests | **112 passing** |
 | Frontend | `npm run build`, `tsc --noEmit`, `oxlint` all clean |
 | CI | GitHub Actions — backend (pytest) and frontend (build) jobs |
 | Python | **3.14** (pinned in CI to match development) |
@@ -380,7 +380,7 @@ JSON first, never a literal in a module or page.
 | Layer 1 | `gdi_min` 0.5, `gdi_max` 5.0, `raw_distance_clip` 12, `shrinkage_alpha` 0.1, `variance_floor` 1e-6, `min_accounts_for_full_cov` 10, `amount_entropy_bins` 10 |
 | Fusion | `fusion_gdi_weight` 0.5, `fusion_ring_weight` 0.5, `confidence_strong_percentile` 0.9, `score_escalation_relative_threshold` 0.1 |
 | Alert share | `default_alert_top_percent` 5, manual range 1–25 |
-| Layer 2 | `louvain_resolution` 2.0, `risk_threshold` 2.0, `min_ring_member_count` 4, `ring_hub_weight` 0.45, `ring_external_weight` 0.30, `ring_recent_weight` 0.15, `community_similarity_threshold` 0.7, `max_partition_snapshots` 5 |
+| Layer 2 | `louvain_resolution` 2.0, `risk_threshold` 2.0, `min_ring_member_count` 4, `ring_hub_weight` 0.45, `ring_external_weight` 0.30, `ring_recent_weight` 0.15, `community_similarity_threshold` 0.7 |
 | Peripheral | `peripheral_hub_connection_base` 3.5, `peripheral_pattern_consistency_bonus` 1.0, `peripheral_min_qualifying_score` 3.5 |
 | Learned signal | `enable_learned_signal` **false**, `learned_signal_min_labels_per_class` 50, `learned_signal_fusion_weight` 0.5 |
 | Co-hub | `enable_cohub_scoring` **false**, `co_hub_max_set_size` 4, `co_hub_similarity_ratio` 0.6, `co_hub_separation_ratio` 2.0 |
@@ -454,7 +454,7 @@ graphdrift/
 │   │   └── simulation/             generator, adversarial_attacks
 │   ├── evaluation/                 benchmarks, eval harnesses, RESULTS.md, data/
 │   ├── scripts/                    create_user, reset_demo_data, measure_alert_volume
-│   ├── tests/                      109 tests
+│   ├── tests/                      112 tests
 │   ├── requirements.txt            exact direct pins
 │   └── requirements.lock           full transitive lock (CI installs this)
 └── frontend/
@@ -540,7 +540,7 @@ npx tsc --noEmit && npm run lint && npm run build
 | Test file | Covers |
 |---|---|
 | `test_auth.py` | login, `/me`, expiry, rate limit (and its override), role gates, **read endpoints require auth**, WebSocket token and **expiry close**, **no labels on the wire**, **production config refusals**, review audit |
-| `test_scoring.py` | Mahalanobis, GDI ordering, ring risk (hub vs distributed), fusion, multi-scale union, explanation cache, co-hub off-by-default and gate cases, **exact top-k budget** |
+| `test_scoring.py` | Mahalanobis, GDI ordering, ring risk (hub vs distributed), fusion, multi-scale union, explanation cache, co-hub off-by-default and gate cases, **exact top-k budget**, **cross-process determinism of tie-breaking** |
 | `test_learned_signal.py` | feature parity between live rows and persisted explanations, trivial-baseline comparison, account-grouped folds, cold-start and no-signal refusals, **flag-off fused scores pinned to pre-change values** |
 | `test_eval_tooling.py` | tie diagnostics, `run_eval` patches only its own rows, **every RESULTS.md section still exists** |
 | `test_rings.py` | stable ring IDs, peripheral inheritance, bulk ring review |
@@ -725,6 +725,13 @@ AUC; both are recorded in RESULTS.md.
 closed-loop run are byte-identical to the pre-change pipeline under two hash
 seeds, and every committed evaluation artifact re-ran unchanged.
 
+**Reproducibility.** Detection output is now identical across processes, not
+just within one: tied candidates and peripheral hub links are ordered by
+account id rather than by `set` iteration, which Python's per-process hash
+randomisation made unstable. Dumps and a 60-cycle closed-loop run are
+byte-identical across three `PYTHONHASHSEED` values, no measured quantity
+changed, and a subprocess test pins it.
+
 ---
 
 ## 13. Known limitations and open evasion vectors
@@ -769,14 +776,7 @@ seeds, and every committed evaluation artifact re-ran unchanged.
     the signal cannot be shown to help on anything but oracle labels (§12.10).
     Its training set is also alerted accounts only, while it scores every
     account — a selection bias more labels of the same kind cannot fix.
-13. **Detection output is not reproducible across processes.** Python
-    randomises string hashing per process, and two places iterate a `set` of
-    account ids: tied fused scores are ordered by set iteration, and a
-    peripheral account linked to several flagged hubs picks its hub the same
-    way. Scores, the selected account set and the community partition are
-    unaffected — every cited metric reproduces — but alert creation order
-    (hence alert ids) and one explanation field are not deterministic.
-14. **Sessions cannot be revoked early.** JWTs are stateless: deleting a user
+13. **Sessions cannot be revoked early.** JWTs are stateless: deleting a user
     blocks new requests (the user lookup fails), but there is no per-token
     revocation list, and a WebSocket is only closed at token expiry.
 
@@ -800,6 +800,7 @@ seeds, and every committed evaluation artifact re-ran unchanged.
 | Learned-signal CV folds grouped by account | an account judged in several cycles would otherwise be memorised across folds |
 | 60-minute cascade reverted | closed nothing, since the hub is never flagged |
 | One knobs file shared by backend and frontend | numbers cannot silently diverge |
+| Tied candidates and hub links ordered by account id | set iteration varies with Python's per-process hash seed, which made alert ids and hub links irreproducible |
 | Exact dependency and runtime pins | cited benchmarks must be reproducible |
 
 ---
@@ -819,10 +820,11 @@ seeds, and every committed evaluation artifact re-ran unchanged.
   marker. The Isolation Forest scripts hardcoded GraphDrift's comparison
   figures; they now read `multiseed_eval.json`. `test_eval_tooling.py` fails CI
   if any RESULTS.md section disappears.
-- **Dead code in `community.py` (open).** `_store_partition_snapshot` maintains
-  `_PARTITION_SNAPSHOTS`, which nothing reads, and its body ends with a stray
-  `return [], 0.0` left over from an earlier edit. Harmless — the value is
-  discarded — but both should go.
+- **Fixed:** `community.py` maintained `_PARTITION_SNAPSHOTS`, a list nothing
+  ever read; it and its `max_partition_snapshots` knob are gone. An earlier
+  note here also claimed a stray `return [], 0.0` in that function — that was
+  a misreading of two concatenated `sed` ranges; all three such returns are
+  legitimate exits of `_detect_co_hub`.
 - **Fixed:** the PaySim corpus was reloaded with the current schema.
 - **`/docs` and `/openapi.json` are public**, including in production. The API
   itself is authenticated, but the schema is visible; disable them in

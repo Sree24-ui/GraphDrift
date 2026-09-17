@@ -19,7 +19,6 @@ from app.constants import (
     COMMUNITY_SIMILARITY_THRESHOLD,
     GDI_MAX,
     LOUVAIN_RESOLUTION,
-    MAX_PARTITION_SNAPSHOTS,
     MIN_RING_MEMBER_COUNT,
     RING_EXTERNAL_WEIGHT,
     RING_HUB_WEIGHT,
@@ -33,9 +32,6 @@ try:
     import community.community_louvain as community_louvain
 except ImportError:  # pragma: no cover - fallback for alternate package layout
     import community as community_louvain
-
-# In-memory store of recent Louvain partitions keyed by as_of timestamp.
-_PARTITION_SNAPSHOTS: list[dict] = []
 
 
 def _window_bounds(
@@ -170,14 +166,6 @@ def _community_existed_before(
         if _jaccard(members, previous_members) >= COMMUNITY_SIMILARITY_THRESHOLD:
             return True
     return False
-
-
-def _store_partition_snapshot(as_of: datetime, partition: dict[str, int]) -> None:
-    global _PARTITION_SNAPSHOTS
-    _PARTITION_SNAPSHOTS.append({"as_of": as_of, "partition": partition.copy()})
-    _PARTITION_SNAPSHOTS.sort(key=lambda item: item["as_of"])
-    if len(_PARTITION_SNAPSHOTS) > MAX_PARTITION_SNAPSHOTS:
-        _PARTITION_SNAPSHOTS = _PARTITION_SNAPSHOTS[-MAX_PARTITION_SNAPSHOTS:]
 
 
 def _detect_co_hub(
@@ -398,7 +386,6 @@ def get_ring_alerts(
     previous_partition = detect_communities(previous_graph) if previous_graph.number_of_nodes() else {}
 
     metrics_list = compute_community_metrics(graph, partition, previous_partition)
-    _store_partition_snapshot(as_of, partition)
 
     alerts: list[dict] = []
     for metrics in metrics_list:

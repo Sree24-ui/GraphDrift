@@ -397,3 +397,115 @@ def test_top_anomaly_budget_is_exact_at_multiples_of_twenty():
     assert top_anomaly_budget(20, 0.95) == 1
     assert top_anomaly_budget(141, 0.95) == 8  # genuine fraction still rounds up
     assert top_anomaly_budget(300, 0.85) == 45
+
+
+# --- deterministic tie-breaking across processes --------------------------
+# Python randomises string hashing per process, so iterating a set of account
+# ids made alert creation order (and a peripheral account's hub link) vary
+# between runs. Scores never moved, which is why it went unnoticed; this
+# fixture pins the ordering itself.
+
+_PROBE = """
+import json, sys
+from datetime import datetime
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from app.detection.fusion import compute_fused_scores_multiscale
+from app.detection.structural_pass import score_peripheral_accounts
+from app.settings_store import set_alert_top_percentile
+
+db = sessionmaker(bind=create_engine("sqlite:///" + sys.argv[1]))()
+as_of = datetime.fromisoformat(sys.argv[2])
+# Widest allowed share, so the candidate list is long enough to contain ties.
+set_alert_top_percentile(0.75, source="manual")
+merged = compute_fused_scores_multiscale(db, as_of)
+# Both hubs explicitly: "shared@ybl" then qualifies against each with the same
+# score, which is the tie the hub link used to resolve by set order.
+peripheral = score_peripheral_accounts(db, as_of, 15, {"hubB@ybl", "hubA@ybl"})
+print(json.dumps([
+    [[row["account_id"], row["fused_score"]] for row in merged],
+    [[row["account_id"], row["linked_hub_account_id"]] for row in peripheral],
+]))
+"""
+
+
+def _seed_two_rings_and_a_shared_spoke(db, now):
+    """Two identical hub-and-spoke rings (so scores tie) and one 2-tx account
+    paid by both hubs (so two hubs qualify for it with the same score)."""
+    from app.models import Account, Transaction
+
+    crowd = [f"n{i}@ybl" for i in range(12)]
+    hubs = ["hubA@ybl", "hubB@ybl"]
+    spokes = [f"s{i}@ybl" for i in range(8)]
+    for acct in crowd + hubs + spokes + ["shared@ybl"]:
+        db.add(Account(id=acct, created_at=now, last_active_at=now))
+
+    def tx(sender, receiver, amount, minutes_ago):
+        db.add(
+            Transaction(
+                sender_id=sender,
+                receiver_id=receiver,
+                amount=float(amount),
+                timestamp=now - timedelta(minutes=minutes_ago),
+                is_synthetic_attack=False,
+            )
+        )
+
+    for i, acct in enumerate(crowd):
+        for j in range(3 + i % 3):
+            tx(acct, crowd[(i + 1 + j) % 12], 100 + 37 * i + 11 * j, 14 - (i + j) % 13)
+    for h, hub in enumerate(hubs):
+        for i in range(4):
+            tx(spokes[h * 4 + i], hub, 45000 + i, 9 - i)
+        for i in range(3):
+            tx(hub, crowd[i], 44000 + i, 3 - i * 0.5)
+        tx(hub, "shared@ybl", 43000 + h, 2 - h * 0.5)
+    db.commit()
+
+
+def test_tie_breaking_is_deterministic_across_processes(tmp_path):
+    import json
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from app.db import Base
+
+    now = datetime(2026, 8, 12, 12, 0, 0)
+    db_path = tmp_path / "ties.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    Base.metadata.create_all(engine)
+    with sessionmaker(bind=engine)() as db:
+        _seed_two_rings_and_a_shared_spoke(db, now)
+    engine.dispose()
+
+    backend_root = Path(__file__).resolve().parents[1]
+    runs = []
+    for hash_seed in ("0", "1"):
+        result = subprocess.run(
+            [sys.executable, "-c", _PROBE, str(db_path), now.isoformat()],
+            cwd=backend_root,
+            env={**os.environ, "PYTHONHASHSEED": hash_seed},
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        runs.append(json.loads(result.stdout))
+
+    order, peripheral = runs[0]
+    assert runs[0] == runs[1], "pipeline output depends on PYTHONHASHSEED"
+    assert dict(peripheral)["shared@ybl"] == "hubA@ybl", "hub tie must break lexically"
+
+    # The fixture must actually contain ties, or the comparison proves nothing,
+    # and tied candidates must be ordered by account id rather than set order.
+    tied = [
+        [account for account, score in order if score == tie]
+        for tie in {score for _, score in order}
+        if sum(score == tie for _, score in order) > 1
+    ]
+    assert tied, "fixture produced no tied fused scores"
+    assert all(group == sorted(group) for group in tied), "tied rows not in id order"

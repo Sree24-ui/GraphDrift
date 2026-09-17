@@ -157,7 +157,9 @@ def score_peripheral_accounts(
             continue
 
         best: dict | None = None
-        for hub_id in top_anomaly_accounts:
+        # sorted(), not set order: equal-scoring hubs are resolved by "first
+        # seen" below, and set iteration varies with Python's hash seed.
+        for hub_id in sorted(top_anomaly_accounts):
             if hub_id == account_id:
                 continue
 

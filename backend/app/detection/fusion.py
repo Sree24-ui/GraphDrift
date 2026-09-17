@@ -320,9 +320,11 @@ def select_top_anomaly_accounts_multiscale(
     selected = selected_15 | selected_60
     by_15 = {row["account_id"]: row for row in primary}
     by_60 = {row["account_id"]: row for row in secondary}
+    # sorted(), not set order: ties in fused_score below keep this order, and
+    # set iteration of account ids varies with Python's per-process hash seed.
     merged = [
         _merge_multiscale_display_row(by_15.get(account_id), by_60.get(account_id))
-        for account_id in selected
+        for account_id in sorted(selected)
     ]
     for row in merged:
         aid = row["account_id"]
@@ -792,7 +794,7 @@ def run_detection_cycle(
         by_60 = {row["account_id"]: row for row in secondary}
         history_rows = [
             _merge_multiscale_display_row(by_15.get(account_id), by_60.get(account_id))
-            for account_id in set(by_15) | set(by_60)
+            for account_id in sorted(set(by_15) | set(by_60))
         ]
         with phase("persist"):
             persist_score_history(db, history_rows, as_of)

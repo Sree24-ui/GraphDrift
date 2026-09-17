@@ -100,6 +100,13 @@ def reset_demo_data(*, assume_yes: bool = False) -> None:
         db.commit()
         counts_after = _row_counts(db)
 
+    if engine.dialect.name == "sqlite":
+        # DELETE alone leaves the file at its high-water mark: a long demo run
+        # can leave hundreds of MB of free pages behind.
+        print("\nReclaiming free pages (VACUUM)...")
+        with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            conn.execute(text("VACUUM"))
+
     _print_counts("After reset:", counts_after)
 
     if any(count != 0 for count in counts_after.values()):

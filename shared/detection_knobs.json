@@ -26,7 +26,6 @@
   "risk_threshold": 2.0,
   "louvain_resolution": 2.0,
   "community_similarity_threshold": 0.7,
-  "max_partition_snapshots": 5,
   "ring_hub_weight": 0.45,
   "ring_external_weight": 0.3,
   "ring_recent_weight": 0.15,

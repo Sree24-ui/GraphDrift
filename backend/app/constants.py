@@ -57,7 +57,6 @@ LOUVAIN_RESOLUTION: float = float(KNOBS["louvain_resolution"])
 COMMUNITY_SIMILARITY_THRESHOLD: float = float(
     KNOBS["community_similarity_threshold"]
 )
-MAX_PARTITION_SNAPSHOTS: int = int(KNOBS["max_partition_snapshots"])
 RING_HUB_WEIGHT: float = float(KNOBS["ring_hub_weight"])
 RING_EXTERNAL_WEIGHT: float = float(KNOBS["ring_external_weight"])
 RING_RECENT_WEIGHT: float = float(KNOBS["ring_recent_weight"])

@@ -862,18 +862,37 @@ inspection:
   test pins the fused scores of a fixed 17-account fixture to the values the
   pre-change pipeline produced.
 
-### Reproducibility note found while verifying this
+### Cross-process determinism (fixed 2026-09-18)
 
-Two runs of the unchanged pipeline in different processes do **not** produce
-identical output, because Python randomises string hashing per process and two
-places iterate a `set` of account ids: the multi-scale candidate list orders
-exactly-tied fused scores by set iteration, and a peripheral account linked to
-several flagged hubs picks its `linked_hub_account_id` the same way. Nothing
-else moves — the scored population, every score, the selected account set and
-the community partition are identical, which is why every cited metric
-reproduces — but alert creation order (hence alert ids) and one explanation
-field are not deterministic across processes. Fixing it means changing the
-default pipeline's tie order, so it is recorded, not changed here.
+Verifying the gate above turned up a reproducibility defect in the **default**
+pipeline, since fixed. Python randomises string hashing per process, and two
+places iterated a `set` of account ids where order decided an outcome: the
+multi-scale candidate list ordered exactly-tied fused scores by set iteration,
+and a peripheral account linked to several flagged hubs picked its
+`linked_hub_account_id` the same way. Both now iterate `sorted()`, as does the
+score-history write, so ordering is a function of the data alone.
+
+Before the fix, two runs of identical code on identical data agreed only when
+`PYTHONHASHSEED` happened to match. After it, the full fused-score dump (7
+databases × 6 as_of points, both scales, union, meta, Layer-1 baselines and the
+peripheral pass) is **byte-identical across `PYTHONHASHSEED` 0, 1 and 7**, and
+so is a 60-cycle `closed_loop_calibration` run.
+
+No measured quantity moved, checked account by account across all 42 scoring
+points: identical scored population, identical selected account set, identical
+row content and meta block, identical peripheral scores. Only two things
+changed, both of them the point of the fix — the order of tied rows at 14 of
+42 points, and the recorded hub for 5 peripheral accounts that had more than
+one qualifying hub. The closed-loop run is byte-identical to the pre-fix
+baseline, and `eval_multi_seed`, `eval_adversarial`, `run_eval` and
+`run_ibm_aml_eval` leave every committed result file and this document
+unchanged.
+
+**What this now supports.** A cited figure reproduces from the committed corpus
+on any machine, and so does the alert stream itself: same alert ids, same
+creation order, same hub links. `test_scoring.py` pins it by running the
+pipeline in two subprocesses under different hash seeds and comparing, which
+fails if either iteration reverts to set order.
 
 Reproduce: `python -m evaluation.eval_learned_signal --label-db graphdrift.db
 --seed-a 20260401 --seed-b 20260402` → `data/learned_signal_eval.json`.
