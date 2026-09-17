@@ -1,0 +1,162 @@
+{
+  "reality_check": [
+    {
+      "database": "graphdrift.db",
+      "judged_by_status": {
+        "confirmed": 4
+      },
+      "judged_with_reviewer": {},
+      "fusion_scored_confirmed": 3,
+      "fusion_scored_false_positive": 0,
+      "fusion_scored_accounts": 3,
+      "guard": {
+        "active": false,
+        "reason": "inactive (cold start): 3 confirmed / 0 false_positive fusion-scored labels; needs at least 50 of each"
+      },
+      "evaluation": null
+    },
+    {
+      "database": "e2e.db",
+      "judged_by_status": {
+        "confirmed": 22,
+        "false_positive": 29
+      },
+      "judged_with_reviewer": {
+        "analyst-e2e (analyst)": 1,
+        "local-admin (admin)": 50
+      },
+      "fusion_scored_confirmed": 3,
+      "fusion_scored_false_positive": 13,
+      "fusion_scored_accounts": 16,
+      "guard": {
+        "active": false,
+        "reason": "inactive (cold start): 3 confirmed / 13 false_positive fusion-scored labels; needs at least 50 of each"
+      },
+      "evaluation": null
+    },
+    {
+      "database": "graphdrift_snapshot_2026-08-12.db",
+      "judged_by_status": {
+        "confirmed": 5,
+        "false_positive": 3
+      },
+      "judged_with_reviewer": {},
+      "fusion_scored_confirmed": 5,
+      "fusion_scored_false_positive": 3,
+      "fusion_scored_accounts": 8,
+      "guard": {
+        "active": false,
+        "reason": "inactive (cold start): 5 confirmed / 3 false_positive fusion-scored labels; needs at least 50 of each"
+      },
+      "evaluation": null
+    }
+  ],
+  "oracle_mechanism_check": {
+    "labels": "simulator ground truth via closed_loop_calibration, not analyst decisions",
+    "cycles_per_trace": 60,
+    "trace_a": {
+      "seed": 20260401,
+      "peripheral_labels_excluded": 4204,
+      "n_accounts": 150,
+      "guard": {
+        "active": true,
+        "reason": "active: trained on 2421 confirmed / 422 false_positive fusion-scored labels; CV F1 0.946 vs always-confirmed 0.920 (p=7.71e-10), accuracy 0.905 vs majority 0.852 (p=9.02e-11)"
+      },
+      "evaluation": {
+        "n_confirmed": 2421,
+        "n_false_positive": 422,
+        "n_accounts": 150,
+        "cv": "5x repeated stratified 5-fold, grouped by account",
+        "model": {
+          "precision": {
+            "mean": 0.9112743887988676,
+            "std": 0.0066639090036707
+          },
+          "recall": {
+            "mean": 0.9837082021765221,
+            "std": 0.005574489191221648
+          },
+          "f1": {
+            "mean": 0.9460889638044288,
+            "std": 0.004578927732814255
+          },
+          "accuracy": {
+            "mean": 0.9045161024959627,
+            "std": 0.008293305199530981
+          }
+        },
+        "always_confirmed": {
+          "precision": {
+            "mean": 0.8515753415893162,
+            "std": 0.003191513819351803
+          },
+          "recall": {
+            "mean": 1.0,
+            "std": 0.0
+          },
+          "f1": {
+            "mean": 0.9198356344317493,
+            "std": 0.0018617597854060036
+          },
+          "accuracy": {
+            "mean": 0.8515753415893162,
+            "std": 0.003191513819351803
+          }
+        },
+        "majority": {
+          "precision": {
+            "mean": 0.8515753415893162,
+            "std": 0.003191513819351803
+          },
+          "recall": {
+            "mean": 1.0,
+            "std": 0.0
+          },
+          "f1": {
+            "mean": 0.9198356344317493,
+            "std": 0.0018617597854060036
+          },
+          "accuracy": {
+            "mean": 0.8515753415893162,
+            "std": 0.003191513819351803
+          }
+        },
+        "p_f1_vs_always_confirmed": 7.705676376259771e-10,
+        "p_accuracy_vs_majority": 9.024992531933053e-11,
+        "beats_baseline": true
+      }
+    },
+    "trace_b_held_out": {
+      "seed": 20260402,
+      "peripheral_labels_excluded": 3989,
+      "n_confirmed": 2344,
+      "n_false_positive": 462,
+      "n_accounts": 150,
+      "model": {
+        "precision": 0.901051811453058,
+        "recall": 0.9867747440273038,
+        "f1": 0.9419670128283445,
+        "accuracy": 0.898431931575196
+      },
+      "always_confirmed": {
+        "precision": 0.8353528153955809,
+        "recall": 1.0,
+        "f1": 0.9102912621359224,
+        "accuracy": 0.8353528153955809
+      },
+      "roc_auc": 0.9079560229304258,
+      "average_precision": 0.9798409367266439,
+      "fused_score_roc_auc": 0.6805932619712484,
+      "majority": {
+        "precision": 0.8353528153955809,
+        "recall": 1.0,
+        "f1": 0.9102912621359224,
+        "accuracy": 0.8353528153955809
+      },
+      "f1_gain_ci95": [
+        0.025257099053093746,
+        0.03857778764161876
+      ]
+    }
+  }
+}

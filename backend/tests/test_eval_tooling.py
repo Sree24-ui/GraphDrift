@@ -65,6 +65,7 @@ def test_run_eval_patch_refuses_to_invent_rows(tmp_path, monkeypatch):
         "### Layer 2 hub-concentration isolation",
         "## Analyst-feedback calibration",
         "## Co-hub scoring (optional, off by default)",
+        "## Analyst-feedback learned signal (optional, off by default)",
         "### PaySim: no detection signal (tie-break artifact)",
     ],
 )

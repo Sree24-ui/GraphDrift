@@ -22,6 +22,11 @@ Real-time UPI fraud detection system.
    produced the cited evaluation results; `requirements.txt` lists the direct
    dependencies you edit.
 
+   LightGBM is installed for the optional analyst-feedback learned signal
+   (`enable_learned_signal`, off by default). It is imported only when that
+   signal is enabled; on macOS that needs the OpenMP runtime
+   (`brew install libomp`).
+
 3. Copy the example env file and adjust if needed:
 
    ```bash

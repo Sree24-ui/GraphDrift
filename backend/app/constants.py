@@ -81,6 +81,16 @@ CO_HUB_MAX_SET_SIZE: int = int(KNOBS["co_hub_max_set_size"])
 CO_HUB_SIMILARITY_RATIO: float = float(KNOBS["co_hub_similarity_ratio"])
 CO_HUB_SEPARATION_RATIO: float = float(KNOBS["co_hub_separation_ratio"])
 
+# Off by default: a third fusion signal learned from analyst review decisions.
+# It stays inactive even when enabled until there are enough labels of each
+# class and it beats the trivial baselines; see app/detection/learned_signal.py
+# and "Analyst-feedback learned signal" in evaluation/RESULTS.md.
+ENABLE_LEARNED_SIGNAL: bool = bool(KNOBS["enable_learned_signal"])
+LEARNED_SIGNAL_MIN_LABELS_PER_CLASS: int = int(
+    KNOBS["learned_signal_min_labels_per_class"]
+)
+LEARNED_SIGNAL_FUSION_WEIGHT: float = float(KNOBS["learned_signal_fusion_weight"])
+
 MIN_REVIEWED_SAMPLE: int = int(KNOBS["min_reviewed_sample"])
 CALIBRATION_WINDOW: int = int(KNOBS["calibration_window"])
 TARGET_BAND_LOW: float = float(KNOBS["target_band_low"])

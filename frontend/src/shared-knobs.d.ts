@@ -39,6 +39,9 @@ declare module '../../shared/detection_knobs.json' {
     co_hub_max_set_size: number
     co_hub_similarity_ratio: number
     co_hub_separation_ratio: number
+    enable_learned_signal: boolean
+    learned_signal_min_labels_per_class: number
+    learned_signal_fusion_weight: number
     min_reviewed_sample: number
     calibration_window: number
     target_band_low: number

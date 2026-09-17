@@ -25,11 +25,13 @@ from app.constants import (
     FUSION_GDI_WEIGHT,
     FUSION_RING_WEIGHT,
     GDI_MAX,
+    LEARNED_SIGNAL_FUSION_WEIGHT,
     MIN_TRANSACTIONS_FOR_SCORING,
     SCORE_ESCALATION_RELATIVE_THRESHOLD,
     SECONDARY_WINDOW_MINUTES,
     WINDOW_MINUTES,
 )
+from app.detection import learned_signal
 from app.detection.community import get_ring_alerts
 from app.detection.features import extract_all_features
 from app.detection.lifecycle import auto_expire_stale_alerts
@@ -217,12 +219,28 @@ def compute_fused_scores(
 
         gdi_percentiles = _percentile_ranks([row["gdi_score"] for row in raw_rows])
         ring_percentiles = _percentile_ranks([row["ring_risk_score"] for row in raw_rows])
+        # None unless enable_learned_signal is on and the model has activated.
+        learned_scores = learned_signal.predict_confirmed_proba(db, raw_rows)
+        learned_percentiles = (
+            _percentile_ranks(learned_scores) if learned_scores is not None else None
+        )
 
         fused_results: list[dict] = []
-        for row, gdi_pct, ring_pct in zip(raw_rows, gdi_percentiles, ring_percentiles):
+        for index, (row, gdi_pct, ring_pct) in enumerate(
+            zip(raw_rows, gdi_percentiles, ring_percentiles)
+        ):
             fused_score = GDI_MAX * (
                 (FUSION_GDI_WEIGHT * gdi_pct) + (FUSION_RING_WEIGHT * ring_pct)
             )
+            learned = {}
+            if learned_percentiles is not None:
+                learned_pct = learned_percentiles[index]
+                fused_score = GDI_MAX * (
+                    FUSION_GDI_WEIGHT * gdi_pct
+                    + FUSION_RING_WEIGHT * ring_pct
+                    + LEARNED_SIGNAL_FUSION_WEIGHT * learned_pct
+                ) / (FUSION_GDI_WEIGHT + FUSION_RING_WEIGHT + LEARNED_SIGNAL_FUSION_WEIGHT)
+                learned = {"learned_percentile": float(learned_pct)}
 
             fused_results.append(
                 {
@@ -238,6 +256,7 @@ def compute_fused_scores(
                     "layer1_baseline": row.get("layer1_baseline"),
                     "ring_info": row["ring_info"],
                     "ring_id": None,
+                    **learned,
                 }
             )
 
@@ -477,6 +496,11 @@ def build_explanation(
         "detection_window": window_minutes,
         "fused_score_by_window": fused_result.get("fused_score_by_window"),
         "ring_id": fused_result.get("ring_id"),
+        **(
+            {"learned_percentile": float(fused_result["learned_percentile"])}
+            if "learned_percentile" in fused_result
+            else {}
+        ),
     }
 
 

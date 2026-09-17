@@ -42,13 +42,13 @@ source of truth for any figure you intend to cite.
 | | |
 |---|---|
 | Repository | https://github.com/Sree24-ui/GraphDrift (branch `main`) |
-| Backend tests | **97 passing** |
+| Backend tests | **109 passing** |
 | Frontend | `npm run build`, `tsc --noEmit`, `oxlint` all clean |
 | CI | GitHub Actions — backend (pytest) and frontend (build) jobs |
 | Python | **3.14** (pinned in CI to match development) |
 | Node | **24.20.0** — Active LTS "Krypton" line (pinned in CI) |
-| Backend deps | 21 direct pins in `requirements.txt`; full transitive lock in `requirements.lock` (CI installs from it) |
-| Detection default | single-node hub concentration; co-hub scoring **off** |
+| Backend deps | 22 direct pins in `requirements.txt`; full transitive lock in `requirements.lock` (CI installs from it) |
+| Detection default | single-node hub concentration; co-hub scoring **off**; learned signal **off** |
 | Frontend bundle | initial load 292 KB (95 KB gzip); every authenticated page is lazy-loaded |
 
 ---
@@ -144,7 +144,8 @@ density score misses exactly the rings this system exists to find.
 raw scale dominates.
 
 **Confidence** — `high` if both GDI and ring percentiles exceed 0.9, `medium`
-if either does, otherwise `low`.
+if either does, otherwise `low`. Confidence is a two-layer judgement and is not
+affected by the optional learned signal (§3.8).
 
 ### 3.4 Multi-scale: union, not max-merge
 
@@ -199,6 +200,23 @@ propagates and a missed hub leaves its spokes invisible.
 as one logical hub, closing the `diluted_hub` evasion. It is gated on
 `enable_cohub_scoring` (default `false`) because enabling it lowers accuracy on
 every other measure. See §12.5 and §14.
+
+### 3.8 Analyst-feedback learned signal (optional, off by default)
+
+`learned_signal.py`. A LightGBM classifier trained on judged alerts
+(`confirmed` vs `false_positive`) predicts `P(confirmed)` for every scored
+account; its percentile rank joins fusion as a third input (equal thirds).
+Inputs are only what the two layers already compute — the eight Layer-1
+z-scores, `gdi_score`, `ring_risk_score`, `hub_concentration` — read from each
+alert's persisted explanation, so training and serving inputs match by
+construction. Peripheral-cascade alerts are excluded: fusion never scored them.
+
+Gated on `enable_learned_signal` (default `false`). Even when enabled it stays
+inactive, and logs why, until there are **50 labels of each class from at least
+5 accounts** and account-grouped cross-validation beats both trivial baselines
+(always-"confirmed" for F1, majority for accuracy). On every database in this
+project it refuses: the real review history is 3–13 labels per class. See
+§12.10.
 
 ---
 
@@ -364,6 +382,7 @@ JSON first, never a literal in a module or page.
 | Alert share | `default_alert_top_percent` 5, manual range 1–25 |
 | Layer 2 | `louvain_resolution` 2.0, `risk_threshold` 2.0, `min_ring_member_count` 4, `ring_hub_weight` 0.45, `ring_external_weight` 0.30, `ring_recent_weight` 0.15, `community_similarity_threshold` 0.7, `max_partition_snapshots` 5 |
 | Peripheral | `peripheral_hub_connection_base` 3.5, `peripheral_pattern_consistency_bonus` 1.0, `peripheral_min_qualifying_score` 3.5 |
+| Learned signal | `enable_learned_signal` **false**, `learned_signal_min_labels_per_class` 50, `learned_signal_fusion_weight` 0.5 |
 | Co-hub | `enable_cohub_scoring` **false**, `co_hub_max_set_size` 4, `co_hub_similarity_ratio` 0.6, `co_hub_separation_ratio` 2.0 |
 | Calibration | window 50, band 0.60–0.85, step 0.5 pp, clamp 2–15%, 2 consecutive ticks, every 10 cycles, `min_reviewed_sample` 20 |
 | Runtime | detection 45 s, metrics 10 s, simulation 2 s, `alert_staleness_hours` 2, `replay_step_seconds` 30 |
@@ -401,7 +420,9 @@ algorithm name (configurable algorithms invite alg-confusion), the 12-character
 password floor, Argon2 library defaults (they track RFC 9106), the 256-character
 password cap (bounds hashing work per request), UPI handle suffixes and the Faker
 locale, simulator attack shapes (e.g. the 2–5% mule skim), evaluation-corpus
-compression factors (PaySim ÷20, IBM ÷332, IBM 48 h slice), and the frozen
+compression factors (PaySim ÷20, IBM ÷332, IBM 48 h slice), the learned
+signal's small-data LightGBM hyperparameters and its 5×5 CV shape (tune with
+nested CV once labels number in the thousands), and the frozen
 clock in the calibration stress harness — which is what keeps
 `bench_calibration` byte-reproducible.
 
@@ -428,13 +449,14 @@ graphdrift/
 │   │   ├── api/                    auth, alerts, rings, accounts, graph,
 │   │   │                           reports, settings, websocket, deps, schemas
 │   │   ├── detection/              features, node_anomaly, community, fusion,
-│   │   │                           structural_pass, calibration, lifecycle,
-│   │   │                           ring_id, cycle_timing
+│   │   │                           structural_pass, calibration, learned_signal,
+│   │   │                           lifecycle, ring_id, cycle_timing
 │   │   └── simulation/             generator, adversarial_attacks
 │   ├── evaluation/                 benchmarks, eval harnesses, RESULTS.md, data/
 │   ├── scripts/                    create_user, reset_demo_data, measure_alert_volume
-│   ├── tests/                      73 tests
-│   └── requirements.txt            exact pins
+│   ├── tests/                      109 tests
+│   ├── requirements.txt            exact direct pins
+│   └── requirements.lock           full transitive lock (CI installs this)
 └── frontend/
     └── src/
         ├── api/                    axios client, types
@@ -519,6 +541,7 @@ npx tsc --noEmit && npm run lint && npm run build
 |---|---|
 | `test_auth.py` | login, `/me`, expiry, rate limit (and its override), role gates, **read endpoints require auth**, WebSocket token and **expiry close**, **no labels on the wire**, **production config refusals**, review audit |
 | `test_scoring.py` | Mahalanobis, GDI ordering, ring risk (hub vs distributed), fusion, multi-scale union, explanation cache, co-hub off-by-default and gate cases, **exact top-k budget** |
+| `test_learned_signal.py` | feature parity between live rows and persisted explanations, trivial-baseline comparison, account-grouped folds, cold-start and no-signal refusals, **flag-off fused scores pinned to pre-change values** |
 | `test_eval_tooling.py` | tie diagnostics, `run_eval` patches only its own rows, **every RESULTS.md section still exists** |
 | `test_rings.py` | stable ring IDs, peripheral inheritance, bulk ring review |
 | `test_calibration.py` | stress streams, damping, clamps, status exclusion, manual override, live tick cadence |
@@ -538,7 +561,7 @@ CI (`.github/workflows/ci.yml`) runs on every push and pull request: Python
 ## 12. Evaluation results
 
 Everything below is the **default configuration** (`enable_cohub_scoring:
-false`). Full tables, per-seed breakdowns and methodology notes are in
+false`, `enable_learned_signal: false`). Full tables, per-seed breakdowns and methodology notes are in
 [`RESULTS.md`](backend/evaluation/RESULTS.md).
 
 ### 12.1 Headline — multi-seed synthetic (n = 5 seeds, mean ± std)
@@ -679,6 +702,29 @@ alert was itself a false positive.
 | slope 2.18, 107 s | pre-fix bug | 1.39, 8.0 s |
 | slow-drip 1/1 | n = 1 | 7/33 (60 m), 11/33 (union) |
 
+### 12.10 Analyst-feedback learned signal (off by default)
+
+**Real labels: nowhere near enough.** The accumulated database holds 4 judged
+alerts (all `confirmed`, **no negative class**); the live end-to-end database
+holds 51, of which 50 were written by a script from simulator ground truth and
+one by a person. After excluding peripheral alerts, which fusion never scored,
+the largest usable set is **3 confirmed / 13 false positive** against a
+50-per-class minimum. The cold-start guard refuses on every database, which is
+the honest result: the mechanism is built and validated, and there is not yet
+enough analyst feedback to show it beats a trivial baseline.
+
+**Mechanism on oracle labels** (two fresh seeded traces, ground-truth
+judgements, *not* analyst decisions): grouped-CV F1 **0.946 ± 0.005** vs 0.920
+for always-"confirmed" (p 7.7e-10), accuracy 0.905 vs 0.852 (p 9.0e-11);
+held-out trace F1 0.942 vs 0.910, bootstrap gain CI **[+0.025, +0.039]**, ROC
+AUC **0.908** where today's fused score scores 0.681. An earlier
+`class_weight="balanced"` configuration **failed** the same gate at identical
+AUC; both are recorded in RESULTS.md.
+
+**Default path proven untouched**: 99 MB of fused-score dumps and a 60-cycle
+closed-loop run are byte-identical to the pre-change pipeline under two hash
+seeds, and every committed evaluation artifact re-ran unchanged.
+
 ---
 
 ## 13. Known limitations and open evasion vectors
@@ -717,7 +763,20 @@ alert was itself a false positive.
 11. **Fusion inflates weak Layer-1 scores.** Ring members without enough
     transactions enter fusion with GDI 0, so a scored account with an
     unremarkable GDI still ranks high on the Layer-1 percentile.
-12. **Sessions cannot be revoked early.** JWTs are stateless: deleting a user
+12. **The learned signal has no real data to learn from.** Every database in
+    the project is an order of magnitude below the 50-labels-per-class
+    minimum, and the accumulated one has no `false_positive` labels at all, so
+    the signal cannot be shown to help on anything but oracle labels (§12.10).
+    Its training set is also alerted accounts only, while it scores every
+    account — a selection bias more labels of the same kind cannot fix.
+13. **Detection output is not reproducible across processes.** Python
+    randomises string hashing per process, and two places iterate a `set` of
+    account ids: tied fused scores are ordered by set iteration, and a
+    peripheral account linked to several flagged hubs picks its hub the same
+    way. Scores, the selected account set and the community partition are
+    unaffected — every cited metric reproduces — but alert creation order
+    (hence alert ids) and one explanation field are not deterministic.
+14. **Sessions cannot be revoked early.** JWTs are stateless: deleting a user
     blocks new requests (the user lookup fails), but there is no per-token
     revocation list, and a WebSocket is only closed at token expiry.
 
@@ -736,6 +795,9 @@ alert was itself a false positive.
 | All endpoints authenticated at router level | the UI already gated every page; the API did not |
 | WebSocket token via query string, shared validator | browsers cannot set handshake headers; one validator prevents drift |
 | Co-hub scoring shipped but off | closes one evasion at a cost to every other measure |
+| Learned signal shipped but off, and self-disabling | it must not activate on a handful of labels, or on a model no better than "always confirmed" |
+| Learned signal trained unweighted | `class_weight="balanced"` moves the decision threshold and fails the gate at identical ranking quality |
+| Learned-signal CV folds grouped by account | an account judged in several cycles would otherwise be memorised across folds |
 | 60-minute cascade reverted | closed nothing, since the hub is never flagged |
 | One knobs file shared by backend and frontend | numbers cannot silently diverge |
 | Exact dependency and runtime pins | cited benchmarks must be reproducible |
@@ -757,6 +819,10 @@ alert was itself a false positive.
   marker. The Isolation Forest scripts hardcoded GraphDrift's comparison
   figures; they now read `multiseed_eval.json`. `test_eval_tooling.py` fails CI
   if any RESULTS.md section disappears.
+- **Dead code in `community.py` (open).** `_store_partition_snapshot` maintains
+  `_PARTITION_SNAPSHOTS`, which nothing reads, and its body ends with a stray
+  `return [], 0.0` left over from an earlier edit. Harmless — the value is
+  discarded — but both should go.
 - **Fixed:** the PaySim corpus was reloaded with the current schema.
 - **`/docs` and `/openapi.json` are public**, including in production. The API
   itself is authenticated, but the schema is visible; disable them in

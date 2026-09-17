@@ -200,7 +200,8 @@ Seeds: 42, 123, 7, 2026, 99. Reproduce: `python -m evaluation.generate_multi_see
 > closed-loop and peripheral-selectivity results. The Isolation Forest
 > baselines, which use the same budget, were re-run below.
 >
-> These are the **default configuration** (`enable_cohub_scoring: false`) and
+> These are the **default configuration** (`enable_cohub_scoring: false`,
+> `enable_learned_signal: false`) and
 > are this project's primary results. Enabling optional co-hub scoring lowers
 > all three F1 figures; see [Co-hub scoring (optional, off by default)](#co-hub-scoring-optional-off-by-default).
 
@@ -695,6 +696,187 @@ right-hand column above.
 
 **Known consequence of leaving it off:** `diluted_hub` remains an open evasion
 vector in the default configuration, alongside `straddle_60`.
+
+## Analyst-feedback learned signal (optional, off by default)
+
+A third detection signal, learned from the review audit trail, gated on
+`enable_learned_signal` in `shared/detection_knobs.json` (**default false**).
+When enabled, a LightGBM classifier predicts `P(confirmed)` for every account
+the fusion step scores, and the percentile rank of that probability enters
+fusion as a third input alongside the GDI and ring percentiles
+(`learned_signal_fusion_weight` 0.5, i.e. equal thirds). Its inputs are only
+what the two layers already computed for an alert at scoring time: the eight
+Layer-1 feature z-scores, `gdi_score`, `ring_risk_score` and
+`hub_concentration`, read from that alert's persisted explanation. Live rows
+are scored through the same `explain_score` path, so training and serving
+inputs are identical by construction, which `test_learned_signal.py` asserts
+row by row.
+
+**Peripheral-cascade alerts are excluded from training.** Fusion never scored
+them, so their zero GDI and ring fields are placeholders rather than
+measurements. In the live end-to-end database that removes 35 of 51 labels.
+
+### How much real analyst feedback exists (2026-09-17)
+
+| Database | Judged alerts | Recorded reviewer | Usable (fusion-scored) |
+|---|---|---|---|
+| `backend/graphdrift.db` (accumulated live use) | 4 confirmed, **0 false positive** | none recorded | 3 / 0 |
+| live end-to-end run (§ "Live end-to-end run") | 22 confirmed, 29 false positive | 50 `local-admin`, 1 `analyst-e2e` | 3 / 13 |
+| `graphdrift_snapshot_2026-08-12.db` | 5 confirmed, 3 false positive | none recorded | 5 / 3 |
+
+These are three separate systems and cannot be pooled; the largest usable set
+is **3 confirmed / 13 false positive**. The count is worse than it looks: of
+the 51 judged alerts in the end-to-end database, 50 were written by a script
+that read the simulator's ground truth and posted it through the review API,
+and exactly one was a decision made by a person in the UI. **There is
+effectively no human analyst feedback yet, and the accumulated database
+contains no negative class at all.**
+
+### Result on real labels: the cold-start guard refuses, correctly
+
+The model refuses to activate below
+`learned_signal_min_labels_per_class` (**50**) of each class, and logs why.
+Fifty per class puts at least ten of each class in every test fold of 5-fold
+cross-validation, so no fold's precision or recall is decided by one or two
+alerts, and gives roughly five examples per class for each of the eleven
+inputs. Every database above is an order of magnitude below that, so with the
+flag on the pipeline would log
+
+```
+Learned signal inactive (cold start): 3 confirmed / 13 false_positive
+fusion-scored labels; needs at least 50 of each
+```
+
+and keep scoring exactly as it does today. **The mechanism is built and
+validated; there is not yet enough analyst feedback to show it beats a trivial
+baseline on real data.** That is the honest state of this signal.
+
+### Mechanism check on oracle labels (not analyst decisions)
+
+To exercise training, evaluation and activation at realistic volume,
+`closed_loop_calibration` ran the real detector over two independent seeded
+simulator traces (60 cycles each, seeds 20260401 and 20260402) and judged every
+new alert from the simulator's ground truth. **These labels are an oracle that
+can see the attack legs, not analyst judgements**, so the numbers below say the
+machinery works, not that the signal helps a real deployment.
+
+Trace A: 2,421 confirmed / 422 false positive across 150 accounts (4,204
+peripheral labels excluded; 70% of the usable labels come from the 60-minute
+scale). Folds are grouped by account, because an account
+alerted and judged in several cycles would otherwise sit in both train and test
+and reward memorising it. Significance uses the Nadeau-Bengio corrected
+resampled t-test, since repeated-CV folds share training data.
+
+| 5×5 grouped CV, trace A | Model | Always "confirmed" | Majority |
+|---|---|---|---|
+| Precision | 0.911 ± 0.007 | 0.852 ± 0.003 | 0.852 ± 0.003 |
+| Recall | 0.984 ± 0.006 | 1.000 ± 0.000 | 1.000 ± 0.000 |
+| F1 | **0.946 ± 0.005** | 0.920 ± 0.002 | 0.920 ± 0.002 |
+| Accuracy | **0.905 ± 0.008** | 0.852 ± 0.003 | 0.852 ± 0.003 |
+
+One-sided corrected p: F1 **7.7e-10**, accuracy **9.0e-11**. The guard
+activates.
+
+Trace B, never seen in training: 2,344 confirmed / 462 false positive.
+
+| Held-out trace B | Model | Always "confirmed" | Majority |
+|---|---|---|---|
+| F1 | **0.942** | 0.910 | 0.910 |
+| Accuracy | **0.898** | 0.835 | 0.835 |
+| ROC AUC | **0.908** | 0.5 | 0.5 |
+
+F1 gain over always-"confirmed", 95% CI from an account-level bootstrap:
+**[+0.025, +0.039]**. For comparison, the **current fused score ranks the same alerts at ROC AUC 0.681**, so on this
+trace the learned signal carries ranking information the existing two layers do
+not. Average precision is 0.980 against a 0.835 base rate.
+
+**Why these numbers are not a product claim.** The oracle confirms 85% of
+fusion alerts, whereas the live run's alert precision was 67.9% overall and 3
+of 16 for fusion-scored alerts; the class balance here is an artifact of a
+generous oracle. The model is trained only on accounts that were alerted, yet
+applied to every scored account, which is a selection bias no amount of data on
+alerts alone can remove. And an oracle label answers "did an attack leg touch
+this account in this window", which is not the question an analyst answers.
+
+### Switching it on inside real detection cycles (exploratory)
+
+One seeded trace (60 cycles, seed 20260403) run twice, flag off and on, with
+the signal training from the labels the run itself accumulates. The guard
+behaved as designed in flight: it refused while the evidence was weak (F1
+p = 0.4 down to 0.06 as labels accumulated) and activated once it was not.
+
+| Seed 20260403, 60 cycles | Flag off | Flag on |
+|---|---|---|
+| Alerts created | 7,442 | 6,801 |
+| Oracle-confirmed rate | 0.943 | **0.965** |
+| Last 20 cycles | 0.953 | **0.986** |
+| Final top-share / calibration steps | 11.5% / 13 | 11.5% / 13 |
+
+**This is not a net-quality claim.** Only precision against oracle labels is
+measured here; recall is not, and fewer alerts can mean missed attacks. The two
+runs also select different alerts, so they are judged on different sets, and
+the model trains on labels its own selections produced. A proper on/off
+comparison needs the multi-seed recall harness and real labels.
+
+### A configuration mistake worth recording
+
+The first version of this model set `class_weight="balanced"`, and it **lost**
+to the trivial baseline on both of the first two traces (seeds 20260830,
+20260917): F1 0.889 / 0.902 against the baseline's 0.919 / 0.920, accuracy
+0.825 / 0.845 against 0.850 / 0.843, one-sided p 1.0 and 0.95, and a held-out
+F1 gain CI entirely negative at [-0.047, -0.014].
+
+The cause was the objective, not the data. Balanced weighting optimises
+balanced accuracy, which moves the effective decision threshold: precision rose
+to 0.960 while recall fell to 0.830, and on an 85%-confirmed set both F1 and
+accuracy punish exactly that trade. **Ranking quality was unaffected**: on the
+same folds, ROC AUC was 0.9095 / 0.9095 weighted against 0.9103 / 0.9130
+unweighted, and the unweighted model cleared the gate on both traces
+(p 6.3e-07 and 5.0e-05). Since the activation gate scores threshold metrics,
+the weighting contradicted the acceptance criterion, so it was removed in
+favour of LightGBM's default.
+
+That decision was made after seeing results on seeds 20260830 and 20260917, so
+every number in the section above was re-measured on two seeds that took no
+part in it (20260401, 20260402). The failed configuration is recorded here
+rather than quietly deleted.
+
+### The default pipeline is untouched
+
+Verified the same way the co-hub gate was, at the byte level rather than by
+inspection:
+
+- every fused-score row the pipeline produces for seven databases at six
+  points each — both window scales, the multi-scale union, the meta block, the
+  Layer-1 baselines and the peripheral pass, 99 MB of output — is
+  **byte-identical** to the pre-change pipeline under two different
+  `PYTHONHASHSEED` values;
+- a 60-cycle `closed_loop_calibration` run, which exercises
+  `run_detection_cycle`, alert creation and the calibration tick, is
+  **byte-identical**;
+- re-running `eval_multi_seed`, `eval_adversarial`, `run_eval` and
+  `run_ibm_aml_eval` leaves every committed result file and this document
+  unchanged;
+- with the flag off, `predict_confirmed_proba` returns before touching the
+  database, no `learned_percentile` key is added to any row, and a regression
+  test pins the fused scores of a fixed 17-account fixture to the values the
+  pre-change pipeline produced.
+
+### Reproducibility note found while verifying this
+
+Two runs of the unchanged pipeline in different processes do **not** produce
+identical output, because Python randomises string hashing per process and two
+places iterate a `set` of account ids: the multi-scale candidate list orders
+exactly-tied fused scores by set iteration, and a peripheral account linked to
+several flagged hubs picks its `linked_hub_account_id` the same way. Nothing
+else moves — the scored population, every score, the selected account set and
+the community partition are identical, which is why every cited metric
+reproduces — but alert creation order (hence alert ids) and one explanation
+field are not deterministic across processes. Fixing it means changing the
+default pipeline's tie order, so it is recorded, not changed here.
+
+Reproduce: `python -m evaluation.eval_learned_signal --label-db graphdrift.db
+--seed-a 20260401 --seed-b 20260402` → `data/learned_signal_eval.json`.
 
 ## Snapshot recall by attack type (fusion) — historical single run only
 

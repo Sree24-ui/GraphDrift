@@ -41,6 +41,7 @@ jupyter_core==5.9.1
 jupytext==1.19.5
 kaggle==2.2.4
 kagglesdk==0.1.37
+lightgbm==4.7.0
 limits==5.8.0
 markdown-it-py==4.2.0
 mdit-py-plugins==0.6.1

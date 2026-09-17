@@ -20,6 +20,9 @@ pytest==9.1.1
 # another package to pull it in.
 httpx==0.28.1
 scikit-learn==1.9.0
+# Opt-in learned signal only (enable_learned_signal). On macOS it needs the
+# OpenMP runtime: brew install libomp.
+lightgbm==4.7.0
 PyJWT==2.13.0
 argon2-cffi==25.1.0
 slowapi==0.1.10
