@@ -19,9 +19,9 @@ Generated: 2026-08-12T22:33:04
 | snapshot | layer1 | 1.000 | 0.273 | 0.429 | 0.0000 | 6 | 0 | 16 | 80 | 22 | 102 |
 | snapshot | fusion | 1.000 | 0.455 | 0.625 | 0.0000 | 10 | 0 | 12 | 80 | 22 | 102 |
 | snapshot | hybrid | 0.914 | 0.813 | 0.860 | 0.0295 | 74 | 7 | 17 | 230 | 91 | 328 |
-| paysim | baseline | 0.000 | 0.000 | 0.000 | 0.0000 | 0 | 0 | 146 | 1843 | 146 | 1989 |
-| paysim | layer1 | 0.050 | 0.034 | 0.041 | 0.0515 | 5 | 95 | 141 | 1748 | 146 | 1989 |
-| paysim | fusion | 0.050 | 0.034 | 0.041 | 0.0515 | 5 | 95 | 141 | 1748 | 146 | 1989 |
+| paysim | baseline | 0.000 | 0.000 | 0.000 | 0.0000 | 0 | 0 | 146 | 1933 | 146 | 2079 |
+| paysim | layer1 | 0.000 | 0.000 | 0.000 | 0.0538 | 0 | 104 | 146 | 1829 | 146 | 2079 |
+| paysim | fusion | 0.038 | 0.027 | 0.032 | 0.0517 | 4 | 100 | 142 | 1833 | 146 | 2079 |
 
 † **Fraud** = ground-truth fraud accounts in the evaluated universe for that detector row (≥3 tx for baseline/layer1/fusion; all active accounts for hybrid).
 ‡ **Eval** = total accounts evaluated (scored universe for fusion family; all active accounts for hybrid).
@@ -32,11 +32,53 @@ Generated: 2026-08-12T22:33:04
 
 Previous run incorrectly compressed all PaySim rows into a single 15-minute window, distorting velocity/burstiness. This run maps `step` → timestamps with proportional compression (1 step-hour ÷ 20 = 3 min) and uses a 15m detection window.
 
-| Detector | Old F1 (compressed) | New F1 (step-based) |
-|----------|--------------------|-----------------------|
+| Detector | Old F1 (compressed) | Step-based F1 (current corpus) |
+|----------|--------------------|--------------------------------|
 | baseline | 0.000 | 0.000 |
-| layer1 | 0.000 | 0.041 |
-| fusion | 0.200 | 0.041 |
+| layer1 | 0.000 | 0.000 |
+| fusion | 0.200 | 0.032 |
+
+The step-based F1 values are **not detection signal** - see
+[PaySim: no detection signal (tie-break artifact)](#paysim-no-detection-signal-tie-break-artifact).
+
+### PaySim: no detection signal (tie-break artifact)
+
+PaySim is scored with `min_transactions=1`, and at that setting the Layer-1
+features collapse: of 2,079 scored accounts, **1,040 share one GDI score at the
+top-5% cutoff**. The top-k budget is 104, and **103 of those 104 slots are filled
+from that tie**. The single account ranked strictly above the tie is not fraud.
+Which tied accounts get selected is decided by row order, not by the detector,
+so every true positive in the PaySim rows is a tie-break artifact.
+
+| Detector | Reported TP | Slots from tie | Tie size | Expected TP, random tie-break |
+|----------|-------------|----------------|----------|-------------------------------|
+| layer1 | 0 | 103 / 104 | 1,040 | 7.23 |
+| fusion | 4 | 103 / 104 | 1,040 | 7.23 |
+
+A uniformly random tie-break would score **expected F1 ≈ 0.058**; both reported
+figures fall below it. **GraphDrift shows no detection signal on PaySim.** This
+is consistent with PaySim's fraud structure - predominantly single-hop
+TRANSFER/CASH_OUT pairs, which neither the Layer-1 behavioural features (at
+1-2 transactions per account) nor Layer 2's hub-and-spoke scoring can
+represent - and should be reported as a structural limitation, not as a weak
+positive result. `run_eval` now prints a warning whenever more than half of a
+detector's alert budget comes from a cutoff tie.
+
+The same check on every headline evaluation - all five multi-seed traces, the
+historical snapshot, and IBM HI-Small - finds a **unique** score at the cutoff
+(tie size 1), so none of those figures are tie artifacts.
+
+**Corpus history.** The PaySim figures cited before 2026-09-17 (fusion and
+layer1 F1 0.041, eval=1,989) came from a `paysim_eval.db` built before the
+`is_labeled_fraud` / `attack_variant` columns existed and could no longer be
+loaded. It also cannot be regenerated: a seeded reload from the HuggingFace
+mirror shares only 46 of its 12,000 transactions. The current corpus is the
+seeded reload (12,000 transactions, 584 fraud, 23,567 accounts); two
+independent reloads are identical row for row, so it is reproducible from
+source. On the old corpus, current code gives layer1 F1 0.000 (not the cited
+0.041) and fusion 0.041, with the same 99-of-100 tie structure - so the old
+layer1 figure was itself a tie-break outcome of earlier code, not a
+reproducible result.
 
 ## Hybrid structural pass (snapshot)
 
@@ -118,7 +160,7 @@ Seeds: 42, 123, 7, 2026, 99. Reproduce: `python -m evaluation.generate_multi_see
 | 42 | fusion_multiscale (union) | 0.407 | 0.306 | 0.349 | 0.1524 | 11 | 16 | 25 | 89 | 36 | 141 |
 | 42 | hybrid (union+peri) | 0.725 | 0.682 | 0.703 | 0.1930 | 58 | 22 | 27 | 92 | 85 | 199 |
 | 123 | baseline | 0.000 | 0.000 | 0.000 | 0.0000 | 0 | 0 | 22 | 118 | 22 | 140 |
-| 123 | layer1 | 0.500 | 0.182 | 0.267 | 0.0339 | 4 | 4 | 18 | 114 | 22 | 140 |
+| 123 | layer1 | 0.571 | 0.182 | 0.276 | 0.0254 | 4 | 3 | 18 | 115 | 22 | 140 |
 | 123 | fusion | 0.600 | 0.273 | 0.375 | 0.0339 | 6 | 4 | 16 | 114 | 22 | 140 |
 | 123 | fusion_multiscale (union) | 0.367 | 0.500 | 0.423 | 0.1610 | 11 | 19 | 11 | 99 | 22 | 140 |
 | 123 | hybrid (union+peri) | 0.707 | 0.828 | 0.763 | 0.1732 | 53 | 22 | 11 | 105 | 64 | 191 |
@@ -143,11 +185,21 @@ Seeds: 42, 123, 7, 2026, 99. Reproduce: `python -m evaluation.generate_multi_see
 | Detector | Precision | Recall | F1 | FPR |
 |----------|-----------|--------|----|-----|
 | baseline | 0.650 ± 0.418 [0.000, 1.000] | 0.058 ± 0.039 [0.000, 0.100] | 0.106 ± 0.070 [0.000, 0.182] | 0.004 ± 0.005 [0.000, 0.010] |
-| layer1 | 0.675 ± 0.168 [0.500, 0.875] | 0.158 ± 0.027 [0.120, 0.182] | 0.251 ± 0.027 [0.207, 0.273] | 0.023 ± 0.010 [0.011, 0.034] |
+| layer1 | 0.689 ± 0.151 [0.500, 0.875] | 0.158 ± 0.027 [0.120, 0.182] | 0.253 ± 0.029 [0.207, 0.276] | 0.022 ± 0.008 [0.011, 0.033] |
 | fusion | 0.620 ± 0.117 [0.444, 0.727] | 0.188 ± 0.048 [0.160, 0.273] | 0.284 ± 0.051 [0.258, 0.375] | 0.035 ± 0.004 [0.032, 0.041] |
 | fusion_multiscale (union) | 0.368 ± 0.103 [0.194, 0.455] | 0.328 ± 0.098 [0.260, 0.500] | **0.336 ± 0.072** [0.226, 0.423] | 0.180 ± 0.022 [0.152, 0.203] |
 | hybrid (union+peri) | **0.710 ± 0.105** [0.536, 0.800] | **0.683 ± 0.086** [0.600, 0.828] | **0.691 ± 0.065** [0.588, 0.763] | **0.191 ± 0.013** [0.173, 0.203] |
 
+> **Layer 1 corrected 2026-09-17: 0.251 ± 0.027 → 0.253 ± 0.029.** The shared
+> top-k budget computed `ceil(n * (1 - 0.95))`, and in floating point
+> `1 - 0.95 = 0.05000000000000004`, so any population that is an exact multiple
+> of 20 flagged one extra account. Seed 123's Layer-1 universe is 140 accounts:
+> it flagged 8 instead of 7 (one extra false positive). Fixed in
+> `top_anomaly_budget`; every other row in this table was re-run and is
+> unchanged, as are the adversarial, IBM, snapshot, PaySim, slow-drip,
+> closed-loop and peripheral-selectivity results. The Isolation Forest
+> baselines, which use the same budget, were re-run below.
+>
 > These are the **default configuration** (`enable_cohub_scoring: false`) and
 > are this project's primary results. Enabling optional co-hub scoring lowers
 > all three F1 figures; see [Co-hub scoring (optional, off by default)](#co-hub-scoring-optional-off-by-default).
@@ -196,8 +248,8 @@ Same 5 snapshots, 15-minute window at `max(timestamp)`, ≥3-tx scored universe,
 |------|----------|---|---|----|-----|----|----|----|----|-------|------|---------------|------------|
 | 42 | isolation_forest_l1_features | 0.625 | 0.139 | 0.227 | 0.0286 | 5 | 3 | 31 | 102 | 36 | 141 | 140 | no |
 | 42 | isolation_forest_all_features | 0.625 | 0.139 | 0.227 | 0.0286 | 5 | 3 | 31 | 102 | 36 | 141 | 141 | no |
-| 123 | isolation_forest_l1_features | 0.500 | 0.182 | 0.267 | 0.0339 | 4 | 4 | 18 | 114 | 22 | 140 | 140 | no |
-| 123 | isolation_forest_all_features | 0.625 | 0.227 | 0.333 | 0.0254 | 5 | 3 | 17 | 115 | 22 | 140 | 139 | no |
+| 123 | isolation_forest_l1_features | 0.571 | 0.182 | 0.276 | 0.0254 | 4 | 3 | 18 | 115 | 22 | 140 | 140 | no |
+| 123 | isolation_forest_all_features | 0.714 | 0.227 | 0.345 | 0.0169 | 5 | 2 | 17 | 116 | 22 | 140 | 139 | no |
 | 7 | isolation_forest_l1_features | 0.375 | 0.136 | 0.200 | 0.0407 | 3 | 5 | 19 | 118 | 22 | 145 | 144 | no |
 | 7 | isolation_forest_all_features | 0.375 | 0.136 | 0.200 | 0.0407 | 3 | 5 | 19 | 118 | 22 | 145 | 145 | no |
 | 2026 | isolation_forest_l1_features | 0.750 | 0.120 | 0.207 | 0.0211 | 6 | 2 | 44 | 93 | 50 | 145 | 144 | no |
@@ -214,21 +266,19 @@ Degenerate (unique < 5 or unique < k) on any seed: L1=False, L1+structural=False
 
 | Detector | Precision | Recall | F1 | FPR |
 |----------|-----------|--------|----|-----|
-| layer1 (GDI / Mahalanobis, existing) | 0.675 ± 0.168 | 0.158 ± 0.027 | **0.251 ± 0.027** | 0.023 ± 0.010 |
-| isolation_forest_l1_features | 0.600 ± 0.163 [0.375, 0.750] | 0.139 ± 0.025 [0.120, 0.182] | 0.222 ± 0.027 [0.200, 0.267] | 0.029 ± 0.008 [0.021, 0.041] |
-| fusion (percentile L1+L2, existing) | 0.620 ± 0.117 | 0.188 ± 0.048 | **0.284 ± 0.051** | 0.035 ± 0.004 |
-| isolation_forest_all_features | 0.625 ± 0.153 [0.375, 0.750] | 0.149 ± 0.045 [0.120, 0.227] | 0.235 ± 0.056 [0.200, 0.333] | 0.027 ± 0.008 [0.021, 0.041] |
-
-† Cite these **sklearn-default** Isolation Forest rows (`n_estimators=100`, `max_samples='auto'`, `max_features=1.0`). Sensitivity sweep (300 trees, `max_samples=64`, `max_features=0.7`): IF-L1 F1 **0.215–0.222**, IF-all **0.235–0.249**; GraphDrift stays ahead. Do not cite the best-of-sweep cell. See [Isolation Forest sensitivity](#isolation-forest-sensitivity).
+| layer1 (GDI / Mahalanobis, existing) | 0.689 ± 0.151 [0.500, 0.875] | 0.158 ± 0.027 [0.120, 0.182] | **0.253 ± 0.029 [0.207, 0.276]** | 0.022 ± 0.008 [0.011, 0.033] |
+| isolation_forest_l1_features | 0.614 ± 0.155 [0.375, 0.750] | 0.139 ± 0.025 [0.120, 0.182] | 0.223 ± 0.031 [0.200, 0.276] | 0.027 ± 0.008 [0.021, 0.041] |
+| fusion (percentile L1+L2, existing) | 0.620 ± 0.117 [0.444, 0.727] | 0.188 ± 0.048 [0.160, 0.273] | **0.284 ± 0.051 [0.258, 0.375]** | 0.035 ± 0.004 [0.032, 0.041] |
+| isolation_forest_all_features | 0.643 ± 0.158 [0.375, 0.750] | 0.149 ± 0.045 [0.120, 0.227] | 0.237 ± 0.061 [0.200, 0.345] | 0.026 ± 0.009 [0.017, 0.041] |
 
 ### Honest read
 
-Layer 1 (Mahalanobis) beats Isolation Forest on the same 8 features (F1 0.251 vs 0.222, Δ=0.029). The gap is modest — about one Layer-1 F1 standard deviation (0.027) — but the sign is consistent: GDI never loses a seed to IF-L1 (ties on 123 and 99). Hypothesis: remaining features are still correlated (counts vs degrees, fan_ratio vs in/out); Mahalanobis uses the inverse covariance, Isolation Forest splits axis-aligned and cannot represent that ellipsoid as cheaply. Hand-designed percentile fusion beats Isolation Forest given the same L1+L2 columns (F1 0.284 vs 0.235, Δ=0.049). Structural signal is sparse (most accounts have hub_concentration=external_edge_ratio=0 unless they sit in a Louvain ring that cleared Layer 2's own gates); percentile fusion is built to let a rare ring_risk dominate, while Isolation Forest treats those two columns as two more random-split features. Isolation Forest does not gain meaningfully from concatenating the two structural columns (ΔF1=+0.013, within 0.02). The extra signal is concentrated on rare ring members; percentile fusion is built to let that tail dominate, IF is not.
+Layer 1 (Mahalanobis) beats Isolation Forest on the same 8 features (F1 0.253 vs 0.223, Δ=0.029). The gap is modest — 1.0× the Layer-1 F1 standard deviation (0.029) — but the sign is consistent: GDI wins 3 of 5 seeds and never loses to IF-L1 (ties on 99 and 123). Hypothesis: remaining features are still correlated (counts vs degrees, fan_ratio vs in/out); Mahalanobis uses the inverse covariance, Isolation Forest splits axis-aligned and cannot represent that ellipsoid as cheaply. Hand-designed percentile fusion beats Isolation Forest given the same L1+L2 columns (F1 0.284 vs 0.237, Δ=0.047). Structural signal is sparse (most accounts have hub_concentration=external_edge_ratio=0 unless they sit in a Louvain ring that cleared Layer 2's own gates); percentile fusion is built to let a rare ring_risk dominate, while Isolation Forest treats those two columns as two more random-split features. Isolation Forest does not gain meaningfully from concatenating the two structural columns (ΔF1=+0.014, within 0.02). The extra signal is concentrated on rare ring members; percentile fusion is built to let that tail dominate, IF is not.
 
 Reproduce: `python -m evaluation.eval_isolation_forest`.
 
 <!-- /isolation-forest -->
-
+† Cite the **sklearn-default** Isolation Forest rows above (`n_estimators=100`, `max_samples='auto'`, `max_features=1.0`), not the best cell of the [sensitivity sweep](#isolation-forest-sensitivity) below.
 ## Isolation Forest sensitivity
 
 Original eval used sklearn **defaults** except `random_state=seed` and `n_jobs=1`:
@@ -238,15 +288,15 @@ This is a 4-config sensitivity check, not a search to beat GraphDrift.
 
 ### Sweep (mean F1, n=5 seeds)
 
-| Config | n_estimators | max_samples | max_features | IF-L1 mean F1 | IF-all mean F1 | vs GDI 0.251 | vs fusion 0.284 |
+| Config | n_estimators | max_samples | max_features | IF-L1 mean F1 | IF-all mean F1 | vs GDI 0.253 | vs fusion 0.284 |
 |--------|--------------|-------------|--------------|---------------|----------------|--------------|-----------------|
-| `sklearn_default` (cite default) | 100 | auto | 1.0 | 0.222 | 0.235 | +0.029 | +0.049 |
-| `n_estimators_300` | 300 | auto | 1.0 | 0.222 | 0.242 | +0.029 | +0.042 |
-| `max_samples_64` | 100 | 64 | 1.0 | 0.222 | 0.249 | +0.029 | +0.035 |
-| `max_features_0.7` | 100 | auto | 0.7 | 0.215 | 0.235 | +0.036 | +0.049 |
+| `sklearn_default` (cite default) | 100 | auto | 1.0 | 0.223 | 0.237 | +0.029 | +0.047 |
+| `n_estimators_300` | 300 | auto | 1.0 | 0.223 | 0.244 | +0.029 | +0.040 |
+| `max_samples_64` | 100 | 64 | 1.0 | 0.223 | 0.237 | +0.029 | +0.047 |
+| `max_features_0.7` | 100 | auto | 0.7 | 0.216 | 0.237 | +0.036 | +0.047 |
 
-IF-L1 F1 range across configs: **0.215–0.222** (median 0.222).
-IF-all F1 range: **0.235–0.249** (median 0.238).
+IF-L1 F1 range across configs: **0.216–0.223** (median 0.223).
+IF-all F1 range: **0.237–0.244** (median 0.237).
 Cite **`sklearn_default`** (most defensible: published sklearn defaults, not the best-of-sweep).
 
 ### Reproducibility (seed 42, sklearn_default, twice)
@@ -256,12 +306,11 @@ L1 F1 both runs: 0.227273 / 0.227273. All-features F1: 0.227273 / 0.227273.
 
 ### Recommendation for §4.4
 
-Cite Isolation Forest at sklearn defaults: L1 F1 **0.222**, L1+structural F1 **0.235** (GraphDrift Layer 1 **0.251**, fusion **0.284**). The GraphDrift edge holds across the sweep: even the best IF-L1 (0.222) stays 0.029 below GDI, and the best IF-all (0.249) stays 0.035 below fusion. Range is tight (L1 0.215–0.222; all 0.235–0.249), so the original +0.029 / +0.049 is not an artifact of n_estimators=100. Do not replace the cited IF row with the best-of-sweep number.
+Cite Isolation Forest at sklearn defaults: L1 F1 **0.223**, L1+structural F1 **0.237** (GraphDrift Layer 1 **0.253**, fusion **0.284**). The GraphDrift edge holds across the sweep: even the best IF-L1 (0.223) stays 0.029 below GDI, and the best IF-all (0.244) stays 0.040 below fusion. Range is tight (L1 0.216–0.223; all 0.237–0.244), so the default-config gap (+0.029 / +0.047) is not an artifact of n_estimators=100. Do not replace the cited IF row with the best-of-sweep number.
 
 Reproduce: `python -m evaluation.eval_isolation_forest_sweep`.
 
 <!-- /isolation-forest-sweep -->
-
 ## Adversarial evaluation (parameter-aware evasion)
 
 Attackers are assumed to know the 15/60-minute windows, hub-concentration 
@@ -537,15 +586,52 @@ Reproduce: `python -m evaluation.closed_loop_calibration --cycles 120`.
 ## Interpretation
 
 - **Synthetic snapshot (cite this):** 15-min fusion F1 = **0.284 ± 0.051** (n=5 seeds, ≥3-tx). Multi-scale **union** fusion F1 = **0.336 ± 0.072**. Hybrid (union+peripheral, all-active) F1 = **0.691 ± 0.065**. Do not cite retired max-merge 0.304 / 0.644 or the historical single-snapshot fusion 0.625.
-- **PaySim (corrected timing + rank-based threshold):** fusion F1=0.041 (TP=5, FP=95, FN=141, fraud=146, eval=1989) vs baseline F1=0.000.
+- **PaySim:** no detection signal. Fusion F1=0.032 (TP=4, FP=100, FN=142, fraud=146, eval=2079) is a tie-break artifact below the random-tie-break expectation (≈0.058); see the PaySim section above.
 
-**PaySim external validation could not be re-run (pre-existing break).** The
-committed `evaluation/data/paysim_eval.db` was built before the
-`is_labeled_fraud` column existed, so `run_eval` aborts with
-`no such column: transactions.is_labeled_fraud`. The corpus needs reloading
-(`python -m evaluation.load_paysim`) before those rows can be refreshed. This
-is unrelated to co-hub - and since the default configuration is byte-identical
-to the pipeline that produced them, the PaySim figures above still stand.
+## Live end-to-end run (2026-09-17)
+
+The full system was run live - simulator, 45 s detection loop, REST API,
+authenticated WebSocket and a real browser session - on a seeded trace of
+**29,932 transactions / 4,338 accounts** (22,000 simulator steps, 462 attack
+events), which grew to **38,065 transactions and 3,540 alerts** during the run.
+Default configuration throughout.
+
+**No stubs.** One alert (#3426, raised on the 60-minute scale) was traced
+through every stage and each value was recomputed independently from the raw
+transaction table at the alert's own `as_of`. GDI (0.914791), ring risk
+(2.162069), both percentile ranks, the fused score (3.521224) and all 30
+community members matched the persisted row exactly. Its ring produced 20
+peripheral-cascade alerts off hub `lipika77@ybl`. The WebSocket delivered 104
+messages in 59 s to a logged-in browser (30 transactions, 66 alerts, 8 metrics
+updates), and sampled IDs matched database rows. With 50 alerts judged through
+the review API (42% confirmed) and calibration enabled, the controller held on
+its first tick (damping) and **lowered the top-share 5.0% -> 4.5% on the next
+live tick**, as the control law specifies.
+
+**The traced alert is a false positive.** None of the account's three
+transactions were attack legs; it cleared the 60-minute cutoff (3.507) at
+3.521 as a member of a "newly formed" 30-account Louvain community. The
+60-minute fusion ranks 908 accounts, but only 270 have enough transactions for
+a GDI score - the rest enter as ring members with GDI 0 - so an unremarkable
+GDI of 0.91 sits at the 86th percentile.
+
+**Live alert precision** (alert counts as confirmed if its account touched an
+attack transaction inside the alert's own scoring window):
+
+| Pattern | Alerts | True fraud | Precision |
+|---|---|---|---|
+| peripheral_structural | 2,751 | 2,024 | 73.6% |
+| community_ring | 329 | 207 | 62.9% |
+| fan_in_fan_out | 459 | 172 | 37.5% |
+| node_anomaly | 1 | 1 | - |
+| **all** | **3,540** | **2,404** | **67.9%** |
+
+This is in line with the multi-seed hybrid precision (0.710 ± 0.105). Two
+caveats: the simulator's attack density is very high (8,334 of the initial
+29,932 transactions are attack legs), which inflates precision relative to real
+fraud base rates; and **78% of live alerts come from the peripheral cascade**,
+i.e. 1-hop association with a flagged hub rather than independent evidence.
+Alerts labelled `fan_in_fan_out` are right fewer than 4 times in 10.
 
 ## Co-hub scoring (optional, off by default)
 
@@ -646,7 +732,7 @@ it cannot fire because the hub itself is never flagged.
 
 - Snapshot metrics in the first table are one `as_of`; multi-seed means are the robustness claim.
 - Layer-1 and fusion share the same top-percentile alert budget, which caps recall when many fraud accounts compete.
-- PaySim: eval-only `min_transactions=1`; 12k cap.
+- PaySim: eval-only `min_transactions=1`; 12k cap. At this setting scores collapse to a tie and results carry no signal.
 - IBM HI-Small is a different evaluation mode (dense-slice, single-window) — see below.
 
 ## IBM HI-Small evaluation corpus
@@ -688,6 +774,22 @@ IBM scored: 64605 accounts (703 labeled-fraud, 63902 legit). Snapshot scored: 10
 
 **Velocity (IBM):** fraud median 0.267 vs legit 0.267, AUC 0.607. Velocity is `tx_count / 15` over a window that already contains the entire subsample, so it is a **global degree/count feature**, not a local burst rate. Snapshot velocity AUC 0.739 (fraud median 0.300 vs legit 0.200).
 
+### Detector comparison — IBM dense-slice, single-window only
+
+Ground truth: accounts touching `Is Laundering=1` transactions (`is_labeled_fraud`). Same 15-min `as_of=max(timestamp)` protocol as other evals, **interpreted under the mode above**. Not comparable without that qualification to snapshot/PaySim F1.
+
+| Detector | P | R | F1 | FPR | TP | FP | FN | TN | Fraud† | Eval‡ |
+|----------|---|---|----|-----|----|----|----|----|--------|-------|
+| baseline | 0.000 | 0.000 | 0.000 | 0.0000 | 0 | 0 | 703 | 63902 | 703 | 64605 |
+| layer1 | 0.040 | 0.183 | 0.066 | 0.0485 | 129 | 3102 | 574 | 60800 | 703 | 64605 |
+| fusion | 0.019 | 0.117 | 0.033 | 0.0651 | 82 | 4163 | 621 | 59739 | 703 | 64605 |
+
+† Fraud = labeled-laundering accounts with ≥3 transactions in the (single) window. ‡ Eval = scored universe.
+
+Reproduce: `python -m evaluation.analyze_ibm_aml_timing` then `python -m evaluation.load_ibm_aml` then `python -m evaluation.run_ibm_aml_eval`. Layer-2 isolation: `python -m evaluation.ibm_aml_hub_isolation`. Dilution / community-size check: `python -m evaluation.ibm_aml_dilution`.
+
+<!-- /ibm-aml -->
+
 ### Layer 2 hub-concentration isolation (formed_recently zeroed)
 
 `formed_recently` fires for every IBM community in this slice (no prior window). To test whether Layer 2 still has a structural signal, ring scores were recomputed from **hub_concentration + external_edge_ratio only** (the 15% recency term set to 0). Accounts not in a Louvain community of size ≥4 get 0.
@@ -728,20 +830,6 @@ What this does and does not support:
 Fusion F1 is **below** Layer 1 here (0.033 vs 0.066). Recency cannot help (empty prior window); hub-concentration does not rank IBM laundering accounts even with recency zeroed. Treat fusion numbers as the same single-window protocol, not as evidence that Layer 2 helps on IBM in the simulator sense.
 
 Fusion F1 is **below** Layer 1 here (0.033 vs 0.066). The previous 15-min graph is empty, so recency cannot help; even without recency, hub-concentration does not rank IBM laundering accounts. Treat fusion numbers as the same single-window protocol, not as evidence that Layer 2 helps on IBM in the simulator sense.
-
-### Detector comparison — IBM dense-slice, single-window only
-
-Ground truth: accounts touching `Is Laundering=1` transactions (`is_labeled_fraud`). Same 15-min `as_of=max(timestamp)` protocol as other evals, **interpreted under the mode above**. Not comparable without that qualification to snapshot/PaySim F1.
-
-| Detector | P | R | F1 | FPR | TP | FP | FN | TN | Fraud† | Eval‡ |
-|----------|---|---|----|-----|----|----|----|----|--------|-------|
-| baseline | 0.000 | 0.000 | 0.000 | 0.0000 | 0 | 0 | 703 | 63902 | 703 | 64605 |
-| layer1 | 0.040 | 0.183 | 0.066 | 0.0485 | 129 | 3102 | 574 | 60800 | 703 | 64605 |
-| fusion | 0.019 | 0.117 | 0.033 | 0.0651 | 82 | 4163 | 621 | 59739 | 703 | 64605 |
-
-† Fraud = labeled-laundering accounts with ≥3 transactions in the (single) window. ‡ Eval = scored universe.
-
-Reproduce: `python -m evaluation.analyze_ibm_aml_timing` then `python -m evaluation.load_ibm_aml` then `python -m evaluation.run_ibm_aml_eval`. Layer-2 isolation: `python -m evaluation.ibm_aml_hub_isolation`. Dilution / community-size check: `python -m evaluation.ibm_aml_dilution`.
 
 ## Reproduce
 

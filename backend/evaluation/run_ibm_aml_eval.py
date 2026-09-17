@@ -42,6 +42,7 @@ IBM_DB = BACKEND_ROOT / "evaluation" / "data" / "ibm_aml_eval.db"
 SNAPSHOT_DB = BACKEND_ROOT / "snapshots" / "graphdrift_snapshot_2026-08-12.db"
 REPORT_JSON = BACKEND_ROOT / "evaluation" / "data" / "ibm_aml_eval_report.json"
 RESULTS_MD = BACKEND_ROOT / "evaluation" / "RESULTS.md"
+IBM_END_MARKER = "<!-- /ibm-aml -->"
 
 FEATURE_KEYS = [
     "burstiness",
@@ -405,12 +406,16 @@ def print_audit(occ: dict, ibm: dict, snap: dict) -> None:
 
 def patch_results_md(occ: dict, ibm: dict, snap: dict, detector_rows: list[dict]) -> None:
     text = RESULTS_MD.read_text()
+    # Own only the generated block. Hand-written subsections (e.g. the Layer-2
+    # hub-isolation audit) live after the end marker and must survive re-runs.
     start = text.find("## IBM HI-Small evaluation corpus")
-    if start < 0:
-        raise SystemExit("RESULTS.md missing IBM section to patch")
-    next_h2 = text.find("\n## Reproduce", start)
-    if next_h2 < 0:
-        next_h2 = len(text)
+    end = text.find(IBM_END_MARKER, start)
+    if start < 0 or end < 0:
+        raise SystemExit(
+            f"RESULTS.md is missing the IBM block or its {IBM_END_MARKER} marker; "
+            "refusing to patch rather than overwrite hand-written sections."
+        )
+    end += len(IBM_END_MARKER)
 
     ibm_burst = ibm["features"]["burstiness"]
     ibm_vel = ibm["features"]["velocity"]
@@ -481,10 +486,10 @@ Ground truth: accounts touching `Is Laundering=1` transactions (`is_labeled_frau
 
 † Fraud = labeled-laundering accounts with ≥3 transactions in the (single) window. ‡ Eval = scored universe.
 
-Reproduce: `python -m evaluation.analyze_ibm_aml_timing` then `python -m evaluation.load_ibm_aml` then `python -m evaluation.run_ibm_aml_eval`.
+Reproduce: `python -m evaluation.analyze_ibm_aml_timing` then `python -m evaluation.load_ibm_aml` then `python -m evaluation.run_ibm_aml_eval`. Layer-2 isolation: `python -m evaluation.ibm_aml_hub_isolation`. Dilution / community-size check: `python -m evaluation.ibm_aml_dilution`.
 
-"""
-    RESULTS_MD.write_text(text[:start] + section + text[next_h2 + 1 :])
+{IBM_END_MARKER}"""
+    RESULTS_MD.write_text(text[:start] + section + text[end:])
 
 
 def main() -> None:

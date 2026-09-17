@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 from datetime import datetime
 
 from fastapi import (
@@ -22,6 +23,7 @@ from app.db import SessionLocal
 from app.detection.community import build_graph
 from app.detection.fusion import compute_fused_scores
 from app.models import Alert, Transaction
+from app.security import decode_access_token
 
 router = APIRouter(tags=["websocket"])
 
@@ -109,7 +111,6 @@ def build_transaction_message(tx: Transaction) -> dict:
             "receiver": tx.receiver_id,
             "amount": tx.amount,
             "timestamp": tx.timestamp.isoformat(),
-            "is_synthetic_attack": tx.is_synthetic_attack,
         },
     }
 
@@ -152,6 +153,21 @@ async def broadcast_metrics() -> None:
     await live_feed_manager.broadcast(build_metrics_message(metrics))
 
 
+def _session_expiry(token: str | None, db: Session) -> float | None:
+    """Expiry timestamp of a valid session token, else None.
+
+    Always releases the DB connection: the socket may stay open for hours, and
+    holding a pooled connection per socket exhausted the pool at 15 clients and
+    froze the whole server on the 16th handshake.
+    """
+    try:
+        if user_from_token(token, db) is None:
+            return None
+        return float(decode_access_token(token)["exp"])
+    finally:
+        db.close()
+
+
 @router.websocket("/ws/live-feed")
 async def live_feed(
     websocket: WebSocket,
@@ -160,13 +176,25 @@ async def live_feed(
 ) -> None:
     # Browsers cannot set headers on a WebSocket handshake, so the same JWT the
     # REST client sends as a bearer header arrives here as a query parameter.
-    if user_from_token(token, db) is None:
+    # The check is blocking DB work, so keep it off the event loop.
+    expires_at = await asyncio.to_thread(_session_expiry, token, db)
+    if expires_at is None:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
     await live_feed_manager.connect(websocket)
     try:
         while True:
-            await websocket.receive_text()
+            # The token is only presented at the handshake, so enforce its
+            # expiry here; otherwise an expired session keeps streaming.
+            remaining = expires_at - time.time()
+            if remaining <= 0:
+                raise TimeoutError
+            await asyncio.wait_for(websocket.receive_text(), timeout=remaining)
+    except TimeoutError:
+        live_feed_manager.disconnect(websocket)
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION, reason="session expired"
+        )
     except WebSocketDisconnect:
         pass
     finally:

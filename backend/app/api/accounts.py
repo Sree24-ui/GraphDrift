@@ -16,7 +16,7 @@ from app.api.schemas import (
 )
 from app.detection.features import WINDOW_MINUTES
 from app.detection.fusion import compute_fused_scores
-from app.models import Account, AccountScoreHistory, Transaction
+from app.models import Account, AccountScoreHistory, Alert, Transaction
 
 router = APIRouter(
     prefix="/api/accounts",
@@ -104,11 +104,11 @@ def get_account(
                 counterparty_id=counterparty_id,
                 amount=tx.amount,
                 timestamp=tx.timestamp,
-                is_synthetic_attack=tx.is_synthetic_attack,
             )
         )
 
     fused_score, confidence = _fused_for_account(db, account_id, as_of)
+    connected = _connected_accounts(db, account_id, as_of)
     total_pages = math.ceil(total / page_size) if total else 0
 
     return AccountDetail(
@@ -118,7 +118,17 @@ def get_account(
         fused_score=fused_score,
         confidence=confidence,
         transactions=transactions,
-        connected_accounts=_connected_accounts(db, account_id, as_of),
+        connected_accounts=connected,
+        connected_accounts_with_open_alerts=sorted(
+            db.scalars(
+                select(Alert.account_id)
+                .where(
+                    Alert.account_id.in_(connected),
+                    Alert.status.in_(("new", "reviewing")),
+                )
+                .distinct()
+            ).all()
+        ),
         pagination=PaginationMeta(
             page=page,
             page_size=page_size,

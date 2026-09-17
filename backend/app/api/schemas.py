@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.models import USERNAME_MAX_LENGTH
+
 AlertStatus = Literal[
     "new", "reviewing", "confirmed", "false_positive", "auto_closed"
 ]
@@ -12,7 +14,8 @@ UserRole = Literal["analyst", "admin"]
 
 
 class AuthLoginRequest(BaseModel):
-    username: str = Field(min_length=1, max_length=64)
+    username: str = Field(min_length=1, max_length=USERNAME_MAX_LENGTH)
+    # Upper bound caps the Argon2 work an unauthenticated request can trigger.
     password: str = Field(min_length=1, max_length=256)
 
 
@@ -196,7 +199,6 @@ class TransactionItem(BaseModel):
     counterparty_id: str
     amount: float
     timestamp: datetime
-    is_synthetic_attack: bool
 
 
 class AccountDetail(BaseModel):
@@ -207,6 +209,8 @@ class AccountDetail(BaseModel):
     confidence: ConfidenceLevel | None = None
     transactions: list[TransactionItem]
     connected_accounts: list[str]
+    # Resolved server-side so the UI never has to page through every open alert.
+    connected_accounts_with_open_alerts: list[str]
     pagination: PaginationMeta
 
 

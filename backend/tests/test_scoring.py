@@ -387,3 +387,13 @@ def test_co_hub_detects_split_mule_role_but_not_benign_shapes(monkeypatch):
     # Benign communities must not trip the gates (this is the false-positive risk).
     assert detect({"a": 3, "b": 3, "c": 2, "d": 2, "e": 2, "f": 2}, 7) == ([], 0.0)
     assert detect({"a": 6, "b": 5, "c": 4, "d": 3, "e": 2, "f": 1}, 11) == ([], 0.0)
+
+
+def test_top_anomaly_budget_is_exact_at_multiples_of_twenty():
+    """1 - 0.95 is 0.05000000000000004 in float; ceil must not round it up."""
+    from app.detection.fusion import top_anomaly_budget
+
+    assert top_anomaly_budget(140, 0.95) == 7
+    assert top_anomaly_budget(20, 0.95) == 1
+    assert top_anomaly_budget(141, 0.95) == 8  # genuine fraction still rounds up
+    assert top_anomaly_budget(300, 0.85) == 45

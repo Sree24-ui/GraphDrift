@@ -11,13 +11,19 @@ from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from app.config import load_runtime_config
 from app.models import User
 
+# argon2-cffi's defaults track the RFC 9106 recommended parameters; pinning our
+# own would silently fall behind when the library raises them.
 PASSWORD_HASHER = PasswordHasher()
+# Fixed on purpose: making the algorithm configurable invites alg-confusion
+# attacks, and every token here is both issued and verified by this service.
 JWT_ALGORITHM = "HS256"
+# A security floor, deliberately not configurable downward per deployment.
+MIN_PASSWORD_LENGTH = 12
 
 
 def hash_password(password: str) -> str:
-    if len(password) < 12:
-        raise ValueError("password must be at least 12 characters")
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise ValueError(f"password must be at least {MIN_PASSWORD_LENGTH} characters")
     return PASSWORD_HASHER.hash(password)
 
 

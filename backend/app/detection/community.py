@@ -357,12 +357,22 @@ def community_risk_score(metrics: dict) -> float:
 def _build_reason(metrics: dict) -> str:
     hub_account = metrics.get("hub_account_id") or "unknown"
     hub_pct = metrics["hub_concentration"] * 100.0
+    co_hubs = metrics.get("co_hub_accounts") or []
 
-    reason = (
-        f"hub-and-spoke pattern: account {hub_account} handles "
-        f"{hub_pct:.0f}% of this community's transaction edges"
-    )
+    # With co-hub scoring the concentration is the *group's* share, so name the
+    # group; attributing it to one co-mule would overstate that account's role.
+    if co_hubs and metrics.get("co_hub_concentration", 0.0) >= metrics["hub_concentration"]:
+        reason = (
+            f"coordinated hub pattern: accounts {', '.join(co_hubs)} together "
+            f"handle {hub_pct:.0f}% of this community's transaction edges"
+        )
+    else:
+        reason = (
+            f"hub-and-spoke pattern: account {hub_account} handles "
+            f"{hub_pct:.0f}% of this community's transaction edges"
+        )
 
+    # Wording tiers for the explanation text only; they do not affect scoring.
     if metrics["external_edge_ratio"] >= 2.0:
         reason += ", with high external flow-through"
     elif metrics["external_edge_ratio"] >= 1.0:

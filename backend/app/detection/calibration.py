@@ -4,7 +4,8 @@ This is a *damped, bounded* controller on the human-readable alert share
 (``alert_top_percent``, e.g. 5.0 for top 5%), not a proportional controller
 on confirmed-rate error.
 
-Control law (documented so the direction is not ambiguous):
+Control law (documented so the direction is not ambiguous). The numbers below
+are the shipped defaults; the live values come from shared/detection_knobs.json.
 - Confirmed rate = confirmed / (confirmed + false_positive) on a rolling
   window of analyst-judged alerts. ``new``, ``reviewing``, and ``auto_closed``
   are excluded — same honesty rule as Reports.
@@ -47,6 +48,7 @@ from app.constants import (
     CALIBRATION_STEP_PERCENT_POINTS,
     CALIBRATION_WINDOW,
     CYCLES_PER_CALIBRATION,
+    DEFAULT_ALERT_TOP_PERCENT,
     MIN_REVIEWED_SAMPLE,
     TARGET_BAND_HIGH,
     TARGET_BAND_LOW,
@@ -552,7 +554,7 @@ def simulate_feedback_stream(
     description: str,
     label_batches: Iterable[Sequence[str]],
     *,
-    start_percent: float = 5.0,
+    start_percent: float = DEFAULT_ALERT_TOP_PERCENT,
     cfg: CalibrationConfig = DEFAULT_CONFIG,
     n_cycles: int | None = None,
 ) -> StreamResult:
@@ -601,7 +603,9 @@ def simulate_feedback_stream(
     notes: list[str] = []
     pass_ok = not outside and reversals == 0
     if outside:
-        notes.append("FAIL: trajectory left the 2–15% clamp")
+        notes.append(
+            f"FAIL: trajectory left the {cfg.clamp_low:g}–{cfg.clamp_high:g}% clamp"
+        )
     if reversals:
         notes.append(f"FAIL: {reversals} direction reversal(s)")
     return StreamResult(
@@ -630,7 +634,7 @@ def _window_from_history(history: Sequence[str], window_size: int) -> list[str]:
 def build_standard_streams(
     *,
     n_cycles: int = 40,
-    start_percent: float = 5.0,
+    start_percent: float = DEFAULT_ALERT_TOP_PERCENT,
     cfg: CalibrationConfig = DEFAULT_CONFIG,
     seed: int = 20260819,
 ) -> list[StreamResult]:
@@ -673,7 +677,7 @@ def build_standard_streams(
         if result.n_applied != 0:
             result.notes.append(
                 f"FAIL: realistic stream moved the threshold {result.n_applied} time(s); "
-                "in-band 60–85% traffic should hold"
+                f"in-band {cfg.target_low:.0%}–{cfg.target_high:.0%} traffic should hold"
             )
         if span > 0:
             result.notes.append(

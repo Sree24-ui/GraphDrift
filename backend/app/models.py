@@ -17,6 +17,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 
+# Shared with the login schema so the API never accepts a name the column
+# cannot store (Postgres enforces VARCHAR length; SQLite does not).
+USERNAME_MAX_LENGTH = 64
+
 
 class User(Base):
     __tablename__ = "users"
@@ -25,7 +29,9 @@ class User(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    username: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    username: Mapped[str] = mapped_column(
+        String(USERNAME_MAX_LENGTH), unique=True, nullable=False, index=True
+    )
     password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
     role: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(

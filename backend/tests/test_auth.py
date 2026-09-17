@@ -219,3 +219,106 @@ def test_live_feed_websocket_requires_a_valid_token(auth_env):
     token = login(client, "analyst")
     with client.websocket_connect(f"/ws/live-feed?token={token}") as ws:
         assert ws is not None
+
+
+def test_login_rate_limit_is_configurable_per_deployment(auth_env, monkeypatch):
+    client, _ = auth_env
+    monkeypatch.setenv("LOGIN_RATE_LIMIT", "3/minute")
+    codes = [
+        client.post(
+            "/api/auth/login", json={"username": "admin", "password": "wrong"}
+        ).status_code
+        for _ in range(4)
+    ]
+    assert codes == [401, 401, 401, 429]
+
+
+def test_invalid_login_rate_limit_fails_at_startup(monkeypatch):
+    from app.config import load_runtime_config
+
+    monkeypatch.setenv("LOGIN_RATE_LIMIT", "lots")
+    with pytest.raises(ValueError, match="LOGIN_RATE_LIMIT"):
+        load_runtime_config()
+
+
+def test_api_never_exposes_ground_truth_labels(auth_env):
+    """Analysts must not be able to see which transactions are simulated attacks."""
+    from app.api.websocket import build_transaction_message
+    from app.models import Transaction
+
+    client, Session = auth_env
+    with Session() as db:
+        db.add(Account(id="peer@ybl", created_at=datetime.now(), last_active_at=datetime.now()))
+        db.add(
+            Transaction(
+                sender_id="peer@ybl", receiver_id="case@ybl", amount=10.0,
+                timestamp=datetime.now(), is_synthetic_attack=True,
+            )
+        )
+        db.commit()
+        tx = db.scalar(select(Transaction))
+        assert "is_synthetic_attack" not in build_transaction_message(tx)["data"]
+
+    token = login(client, "analyst")
+    body = client.get("/api/accounts/case@ybl", headers=bearer(token)).json()
+    assert body["transactions"], body
+    assert all("is_synthetic_attack" not in t for t in body["transactions"])
+    assert "is_synthetic_attack" not in str(body)
+    # case@ybl has the open alert; its counterparty peer@ybl does not.
+    assert body["connected_accounts"] == ["peer@ybl"]
+    assert body["connected_accounts_with_open_alerts"] == []
+    peer = client.get("/api/accounts/peer@ybl", headers=bearer(token)).json()
+    assert peer["connected_accounts_with_open_alerts"] == ["case@ybl"]
+
+
+def test_live_feed_closes_when_the_session_expires(auth_env, monkeypatch):
+    """The token is only checked at the handshake; expiry must still end the stream."""
+    import time as _time
+
+    client, _ = auth_env
+    monkeypatch.setenv("SESSION_TTL_SECONDS", "2")
+    token = login(client, "analyst")
+    started = _time.monotonic()
+    with client.websocket_connect(f"/ws/live-feed?token={token}") as ws:
+        message = ws.receive()
+    assert message["type"] == "websocket.close"
+    assert message["code"] == 1008
+    assert _time.monotonic() - started < 5
+
+
+@pytest.mark.parametrize(
+    ("secret", "origins", "message"),
+    [
+        ("", "https://app.example.com", "must be set"),
+        ("replace-with-a-long-random-secret-in-production", "https://app.example.com", "published example"),
+        ("short-secret", "https://app.example.com", "at least 32"),
+        ("x" * 48, "*", "explicit origins"),
+        ("x" * 48, "https://app.example.com,*", "explicit origins"),
+    ],
+)
+def test_production_refuses_unsafe_configuration(monkeypatch, secret, origins, message):
+    from app.config import load_runtime_config
+
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("SESSION_SECRET", secret)
+    monkeypatch.setenv("ALLOWED_ORIGINS", origins)
+    with pytest.raises(ValueError, match=message):
+        load_runtime_config()
+
+
+def test_production_accepts_a_strong_secret_and_explicit_origins(monkeypatch):
+    from app.config import load_runtime_config
+
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("SESSION_SECRET", "s" * 48)
+    monkeypatch.setenv("ALLOWED_ORIGINS", "https://app.example.com")
+    config = load_runtime_config()
+    assert config.allowed_origins == ("https://app.example.com",)
+
+
+def test_development_still_runs_without_a_secret(monkeypatch):
+    from app.config import load_runtime_config
+
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("SESSION_SECRET", raising=False)
+    assert len(load_runtime_config().session_secret) >= 32

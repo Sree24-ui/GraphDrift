@@ -16,6 +16,9 @@ datasets==5.0.1
 huggingface_hub==1.27.0
 kaggle==2.2.4
 pytest==9.1.1
+# FastAPI's TestClient needs httpx; declared directly rather than relying on
+# another package to pull it in.
+httpx==0.28.1
 scikit-learn==1.9.0
 PyJWT==2.13.0
 argon2-cffi==25.1.0

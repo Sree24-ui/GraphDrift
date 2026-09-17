@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import re
 import sys
 from dataclasses import dataclass
 from datetime import datetime
@@ -46,9 +47,7 @@ from evaluation.db import init_eval_db  # noqa: E402
 from evaluation.freeze_snapshot import freeze_snapshot  # noqa: E402
 from evaluation.metrics import EvalMetrics, compute_metrics  # noqa: E402
 from evaluation.paysim_config import (  # noqa: E402
-    PAYSIM_COMPRESSED_MINUTES_PER_STEP,
     PAYSIM_MIN_TRANSACTIONS_FOR_SCORING,
-    PAYSIM_TIME_SCALE,
     PAYSIM_WINDOW_MINUTES,
     PAYSIM_WINDOW_STEPS,
 )
@@ -57,8 +56,6 @@ from evaluation.snapshot_analysis import (  # noqa: E402
     attack_type_recall,
     classify_attack_types,
     diagnose_fusion_misses,
-    format_attack_breakdown,
-    format_miss_diagnoses,
 )
 
 PAYSIM_DB = BACKEND_ROOT / "evaluation" / "data" / "paysim_eval.db"
@@ -67,13 +64,6 @@ RESULTS_CSV = BACKEND_ROOT / "evaluation" / "results.csv"
 RESULTS_MD = BACKEND_ROOT / "evaluation" / "RESULTS.md"
 
 # Previous run used single-window timestamp compression (invalid for temporal features).
-PREVIOUS_PAYSIM_COMPRESSED = {
-    "baseline": {"tp": 0, "fp": 0, "fn": 11, "tn": 28, "f1": 0.0},
-    "layer1": {"tp": 0, "fp": 2, "fn": 11, "tn": 26, "f1": 0.0},
-    "fusion": {"tp": 2, "fp": 7, "fn": 9, "tn": 21, "f1": 0.2},
-}
-
-
 @dataclass(frozen=True)
 class DatasetEval:
     name: str
@@ -332,6 +322,29 @@ def run_dataset_eval(dataset: DatasetEval) -> tuple[list[dict], dict]:
 
             positives_eval = all_positives & eval_universe
             metrics = compute_metrics(positives_eval, predicted, eval_universe)
+            ties = None
+            if detector in ("layer1", "fusion"):
+                scored = (
+                    compute_gdi_scores(
+                        extract_all_features(
+                            db, as_of, window_minutes, min_transactions=min_transactions
+                        )
+                    )
+                    if detector == "layer1"
+                    else compute_fused_scores(
+                        db, as_of, window_minutes=window_minutes,
+                        min_transactions=min_transactions,
+                    )
+                )
+                key = "gdi_score" if detector == "layer1" else "fused_score"
+                ties = tie_diagnostics(scored, key, positives_eval)
+                if ties["k"] and ties["slots_from_tie"] > ties["k"] / 2:
+                    print(
+                        f"  WARNING {dataset.name}/{detector}: {ties['slots_from_tie']} of "
+                        f"{ties['k']} alert slots come from a {ties['tie_size']}-account tie "
+                        f"at the cutoff. TP={metrics.tp} is a tie-break artifact; a random "
+                        f"tie-break expects TP={ties['expected_tp_random_tiebreak']:.2f}."
+                    )
             row = {
                 "dataset": dataset.name,
                 "detector": detector,
@@ -343,6 +356,11 @@ def run_dataset_eval(dataset: DatasetEval) -> tuple[list[dict], dict]:
                 "ground_truth_fraud_scored": len(positives_eval),
                 "ground_truth_filtered_out": len(all_positives) - len(positives_eval),
                 **metrics.as_dict(),
+                "tie_slots": ties["slots_from_tie"] if ties else "",
+                "tie_size": ties["tie_size"] if ties else "",
+                "expected_tp_random_tiebreak": (
+                    round(ties["expected_tp_random_tiebreak"], 3) if ties else ""
+                ),
             }
             rows.append(row)
             print(
@@ -472,198 +490,53 @@ def save_results_csv(rows: list[dict], path: Path) -> None:
         writer.writerows(metric_rows)
 
 
-def write_results_md(
-    rows: list[dict],
-    *,
-    snapshot_path: Path,
-    paysim_path: Path,
-    snapshot_extras: dict,
-    paysim_extras: dict,
-) -> None:
-    metric_rows = [r for r in rows if "f1" in r]
+def patch_results_md(rows: list[dict]) -> None:
+    """Update only the table rows this script computed.
 
-    def row(dataset: str, detector: str) -> dict | None:
-        for r in metric_rows:
-            if r["dataset"] == dataset and r["detector"] == detector:
-                return r
-        return None
-
-    snap_fusion = row("snapshot", "fusion")
-    snap_baseline = row("snapshot", "baseline")
-    pay_fusion = row("paysim", "fusion")
-    pay_baseline = row("paysim", "baseline")
-
-    lines = [
-        "# GraphDrift Offline Evaluation Results",
-        "",
-        f"Generated: {datetime.now().isoformat(timespec='seconds')}",
-        "",
-        "## Datasets",
-        "",
-        f"- **Internal snapshot:** `{snapshot_path.name}`",
-        f"- **PaySim sample:** `{paysim_path.name}` (isolated from live demo DB)",
-        f"- **Snapshot window:** {WINDOW_MINUTES} minutes at `max(timestamp)`",
-        f"- **PaySim window:** {PAYSIM_WINDOW_MINUTES} minutes at `max(timestamp)` "
-        f"(after ÷{PAYSIM_TIME_SCALE:.0f} step compression: 1 step-hour → "
-        f"{PAYSIM_COMPRESSED_MINUTES_PER_STEP:.0f} wall-clock min; "
-        f"≈{PAYSIM_WINDOW_STEPS:.1f} PaySim steps per window)",
-        f"- **Alert percentile:** top {(1 - get_alert_top_percentile()) * 100:.0f}% (Layer-1 + fusion)",
-        "",
-        "## Results (rates + raw counts)",
-        "",
-        "| Dataset | Detector | P | R | F1 | FPR | TP | FP | FN | TN | Fraud† | Eval‡ |",
-        "|---------|----------|---|---|----|-----|----|----|----|----|--------|-------|",
-    ]
-
-    for r in metric_rows:
-        lines.append(
-            f"| {r['dataset']} | {r['detector']} | "
-            f"{r['precision']:.3f} | {r['recall']:.3f} | {r['f1']:.3f} | {r['fpr']:.4f} | "
-            f"{r['tp']} | {r['fp']} | {r['fn']} | {r['tn']} | "
+    RESULTS.md is a hand-maintained log with sections owned by other scripts,
+    so this never rewrites the file: each ``| dataset | detector |`` row it
+    measured is replaced in place, and everything else is left untouched.
+    """
+    text = RESULTS_MD.read_text()
+    for r in (r for r in rows if "f1" in r):
+        prefix = f"| {r['dataset']} | {r['detector']} |"
+        pattern = re.compile(rf"^{re.escape(prefix)}.*$", re.M)
+        if not pattern.search(text):
+            raise SystemExit(
+                f"RESULTS.md has no row starting {prefix!r}; add it by hand first."
+            )
+        new_line = (
+            f"{prefix} {r['precision']:.3f} | {r['recall']:.3f} | {r['f1']:.3f} | "
+            f"{r['fpr']:.4f} | {r['tp']} | {r['fp']} | {r['fn']} | {r['tn']} | "
             f"{r['ground_truth_fraud_scored']} | {r['accounts_evaluated']} |"
         )
+        text = pattern.sub(new_line, text, count=1)
+    RESULTS_MD.write_text(text)
 
-    lines.extend(
-        [
-            "",
-            "† **Fraud** = ground-truth fraud accounts in the scored universe (≥3 tx in window).",
-            "‡ **Eval** = total accounts evaluated (scored universe size).",
-            "",
-            "### PaySim time-handling correction",
-            "",
-            "Previous run incorrectly compressed all PaySim rows into a single 15-minute window, "
-            "distorting velocity/burstiness. This run maps `step` → timestamps with proportional "
-            f"compression (1 step-hour ÷ {PAYSIM_TIME_SCALE:.0f} = {PAYSIM_COMPRESSED_MINUTES_PER_STEP:.0f} min) "
-            f"and uses a {PAYSIM_WINDOW_MINUTES}m detection window.",
-            "",
-            "| Detector | Old F1 (compressed) | New F1 (step-based) |",
-            "|----------|--------------------|-----------------------|",
-        ]
-    )
 
-    for detector in ("baseline", "layer1", "fusion"):
-        old = PREVIOUS_PAYSIM_COMPRESSED[detector]["f1"]
-        new_row = row("paysim", detector)
-        new_f1 = new_row["f1"] if new_row else 0.0
-        lines.append(f"| {detector} | {old:.3f} | {new_f1:.3f} |")
+def tie_diagnostics(rows: list[dict], key: str, positives: set[str]) -> dict:
+    """How much of the top-k budget is decided by a tie at the cutoff score.
 
-    lines.extend(["", "## Interpretation", ""])
-
-    if snap_fusion and snap_baseline:
-        if snap_fusion["f1"] > snap_baseline["f1"]:
-            lines.append(
-                f"- **Snapshot:** fusion F1={snap_fusion['f1']:.3f} "
-                f"(TP={snap_fusion['tp']}, FN={snap_fusion['fn']}, "
-                f"fraud={snap_fusion['ground_truth_fraud_scored']}, "
-                f"eval={snap_fusion['accounts_evaluated']}) beats baseline F1={snap_baseline['f1']:.3f}."
-            )
-        else:
-            lines.append(
-                f"- **Snapshot warning:** fusion F1={snap_fusion['f1']:.3f} does not beat "
-                f"baseline F1={snap_baseline['f1']:.3f}."
-            )
-
-    if pay_fusion and pay_baseline:
-        lines.append(
-            f"- **PaySim (corrected timing + rank-based threshold):** fusion F1={pay_fusion['f1']:.3f} "
-            f"(TP={pay_fusion['tp']}, FP={pay_fusion['fp']}, FN={pay_fusion['fn']}, "
-            f"fraud={pay_fusion['ground_truth_fraud_scored']}, eval={pay_fusion['accounts_evaluated']}) "
-            f"vs baseline F1={pay_baseline['f1']:.3f}. "
-            "Prior bug: `score >= np.percentile` with tied GDI scores flagged 996/1989 (~50%); "
-            "rank-based top-k=100 restores the intended 5% alert budget."
-        )
-
-    if snapshot_extras.get("breakdowns"):
-        lines.extend(["", "## Snapshot recall by attack type (fusion)", ""])
-        lines.append(
-            format_attack_breakdown(snapshot_extras["breakdowns"], "fusion")
-        )
-        lines.extend(
-            [
-                "",
-                "### Why snapshot recall is below 50%",
-                "",
-                "This is **not** primarily a detector-quality issue — it is a **coverage** issue:",
-                "",
-                "- **91** fraud-involved accounts appear in the 15-minute window.",
-                "- **69 (76%)** never enter the scored universe because they have fewer than 3 "
-                "transactions in the window (typical fan-in *senders* and fan-out *receivers* "
-                "each participate in only 1–2 legs).",
-                "- Only **22** fraud accounts are scored; fusion detects **10** → **45.5% recall** "
-                "on the scored subset, **11.0%** of all fraud-involved accounts in the window.",
-                "",
-                "Among **scored** fast fan-in/fan-out accounts (n=21), fusion recall is **42.9%** "
-                "(9/21). Misses are not random — they fall just below the top-5% fused-score cutoff:",
-                "",
-                "- **Fan-in senders** (`in_deg=0`, `out_deg≥3`): low GDI, occasionally boosted by "
-                "ring percentile but not enough to clear threshold (e.g. `aarnav01@ybl` fused=3.526 "
-                "vs threshold 3.683).",
-                "- **Peripheral mule accounts** with moderate fan activity but unremarkable "
-                "percentile ranks vs 102 scored peers.",
-                "",
-                "The top-5% alert budget (≈5 slots) structurally limits recall when 22 fraud accounts "
-                "compete in the same percentile pool.",
-            ]
-        )
-
-    if snapshot_extras.get("diagnoses") is not None:
-        lines.extend(["", format_miss_diagnoses(snapshot_extras["diagnoses"])])
-
-    if paysim_extras.get("ring_stats"):
-        lines.extend(
-            [
-                "",
-                format_ring_inspection("PaySim", paysim_extras["ring_stats"]),
-                "",
-                "PaySim fraud is predominantly single-hop TRANSFER/CASH_OUT between two "
-                "accounts. Louvain finds many small components but none form the dense, "
-                "hub-and-spoke rings Layer 2 is tuned for — **Layer 2 does not fire** on "
-                "this sample (zero accounts with non-zero ring risk). Fusion on PaySim "
-                "degenerates to Layer 1 percentile ranking.",
-            ]
-        )
-
-    if snapshot_extras.get("ring_stats_snapshot"):
-        rs = snapshot_extras["ring_stats_snapshot"]
-        lines.extend(
-            [
-                "",
-                f"### Layer 2 on snapshot (contrast)",
-                "",
-                f"- Ring alerts: **{rs['ring_alerts_emitted']}** | "
-                f"accounts with ring risk: **{rs['accounts_with_nonzero_ring_risk']}**",
-            ]
-        )
-
-    lines.extend(
-        [
-            "",
-            "### Alert threshold fix (tie-breaking)",
-            "",
-            "PaySim with `min_transactions=1` collapses most accounts to **2 unique GDI "
-            "scores** (~99% tied at 0.892). Using `score >= np.percentile(scores, 95)` "
-            "flags everyone at the tied floor (~50% of accounts). Eval and production "
-            "now use **rank-based top-k** selection (`top_anomaly_budget`) instead.",
-            "",
-            "## Limitations",
-            "",
-            "- Single `as_of` per dataset; no rolling multi-window average.",
-            "- Layer-1 and fusion share the same top-percentile alert budget.",
-            "- PaySim: eval-only `min_transactions=1` (PaySim accounts rarely reach ≥3 tx/window); 12k cap.",
-            "- Snapshot: ~49 min of live sim data; denominators are modest — interpret rates alongside counts.",
-            "",
-            "## Reproduce",
-            "",
-            "```bash",
-            "cd graphdrift/backend",
-            "python -m evaluation.load_paysim",
-            "python -m evaluation.freeze_snapshot",
-            "python -m evaluation.run_eval --skip-paysim-load --skip-snapshot",
-            "```",
-        ]
-    )
-
-    RESULTS_MD.write_text("\n".join(lines) + "\n")
+    With heavily tied scores the selected set is fixed by row order, not by the
+    detector. ``expected_tp_random_tiebreak`` is what a uniformly random pick
+    from the tie would score, which is the honest reference for such rows.
+    """
+    ranked = sorted(rows, key=lambda row: -float(row[key]))
+    k = top_anomaly_budget(len(ranked))
+    if k == 0:
+        return {"k": 0, "tie_size": 0, "slots_from_tie": 0, "expected_tp_random_tiebreak": 0.0}
+    cutoff = float(ranked[k - 1][key])
+    above = [row for row in ranked if float(row[key]) > cutoff]
+    tied = [row for row in ranked if float(row[key]) == cutoff]
+    slots = k - len(above)
+    fraud_above = sum(row["account_id"] in positives for row in above)
+    fraud_tied = sum(row["account_id"] in positives for row in tied)
+    return {
+        "k": k,
+        "tie_size": len(tied),
+        "slots_from_tie": slots,
+        "expected_tp_random_tiebreak": fraud_above + slots * fraud_tied / len(tied),
+    }
 
 
 def main() -> None:
@@ -697,10 +570,11 @@ def main() -> None:
             label=args.snapshot_label,
         )
     else:
-        candidates = sorted(SNAPSHOT_DIR.glob("graphdrift_snapshot_*.db"))
-        if not candidates:
-            raise FileNotFoundError("No snapshot found; run freeze_snapshot first")
-        snapshot_path = candidates[-1]
+        # The cited snapshot rows belong to one specific frozen snapshot; never
+        # silently fall back to whichever file sorts last.
+        snapshot_path = SNAPSHOT_DIR / f"graphdrift_snapshot_{args.snapshot_label}.db"
+        if not snapshot_path.exists():
+            raise FileNotFoundError(f"{snapshot_path} not found; run freeze_snapshot first")
 
     print(f"Using snapshot: {snapshot_path}")
 
@@ -721,25 +595,13 @@ def main() -> None:
     ]
 
     all_rows: list[dict] = []
-    snapshot_extras: dict = {}
-    paysim_extras: dict = {}
     for dataset in datasets:
-        rows, extras = run_dataset_eval(dataset)
+        rows, _ = run_dataset_eval(dataset)
         all_rows.extend(rows)
-        if dataset.name == "snapshot":
-            snapshot_extras = extras
-        elif dataset.name == "paysim":
-            paysim_extras = extras
 
     print_results_table(all_rows)
     save_results_csv(all_rows, RESULTS_CSV)
-    write_results_md(
-        all_rows,
-        snapshot_path=snapshot_path,
-        paysim_path=PAYSIM_DB,
-        snapshot_extras=snapshot_extras,
-        paysim_extras=paysim_extras,
-    )
+    patch_results_md(all_rows)
     print(f"\nSaved: {RESULTS_CSV}")
     print(f"Saved: {RESULTS_MD}")
 

@@ -133,10 +133,10 @@ def _run_config(bundle: dict, variant: str, cfg: dict) -> dict:
 
 
 def format_section(sweep: dict) -> str:
-    gdi = GRAPHDRIFT["layer1"]["f1"]
-    fusion = GRAPHDRIFT["fusion"]["f1"]
+    gdi = GRAPHDRIFT["layer1"]["f1"]["mean"]
+    fusion = GRAPHDRIFT["fusion"]["f1"]["mean"]
     rows = [
-        "| Config | n_estimators | max_samples | max_features | IF-L1 mean F1 | IF-all mean F1 | vs GDI 0.251 | vs fusion 0.284 |",
+        f"| Config | n_estimators | max_samples | max_features | IF-L1 mean F1 | IF-all mean F1 | vs GDI {gdi:.3f} | vs fusion {fusion:.3f} |",
         "|--------|--------------|-------------|--------------|---------------|----------------|--------------|-----------------|",
     ]
     l1_means = []
@@ -208,8 +208,8 @@ def patch_results_md(block: str) -> None:
 
 
 def _recommend(by_config: dict) -> str:
-    gdi = GRAPHDRIFT["layer1"]["f1"]
-    fusion = GRAPHDRIFT["fusion"]["f1"]
+    gdi = GRAPHDRIFT["layer1"]["f1"]["mean"]
+    fusion = GRAPHDRIFT["fusion"]["f1"]["mean"]
     l1_vals = [
         by_config[c["name"]]["isolation_forest_l1_features"]["f1"]["mean"]
         for c in CONFIGS
@@ -236,7 +236,8 @@ def _recommend(by_config: dict) -> str:
             f"({best_l1:.3f}) stays {worst_gap_l1:.3f} below GDI, and the best IF-all "
             f"({best_all:.3f}) stays {worst_gap_all:.3f} below fusion. Range is tight "
             f"(L1 {min(l1_vals):.3f}–{max(l1_vals):.3f}; all {min(all_vals):.3f}–{max(all_vals):.3f}), "
-            "so the original +0.029 / +0.049 is not an artifact of n_estimators=100."
+            f"so the default-config gap (+{gdi - default_l1:.3f} / +{fusion - default_all:.3f}) "
+            "is not an artifact of n_estimators=100."
         )
     elif worst_gap_l1 <= 0 or worst_gap_all <= 0:
         winner = "IF-L1" if worst_gap_l1 <= 0 else "IF-all"

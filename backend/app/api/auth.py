@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
 from app.api.schemas import AuthLoginRequest, AuthSessionResponse, CurrentUserResponse
+from app.config import load_runtime_config
 from app.models import User
 from app.rate_limit import limiter
 from app.security import create_access_token, verify_password
@@ -23,7 +24,7 @@ INVALID_CREDENTIALS = HTTPException(
 
 
 @router.post("/login", response_model=AuthSessionResponse)
-@limiter.limit("10/minute")
+@limiter.limit(lambda: load_runtime_config().login_rate_limit)
 def login(
     request: Request,
     body: AuthLoginRequest,

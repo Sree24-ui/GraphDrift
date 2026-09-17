@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import math
 import sys
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -31,6 +30,7 @@ from app.detection.fusion import (  # noqa: E402
     compute_fused_scores,
     compute_fused_scores_multiscale,
     select_top_anomaly_accounts,
+    top_anomaly_budget,
 )
 from app.detection.structural_pass import score_peripheral_accounts  # noqa: E402
 from app.models import Transaction  # noqa: E402
@@ -593,7 +593,7 @@ def _why(miss: dict, hub: dict) -> str:
             f"in_degree/out_degree ≈ 5/5, hub_concentration={c60.get('hub_concentration')} "
             f"on a {c60.get('member_count')}-node leftover community). "
             f"60m fused rank {rank}/{nsc} is outside the top-5% budget "
-            f"(k={max(1, int(math.ceil((nsc or 0) * 0.05)))}). High-activity pool accounts "
+            f"(k={top_anomaly_budget(nsc or 0)}). High-activity pool accounts "
             f"with 20–30 txs over the hour take the slow-scale slots."
         )
     if variant == "straddle_15":

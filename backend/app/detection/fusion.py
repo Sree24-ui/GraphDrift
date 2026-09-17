@@ -87,7 +87,10 @@ def top_anomaly_budget(
         return 0
     if percentile is None:
         percentile = get_alert_top_percentile()
-    return max(1, int(np.ceil(account_count * (1 - percentile))))
+    # Round away float noise before ceil: 1 - 0.95 == 0.05000000000000004, which
+    # otherwise flags one extra account whenever the population is a multiple
+    # of 20 (e.g. top 5% of 140 would be 8, not 7).
+    return max(1, int(np.ceil(round(account_count * (1 - percentile), 9))))
 
 
 def compute_alert_threshold(fused_results: list[dict]) -> float:

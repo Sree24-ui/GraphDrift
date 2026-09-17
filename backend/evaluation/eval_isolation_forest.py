@@ -36,10 +36,15 @@ DETECTORS = (
     "isolation_forest_all_features",
 )
 
-# Citeable 5-seed GraphDrift rows from RESULTS.md (15-min, ≥3-tx).
-GRAPHDRIFT = {
-    "layer1": {"precision": 0.675, "recall": 0.158, "f1": 0.251, "fpr": 0.023},
-    "fusion": {"precision": 0.620, "recall": 0.188, "f1": 0.284, "fpr": 0.035},
+# GraphDrift 5-seed aggregates (15-min, >=3-tx), read from the multi-seed run
+# instead of retyped, so this comparison always matches the cited numbers.
+# Run `python -m evaluation.eval_multi_seed` first.
+_MULTISEED = json.loads(
+    (BACKEND_ROOT / "evaluation" / "data" / "multiseed_eval.json").read_text()
+)
+GRAPHDRIFT = _MULTISEED["aggregate"]
+GDI_F1_BY_SEED = {
+    row["seed"]: row["f1"] for row in _MULTISEED["per_seed"] if row["detector"] == "layer1"
 }
 
 
@@ -119,20 +124,40 @@ def aggregate(rows: list[dict]) -> dict[str, dict]:
     return out
 
 
-def _honest(agg: dict) -> str:
+def _honest(agg: dict, per_seed: list[dict]) -> str:
     l1_if = agg["isolation_forest_l1_features"]["f1"]["mean"]
     all_if = agg["isolation_forest_all_features"]["f1"]["mean"]
-    gdi = GRAPHDRIFT["layer1"]["f1"]
-    fusion = GRAPHDRIFT["fusion"]["f1"]
+    gdi = GRAPHDRIFT["layer1"]["f1"]["mean"]
+    fusion = GRAPHDRIFT["fusion"]["f1"]["mean"]
     d_l1 = gdi - l1_if
     d_fu = fusion - all_if
+    gdi_std = GRAPHDRIFT["layer1"]["f1"]["std"]
+    seed_gap = {
+        r["seed"]: GDI_F1_BY_SEED[r["seed"]] - r["f1"]
+        for r in per_seed
+        if r["detector"] == "isolation_forest_l1_features"
+    }
+    wins = sorted(s for s, d in seed_gap.items() if d > 1e-9)
+    ties = sorted(s for s, d in seed_gap.items() if abs(d) <= 1e-9)
+    losses = sorted(s for s, d in seed_gap.items() if d < -1e-9)
+    if losses:
+        seed_claim = (
+            f"but it is not consistent: IF-L1 beats GDI on seed(s) "
+            f"{', '.join(map(str, losses))}"
+        )
+    else:
+        seed_claim = (
+            f"but the sign is consistent: GDI wins {len(wins)} of {len(seed_gap)} seeds "
+            f"and never loses to IF-L1"
+            + (f" (ties on {' and '.join(map(str, ties))})" if ties else "")
+        )
     parts = []
     if d_l1 > 0.02:
         parts.append(
             f"Layer 1 (Mahalanobis) beats Isolation Forest on the same 8 features "
-            f"(F1 {gdi:.3f} vs {l1_if:.3f}, Δ={d_l1:.3f}). The gap is modest — about one "
-            f"Layer-1 F1 standard deviation (0.027) — but the sign is consistent: GDI "
-            f"never loses a seed to IF-L1 (ties on 123 and 99). Hypothesis: remaining "
+            f"(F1 {gdi:.3f} vs {l1_if:.3f}, Δ={d_l1:.3f}). The gap is modest — "
+            f"{d_l1 / gdi_std:.1f}× the Layer-1 F1 standard deviation ({gdi_std:.3f}) — "
+            f"{seed_claim}. Hypothesis: remaining "
             f"features are still correlated (counts vs degrees, fan_ratio vs in/out); "
             f"Mahalanobis uses the inverse covariance, Isolation Forest splits "
             f"axis-aligned and cannot represent that ellipsoid as cheaply."
@@ -211,16 +236,16 @@ def format_section(per_seed: list[dict], agg: dict) -> str:
     agg_lines = [
         "| Detector | Precision | Recall | F1 | FPR |",
         "|----------|-----------|--------|----|-----|",
-        f"| layer1 (GDI / Mahalanobis, existing) | {GRAPHDRIFT['layer1']['precision']:.3f} ± 0.168 | "
-        f"{GRAPHDRIFT['layer1']['recall']:.3f} ± 0.027 | **{GRAPHDRIFT['layer1']['f1']:.3f} ± 0.027** | "
-        f"{GRAPHDRIFT['layer1']['fpr']:.3f} ± 0.010 |",
+        f"| layer1 (GDI / Mahalanobis, existing) | {_fmt(GRAPHDRIFT['layer1']['precision'])} | "
+        f"{_fmt(GRAPHDRIFT['layer1']['recall'])} | **{_fmt(GRAPHDRIFT['layer1']['f1'])}** | "
+        f"{_fmt(GRAPHDRIFT['layer1']['fpr'])} |",
         f"| isolation_forest_l1_features | {_fmt(agg['isolation_forest_l1_features']['precision'])} | "
         f"{_fmt(agg['isolation_forest_l1_features']['recall'])} | "
         f"{_fmt(agg['isolation_forest_l1_features']['f1'])} | "
         f"{_fmt(agg['isolation_forest_l1_features']['fpr'])} |",
-        f"| fusion (percentile L1+L2, existing) | {GRAPHDRIFT['fusion']['precision']:.3f} ± 0.117 | "
-        f"{GRAPHDRIFT['fusion']['recall']:.3f} ± 0.048 | **{GRAPHDRIFT['fusion']['f1']:.3f} ± 0.051** | "
-        f"{GRAPHDRIFT['fusion']['fpr']:.3f} ± 0.004 |",
+        f"| fusion (percentile L1+L2, existing) | {_fmt(GRAPHDRIFT['fusion']['precision'])} | "
+        f"{_fmt(GRAPHDRIFT['fusion']['recall'])} | **{_fmt(GRAPHDRIFT['fusion']['f1'])}** | "
+        f"{_fmt(GRAPHDRIFT['fusion']['fpr'])} |",
         f"| isolation_forest_all_features | {_fmt(agg['isolation_forest_all_features']['precision'])} | "
         f"{_fmt(agg['isolation_forest_all_features']['recall'])} | "
         f"{_fmt(agg['isolation_forest_all_features']['f1'])} | "
@@ -251,7 +276,7 @@ Degenerate (unique < {5} or unique < k) on any seed: L1={deg_l1}, L1+structural=
 
 ### Honest read
 
-{_honest(agg)}
+{_honest(agg, per_seed)}
 
 Reproduce: `python -m evaluation.eval_isolation_forest`.
 
@@ -295,7 +320,7 @@ def main() -> None:
             f"unique={a['unique_scores']}  degenerate={a['any_degenerate']}"
         )
 
-    honest = _honest(agg)
+    honest = _honest(agg, all_rows)
     print("\n" + honest)
     REPORT_JSON.parent.mkdir(parents=True, exist_ok=True)
     REPORT_JSON.write_text(
