@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { GraphSnapshot, MetricsUpdate } from '../api/types'
 import { useLiveFeed } from '../hooks/useLiveFeed'
 import AlertFeedPanel from '../components/AlertFeedPanel'
+import AnimatedNumber from '../components/AnimatedNumber'
 import ErrorBanner from '../components/ErrorBanner'
 import GraphView from '../components/GraphView'
 import MaterialIcon from '../components/MaterialIcon'
@@ -13,7 +14,8 @@ import TimelineScrubber, {
 
 interface MetricCardProps {
   label: string
-  value: string | number
+  /** null renders the placeholder: an unknown count must not read as zero. */
+  value: number | null
   icon: string
   accent?: 'primary' | 'tertiary' | 'error'
   trend?: string
@@ -59,9 +61,10 @@ function MetricCard({
         <MaterialIcon name={icon} className={iconColor} size={20} />
       </div>
       <div className="relative z-10 mt-2 flex items-baseline gap-2">
-        <span className="font-display text-3xl font-bold tabular-nums tracking-tight text-on-surface">
-          {value}
-        </span>
+        <AnimatedNumber
+          value={value}
+          className="font-display text-3xl font-bold tabular-nums tracking-tight text-on-surface"
+        />
         {trend && (
           <span
             className={`flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${trendColor}`}
@@ -205,14 +208,14 @@ export default function LiveMonitor() {
             timelineMode === 'replay'
               ? 'border-tertiary/40 bg-tertiary/10 text-tertiary'
               : connectionStatus === 'connected'
-                ? 'border-primary/40 bg-primary/10 text-primary'
+                ? 'status-live'
                 : connectionStatus === 'connecting'
                   ? 'border-tertiary/40 bg-tertiary/10 text-tertiary'
                   : 'border-error/40 bg-error/10 text-error',
           ].join(' ')}
         >
           {connectionStatus === 'connected' && timelineMode === 'live' && (
-            <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+            <span className="live-dot" aria-hidden />
           )}
           {statusLabel}
         </span>
@@ -221,12 +224,12 @@ export default function LiveMonitor() {
       <div className="grid shrink-0 grid-cols-1 gap-4 md:grid-cols-3">
         <MetricCard
           label="Active Nodes"
-          value={displayMetrics.active_node_count.toLocaleString()}
+          value={displayMetrics.active_node_count}
           icon="grain"
         />
         <MetricCard
           label="Live Edges"
-          value={displayMetrics.live_edge_count.toLocaleString()}
+          value={displayMetrics.live_edge_count}
           icon="timeline"
           accent="tertiary"
         />
@@ -236,8 +239,8 @@ export default function LiveMonitor() {
             // The graph fallback cannot know the open-alert count, so show it as
             // unknown until the first metrics message instead of a false 0.
             metrics || timelineMode === 'replay'
-              ? displayMetrics.active_alert_count.toLocaleString()
-              : '—'
+              ? displayMetrics.active_alert_count
+              : null
           }
           icon="gpp_maybe"
           accent="error"

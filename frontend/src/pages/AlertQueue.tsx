@@ -1,3 +1,4 @@
+import { AnimatePresence, m } from 'motion/react'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -20,6 +21,7 @@ import ShortcutHint from '../components/ShortcutHint'
 import RiskScorePill from '../components/RiskScorePill'
 import StatusBadge from '../components/StatusBadge'
 import TableSkeleton from '../components/TableSkeleton'
+import { useMotionTransition } from '../hooks/useMotionTransition'
 import { useQueueShortcuts } from '../hooks/useQueueShortcuts'
 import { useToast } from '../hooks/useToast'
 import {
@@ -293,6 +295,7 @@ export default function AlertQueue() {
   const [ringTotal, setRingTotal] = useState<number | null>(null)
   const toast = useToast()
   const tableRef = useRef<HTMLDivElement>(null)
+  const rowTransition = useMotionTransition()
 
   const queryParams = useMemo((): GetAlertsParams => {
     const params: GetAlertsParams = {
@@ -953,18 +956,31 @@ export default function AlertQueue() {
                         </td>
                       </tr>
 
-                      {isExpanded && (
-                        <tr className="border-b border-primary/5" id={`alert-detail-${alert.id}`}>
-                          <td colSpan={9} className="p-0">
-                            <AlertRowDetail
-                              alert={alert}
-                              onStatusChange={handleStatusChange}
-                              onNotesSaved={() => {}}
-                              busy={isBusy}
-                            />
-                          </td>
-                        </tr>
-                      )}
+                      <AnimatePresence initial={false}>
+                        {isExpanded && (
+                          <tr
+                            className="border-b border-primary/5"
+                            id={`alert-detail-${alert.id}`}
+                          >
+                            <td colSpan={9} className="p-0">
+                              <m.div
+                                initial={{ height: 0 }}
+                                animate={{ height: 'auto' }}
+                                exit={{ height: 0 }}
+                                transition={rowTransition}
+                                className="overflow-hidden"
+                              >
+                                <AlertRowDetail
+                                  alert={alert}
+                                  onStatusChange={handleStatusChange}
+                                  onNotesSaved={() => {}}
+                                  busy={isBusy}
+                                />
+                              </m.div>
+                            </td>
+                          </tr>
+                        )}
+                      </AnimatePresence>
                     </Fragment>
                   )
                 })}

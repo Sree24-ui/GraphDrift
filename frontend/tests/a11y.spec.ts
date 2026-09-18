@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 
+import { signIn, TOKEN_KEY } from './session'
+
 /**
  * Zero axe violations on every page an analyst uses.
  *
@@ -10,23 +12,31 @@ import { expect, test, type Page } from '@playwright/test'
  * pages with real data — empty tables would pass while proving nothing.
  */
 
-const USERNAME = process.env.A11Y_USERNAME ?? 'local-admin'
-const PASSWORD = process.env.A11Y_PASSWORD ?? 'local-development-only'
-const TOKEN_KEY = 'graphdrift.sessionToken'
 
-async function signIn(page: Page): Promise<void> {
-  const response = await page.request.post('/api/auth/login', {
-    data: { username: USERNAME, password: PASSWORD },
-  })
-  expect(response.ok(), 'seeded backend must accept the test login').toBeTruthy()
-  const { access_token: token } = await response.json()
-  await page.addInitScript(
-    ([key, value]) => window.sessionStorage.setItem(key, value),
-    [TOKEN_KEY, token] as const,
+
+/**
+ * Wait for transient animations to finish before scanning. Text part-way
+ * through a fade measures as low contrast, which is a property of the frame
+ * rather than of the page an analyst reads. Infinite animations (the live
+ * pulse) are excluded, or this would never settle.
+ */
+async function settle(page: Page) {
+  await page.waitForFunction(
+    () =>
+      document
+        .getAnimations()
+        .filter((animation) => {
+          const timing = animation.effect?.getComputedTiming()
+          return animation.playState === 'running' && timing?.iterations !== Infinity
+        })
+        .length === 0,
+    null,
+    { timeout: 5000 },
   )
 }
 
 async function scan(page: Page) {
+  await settle(page)
   const { violations } = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'])
     .analyze()

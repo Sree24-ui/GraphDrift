@@ -1,4 +1,7 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { AnimatePresence, m } from 'motion/react'
+
+import { useMotionTransition } from '../hooks/useMotionTransition'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/useAuth'
 import AppBackground from './AppBackground'
@@ -14,6 +17,8 @@ const navItems = [
 export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const transition = useMotionTransition(0.18)
 
   const handleLogout = async () => {
     await logout()
@@ -131,7 +136,18 @@ export default function Layout() {
         </nav>
 
         <div className="min-h-0 flex-1 overflow-hidden p-4 md:p-6 lg:p-8">
-          <Outlet />
+          <AnimatePresence mode="wait" initial={false}>
+            <m.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={transition}
+              className="h-full"
+            >
+              <Outlet />
+            </m.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>

@@ -43,13 +43,13 @@ source of truth for any figure you intend to cite.
 |---|---|
 | Repository | https://github.com/Sree24-ui/GraphDrift (branch `main`) |
 | Backend tests | **117 passing** |
-| Frontend | `npm run build`, `tsc --noEmit`, `oxlint` all clean; 8 axe scans green |
+| Frontend | `npm run build`, `tsc --noEmit`, `oxlint` all clean; 11 Playwright checks green (8 axe scans, 3 reduced-motion) |
 | CI | GitHub Actions — backend (pytest), frontend (build) and accessibility (axe) jobs |
 | Python | **3.14** (pinned in CI to match development) |
 | Node | **24.20.0** — Active LTS "Krypton" line (pinned in CI) |
 | Backend deps | 22 direct pins in `requirements.txt`; full transitive lock in `requirements.lock` (CI installs from it) |
 | Detection default | single-node hub concentration; co-hub scoring **off**; learned signal **off** |
-| Frontend bundle | initial load 294 KB (96 KB gzip); every authenticated page is lazy-loaded |
+| Frontend bundle | initial load 340 KB (113 KB gzip) across three entry chunks; every authenticated page is lazy-loaded |
 | Last verified end-to-end | **2026-09-18** — both suites, axe scans, and the production-gate and session-revocation checks run against live servers |
 
 ---
@@ -386,6 +386,21 @@ Notable implementation details:
   settings write reports through it. `errorMessage()` surfaces the server's
   own `detail` text, so a rejected transition or a role refusal is shown
   rather than logged to the console.
+- **Motion.** `motion` (v13) drives the metric counters, route transitions,
+  toasts and row expansion. Its feature bundle is loaded through `LazyMotion`
+  from a separate chunk, so the entry payload carries only the small core.
+  Every transition comes from `useMotionTransition`, which returns
+  `{ duration: 0 }` under `prefers-reduced-motion`, and one CSS media query
+  flattens the hand-written keyframes — `MotionConfig reducedMotion="user"`
+  alone keeps opacity animations, which is not what "no motion" should mean.
+  Row expansion animates height only: fading the text would drop its contrast
+  for the length of the animation, which the axe scan correctly flags.
+- **Accent usage.** The palette was never the reason the UI read as flat — the
+  accent was applied almost exclusively at 5–20% alpha, which composites to a
+  dark slate (L≈0.13–0.23) over the surface. Full-strength accent covered 0.02%
+  of the Live Monitor viewport. `status-live`, `live-dot` and the active nav
+  item now carry the accent at full strength so an active state is visibly
+  different from a resting one.
 - **Queue shortcuts.** `useQueueShortcuts` binds `j`/`k` (or arrows) to move
   between rows, `Enter` to expand, `c` to confirm, `x` for false positive and
   `?` for the legend, and lands on the next still-unreviewed row after a
@@ -487,14 +502,16 @@ graphdrift/
 │   ├── requirements.txt            exact direct pins
 │   └── requirements.lock           full transitive lock (CI installs this)
 └── frontend/
-    ├── playwright.config.ts        a11y suite runner (starts Vite itself)
+    ├── playwright.config.ts        browser suite runner (starts Vite itself)
     ├── tests/a11y.spec.ts          axe scan of every page
+    ├── tests/reduced-motion.spec.ts  animations off when the OS asks
     └── src/
         ├── api/                    axios client, types
         ├── auth/                   AuthContext, useAuth
         ├── components/             graph, feed, queue, badges, toasts,
         │                           shortcut hint, scrubber …
-        ├── hooks/                  useLiveFeed, useQueueShortcuts, useToast
+        ├── hooks/                  useLiveFeed, useQueueShortcuts, useToast,
+        │                           useMotionTransition
         ├── pages/                  Login, LiveMonitor, AlertQueue,
         │                           AccountDetail, Reports, Settings
         ├── knobs.ts                imports shared/detection_knobs.json
@@ -594,6 +611,7 @@ cd ../frontend && npm run test:a11y
 | `test_ibm_aml_loader.py` | IBM schema, windowing, compression |
 | `test_simulation_seed.py` | seeded reproducibility |
 | `frontend/tests/a11y.spec.ts` | axe-core scan of all six pages plus login and an expanded ring row, against a seeded backend; asserts zero violations |
+| `frontend/tests/reduced-motion.spec.ts` | with `prefers-reduced-motion: reduce` forced on: CSS keyframes flattened and an expanding row lands at its final height instantly; the mirror case proves the check has teeth |
 
 CI (`.github/workflows/ci.yml`) runs on every push and pull request: Python
 3.14 → `pip install -r requirements.lock` → `pytest -q`; Node 24.20.0 →

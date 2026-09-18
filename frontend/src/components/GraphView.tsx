@@ -1,3 +1,4 @@
+import { useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D, {
   type ForceGraphMethods,
@@ -17,6 +18,7 @@ const PRIMARY = '#7dd3fc'
 const TERTIARY = '#c8a0f0'
 const ERROR = '#ff6b6b'
 const PULSE_DURATION_MS = 900
+const NODE_FADE_IN_MS = 600
 
 export interface GraphNodeObject {
   id: string
@@ -185,6 +187,8 @@ export default function GraphView({
   const lastTxIndexRef = useRef(0)
   const initialLoadDoneRef = useRef(false)
   const pulseStartedAtRef = useRef<Map<string, number>>(new Map())
+  const firstSeenAtRef = useRef<Map<string, number>>(new Map())
+  const reducedMotion = useReducedMotion()
 
   const [dimensions, setDimensions] = useState({ width: 800, height: 520 })
   const [graphVersion, setGraphVersion] = useState(0)
@@ -458,6 +462,20 @@ export default function GraphView({
     (node: GraphNodeObject, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const x = node.x ?? 0
       const y = node.y ?? 0
+      // Nodes used to appear at full opacity the instant the feed added them.
+      const now = Date.now()
+      let firstSeen = firstSeenAtRef.current.get(node.id)
+      if (firstSeen === undefined) {
+        firstSeen = now
+        firstSeenAtRef.current.set(node.id, now)
+      }
+      // A new node only appears alongside a data change, which reheats the
+      // force simulation and repaints for us; no extra frame loop needed.
+      const fade = reducedMotion
+        ? 1
+        : Math.min(1, (now - firstSeen) / NODE_FADE_IN_MS)
+      const previousAlpha = ctx.globalAlpha
+      ctx.globalAlpha = previousAlpha * fade
       const radius = nodeRadius(node)
       const alertConf = node.alertConfidence
       const isFocused = focusNodeId === node.id
@@ -498,8 +516,10 @@ export default function GraphView({
           ctx.stroke()
         }
       }
+
+      ctx.globalAlpha = previousAlpha
     },
-    [focusNodeId],
+    [focusNodeId, reducedMotion],
   )
 
   return (

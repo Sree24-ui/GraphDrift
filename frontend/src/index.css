@@ -90,7 +90,8 @@
   }
 
   .nav-link-active {
-    @apply bg-primary/10 text-primary shadow-[0_0_15px_rgba(125,211,252,0.1)];
+    @apply border-l-2 border-primary bg-primary/[0.18] text-primary
+      shadow-[0_0_18px_rgba(125,211,252,0.22)];
   }
 
   .nav-link-inactive {
@@ -110,7 +111,28 @@
   }
 
   .kpi-card {
-    @apply glass-panel relative overflow-hidden rounded-xl p-5 transition-all duration-300 hover:bg-surface/70;
+    @apply glass-panel relative overflow-hidden rounded-xl p-5 transition-all duration-300
+      hover:-translate-y-0.5 hover:border-primary/30 hover:bg-surface/70
+      hover:shadow-[0_0_24px_rgba(125,211,252,0.16)];
+  }
+
+  /* The accent only ever appeared as a <=20% tint or 1px text, so nothing on
+     screen read as "live". These two carry a full-strength accent instead, to
+     separate an active state from a resting one. */
+  .live-dot {
+    @apply relative h-2 w-2 rounded-full bg-primary;
+    box-shadow: 0 0 8px rgba(125, 211, 252, 0.9);
+  }
+
+  .live-dot::after {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-primary;
+    animation: livePing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  .status-live {
+    @apply border-primary/60 bg-primary/20 text-primary;
+    box-shadow: 0 0 18px rgba(125, 211, 252, 0.22);
   }
 
   .kpi-card-gradient::before {
@@ -133,6 +155,54 @@
 
   .data-table-row {
     @apply border-b border-primary/5 transition-colors hover:bg-primary/5;
+  }
+
+  /* Press feedback for the controls an analyst clicks all day. */
+  .glass-panel button:not(:disabled):active,
+  .filter-chip:not(:disabled):active {
+    @apply scale-[0.97];
+  }
+}
+
+@keyframes livePing {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+@keyframes valueFlash {
+  from {
+    color: #7dd3fc;
+    text-shadow: 0 0 14px rgba(125, 211, 252, 0.7);
+  }
+  to {
+    color: inherit;
+    text-shadow: none;
+  }
+}
+
+/* Everything motion-related stops here for anyone who asked their OS for less
+   of it. Covers the CSS animations that predate the motion library as well as
+   the transitions added with it; MotionConfig reducedMotion="user" covers the
+   React side. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .kpi-card:hover {
+    @apply translate-y-0;
   }
 }
 

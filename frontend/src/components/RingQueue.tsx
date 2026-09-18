@@ -1,3 +1,4 @@
+import { AnimatePresence, m } from 'motion/react'
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -9,6 +10,7 @@ import type {
   RingListItem,
   RingMember,
 } from '../api/types'
+import { useMotionTransition } from '../hooks/useMotionTransition'
 import { useQueueShortcuts } from '../hooks/useQueueShortcuts'
 import { useToast } from '../hooks/useToast'
 import { canTransitionTo, getQuickActions } from '../utils/alertActions'
@@ -61,6 +63,7 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
   const [busyRingId, setBusyRingId] = useState<string | null>(null)
   const toast = useToast()
   const tableRef = useRef<HTMLDivElement>(null)
+  const rowTransition = useMotionTransition()
 
   const page = queryParams.page ?? 1
 
@@ -278,16 +281,29 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
                       </div>
                     </td>
                   </tr>
-                  {isExpanded && (
-                    <tr className="border-b border-primary/5" id={`ring-detail-${ring.ring_id}`}>
-                      <td colSpan={8} className="p-0">
-                        <RingExpanded
-                          ringId={ring.ring_id}
-                          onMemberStatusChange={fetchRings}
-                        />
-                      </td>
-                    </tr>
-                  )}
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <tr
+                        className="border-b border-primary/5"
+                        id={`ring-detail-${ring.ring_id}`}
+                      >
+                        <td colSpan={8} className="p-0">
+                          <m.div
+                            initial={{ height: 0 }}
+                            animate={{ height: 'auto' }}
+                            exit={{ height: 0 }}
+                            transition={rowTransition}
+                            className="overflow-hidden"
+                          >
+                            <RingExpanded
+                              ringId={ring.ring_id}
+                              onMemberStatusChange={fetchRings}
+                            />
+                          </m.div>
+                        </td>
+                      </tr>
+                    )}
+                  </AnimatePresence>
                 </Fragment>
               )
             })}

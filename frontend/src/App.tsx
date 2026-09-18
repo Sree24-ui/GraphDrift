@@ -1,3 +1,4 @@
+import { LazyMotion, MotionConfig } from 'motion/react'
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
@@ -35,6 +36,10 @@ export default function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
+          {/* reducedMotion="user" makes every motion component below fall back
+              to an instant state change when the OS asks for less motion. */}
+          <MotionConfig reducedMotion="user">
+          <LazyMotion features={() => import('./motion-features').then((m) => m.default)} strict>
           <ToastProvider>
           <Suspense fallback={<LoadingSpinner label="Loading workspace…" className="min-h-screen" />}>
             <Routes>
@@ -50,6 +55,8 @@ export default function App() {
             </Routes>
           </Suspense>
           </ToastProvider>
+          </LazyMotion>
+          </MotionConfig>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>

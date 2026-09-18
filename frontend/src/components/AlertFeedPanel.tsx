@@ -1,3 +1,6 @@
+import { m, useReducedMotion } from 'motion/react'
+
+import { useMotionTransition } from '../hooks/useMotionTransition'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -28,6 +31,8 @@ function riskBorderClass(score: number): string {
 
 export default function AlertFeedPanel({ alerts }: AlertFeedPanelProps) {
   const [selectedAlertId, setSelectedAlertId] = useState<number | null>(null)
+  const reducedMotion = useReducedMotion()
+  const transition = useMotionTransition(0.25)
 
   const sortedAlerts = useMemo(
     () =>
@@ -51,7 +56,8 @@ export default function AlertFeedPanel({ alerts }: AlertFeedPanelProps) {
           <MaterialIcon name="list_alt" className="text-tertiary" size={18} />
           Live Feed
         </h2>
-        <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+        <span className="status-live flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-medium">
+          <span className="live-dot" aria-hidden />
           Real-time
         </span>
       </div>
@@ -68,9 +74,14 @@ export default function AlertFeedPanel({ alerts }: AlertFeedPanelProps) {
             const isSelected = selectedAlertId === data.id
             const isStructural = isPeripheralStructural(data.pattern_type)
 
+            const isNewest = sortedAlerts[0] === alert
+
             return (
-              <div
+              <m.div
                 key={`${data.id}-${alert.timestamp}`}
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={transition}
                 role="button"
                 tabIndex={0}
                 onClick={() => setSelectedAlertId(data.id)}
@@ -87,7 +98,11 @@ export default function AlertFeedPanel({ alerts }: AlertFeedPanelProps) {
                     ? 'border-primary/30 bg-primary/5 ring-1 ring-primary/20'
                     : 'hover:bg-surface-bright/40',
                 ].join(' ')}
-                style={{ animation: 'fadeSlideIn 0.35s ease-out' }}
+                style={
+                  isNewest && !reducedMotion
+                    ? { boxShadow: '0 0 0 1px rgba(125,211,252,0.35), 0 0 18px rgba(125,211,252,0.18)' }
+                    : undefined
+                }
               >
                 <div className="mb-1 flex items-start justify-between gap-2">
                   <RiskScorePill
@@ -118,7 +133,7 @@ export default function AlertFeedPanel({ alerts }: AlertFeedPanelProps) {
                 <p className="mt-0.5 text-[10px] uppercase tracking-wide text-on-surface-variant/70">
                   {data.action}
                 </p>
-              </div>
+              </m.div>
             )
           })
         )}
