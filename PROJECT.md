@@ -50,6 +50,7 @@ source of truth for any figure you intend to cite.
 | Backend deps | 22 direct pins in `requirements.txt`; full transitive lock in `requirements.lock` (CI installs from it) |
 | Detection default | single-node hub concentration; co-hub scoring **off**; learned signal **off** |
 | Frontend bundle | initial load 294 KB (96 KB gzip); every authenticated page is lazy-loaded |
+| Last verified end-to-end | **2026-09-18** — both suites, axe scans, and the production-gate and session-revocation checks run against live servers |
 
 ---
 
@@ -459,7 +460,7 @@ clock in the calibration stress harness — which is what keeps
 
 ```
 graphdrift/
-├── .github/workflows/ci.yml        CI: pytest + frontend build
+├── .github/workflows/ci.yml        CI: pytest, frontend build, axe scan
 ├── PROJECT.md                      this document
 ├── README.md                       setup and deployment quick-start
 ├── shared/
@@ -480,16 +481,20 @@ graphdrift/
 │   │   │                           lifecycle, ring_id, cycle_timing
 │   │   └── simulation/             generator, adversarial_attacks
 │   ├── evaluation/                 benchmarks, eval harnesses, RESULTS.md, data/
-│   ├── scripts/                    create_user, reset_demo_data, measure_alert_volume
+│   ├── scripts/                    create_user, reset_demo_data,
+│   │                               seed_ui_fixture, measure_alert_volume
 │   ├── tests/                      117 tests
 │   ├── requirements.txt            exact direct pins
 │   └── requirements.lock           full transitive lock (CI installs this)
 └── frontend/
+    ├── playwright.config.ts        a11y suite runner (starts Vite itself)
+    ├── tests/a11y.spec.ts          axe scan of every page
     └── src/
         ├── api/                    axios client, types
         ├── auth/                   AuthContext, useAuth
-        ├── components/             graph, feed, queue, badges, scrubber …
-        ├── hooks/useLiveFeed.ts
+        ├── components/             graph, feed, queue, badges, toasts,
+        │                           shortcut hint, scrubber …
+        ├── hooks/                  useLiveFeed, useQueueShortcuts, useToast
         ├── pages/                  Login, LiveMonitor, AlertQueue,
         │                           AccountDetail, Reports, Settings
         ├── knobs.ts                imports shared/detection_knobs.json
@@ -548,7 +553,10 @@ cd graphdrift/backend
 python scripts/reset_demo_data.py   # type "yes"; permanently deletes data
 ```
 
-Then restart the backend so the simulator re-seeds its account pool.
+It empties `transactions`, `alerts`, `account_score_history` and `accounts`
+(users are kept), then `VACUUM`s, which is what actually shrinks the file:
+a long-running demo left 483 MB of free pages that `DELETE` alone would have
+kept. Restart the backend afterwards so the simulator re-seeds its pool.
 
 ---
 
@@ -562,6 +570,13 @@ python -m pytest -q
 # frontend
 cd graphdrift/frontend
 npx tsc --noEmit && npm run lint && npm run build
+
+# accessibility (needs a seeded backend on :8000; Playwright starts Vite itself)
+cd graphdrift/backend
+DATABASE_URL=sqlite:///./a11y.db python scripts/seed_ui_fixture.py
+DATABASE_URL=sqlite:///./a11y.db python scripts/create_user.py --dev-seed
+DATABASE_URL=sqlite:///./a11y.db uvicorn app.main:app --port 8000 &
+cd ../frontend && npm run test:a11y
 ```
 
 | Test file | Covers |
@@ -791,8 +806,9 @@ changed, and a subprocess test pins it.
 5. **Weak external validation.** IBM F1 0.033; **PaySim shows no detection
    signal at all** (every true positive is a tie-break artifact, §12.3). PaySim
    fraud is mostly single-hop pairs, which neither layer can represent.
-6. **Prototype storage.** SQLite ingest tops out in the hundreds of
-   transactions per second.
+6. **Prototype storage.** SQLite ingest measures 833 tx/s committing per
+   transaction and 1,874 tx/s batched (2026-09-18) — orders of magnitude below
+   national UPI volume, and a single-process ceiling either way.
 7. **Coverage gap.** Accounts with < 3 transactions are only reachable through
    the cascade — 69 of 91 fraud accounts in the historical snapshot were below
    the scoring threshold.
@@ -903,6 +919,10 @@ Render shell.
 
 Only set `FORWARDED_ALLOW_IPS=*` when the app can be reached solely through the
 proxy, as on Render; otherwise clients could spoof their IP.
+
+With `ENVIRONMENT=production` the interactive docs and the schema behind them
+(`/docs`, `/redoc`, `/openapi.json`) are not served at all, and logout revokes
+the presented token server-side rather than trusting the client to drop it.
 
 **Frontend (Vercel)** — root `frontend`; build `npm run build`; output
 `dist`. Set `VITE_API_BASE_URL` and `VITE_WS_BASE_URL` (`wss://`); both are baked
