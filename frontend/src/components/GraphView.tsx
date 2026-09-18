@@ -534,6 +534,12 @@ export default function GraphView({
         </div>
       )}
 
+      {/* The canvas itself is opaque to assistive tech: name it and summarise
+          what it shows. The controls above stay outside this role="img". */}
+      <div
+        role="img"
+        aria-label={`Transaction network graph: ${visibleNodeCount} of ${totalNodeCount} accounts shown${showFlaggedOnly ? ', flagged network only' : ''}. Node size and colour follow the fused risk score; the Alert Queue table carries the same data as text.`}
+      >
       <ForceGraph2D
         ref={graphRef}
         width={dimensions.width}
@@ -558,6 +564,7 @@ export default function GraphView({
         d3AlphaDecay={0.02}
         d3VelocityDecay={0.3}
       />
+      </div>
     </div>
   )
 }

@@ -24,7 +24,7 @@ export default function Layout() {
     <div className="relative flex min-h-screen overflow-hidden">
       <AppBackground />
 
-      <aside className="fixed left-0 top-0 z-50 hidden h-full w-64 flex-col rounded-r-xl border-r border-primary/10 bg-surface/60 py-6 shadow-glacier backdrop-blur-xl md:flex">
+      <aside aria-label="Sidebar" className="fixed left-0 top-0 z-50 hidden h-full w-64 flex-col rounded-r-xl border-r border-primary/10 bg-surface/60 py-6 shadow-glacier backdrop-blur-xl md:flex">
         <div className="mb-8 flex items-center gap-3 px-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-primary/20 text-primary shadow-primary-glow">
             <MaterialIcon name="hub" size={20} />
@@ -39,7 +39,7 @@ export default function Layout() {
           </div>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 font-body text-sm font-medium tracking-wide">
+        <nav aria-label="Main" className="flex flex-1 flex-col gap-1 font-body text-sm font-medium tracking-wide">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -109,7 +109,7 @@ export default function Layout() {
           </div>
         </header>
 
-        <nav className="flex gap-1 overflow-x-auto border-b border-primary/10 px-3 py-2 md:hidden">
+        <nav aria-label="Main (compact)" className="flex gap-1 overflow-x-auto border-b border-primary/10 px-3 py-2 md:hidden">
           {navItems.map((item) => (
             <NavLink
               key={item.to}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import {
   API_BASE_URL,
+  errorMessage,
   getHealthStatus,
   getSettings,
   patchSettings,
@@ -12,6 +13,7 @@ import { useAuth } from '../auth/useAuth'
 import ErrorBanner from '../components/ErrorBanner'
 import LoadingSpinner from '../components/LoadingSpinner'
 import MaterialIcon from '../components/MaterialIcon'
+import { useToast } from '../hooks/useToast'
 import {
   loadDefaultConfidenceFilter,
   loadDefaultStatusFilter,
@@ -66,6 +68,7 @@ export default function Settings() {
   const [simSlow, setSimSlow] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const toast = useToast()
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -168,14 +171,17 @@ export default function Settings() {
       const updated = await patchSettings({ alert_top_percent: topPercent })
       setPercentile(updated.alert_top_percentile)
       setTopPercent(updated.alert_top_percent)
+      toast(`Saved — alerts now target the top ${updated.alert_top_percent}% of accounts each cycle`)
       setSaveMessage(
-        `Saved — alerts will target the top ${updated.alert_top_percent}% of accounts each cycle. Auto-calibration counters reset so this manual baseline is not overwritten this tick.`,
+        `Auto-calibration counters reset so this manual baseline is not overwritten this tick.`,
       )
       setCalibration(updated.calibration)
       setCalibrationOn(updated.calibration_enabled)
       sliderDirtyRef.current = false
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save settings')
+      const message = errorMessage(err, 'Failed to save settings')
+      setError(message)
+      toast(message, 'error')
     } finally {
       setSaving(false)
     }
@@ -188,10 +194,11 @@ export default function Settings() {
       const updated = await patchSettings({ calibration_enabled: enabled })
       setCalibrationOn(updated.calibration_enabled)
       setCalibration(updated.calibration)
+      toast(`Auto-calibration ${updated.calibration_enabled ? 'enabled' : 'disabled'}`)
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to update auto-calibration',
-      )
+      const message = errorMessage(err, 'Failed to update auto-calibration')
+      setError(message)
+      toast(message, 'error')
     } finally {
       setTogglingCalibration(false)
     }
@@ -256,10 +263,11 @@ export default function Settings() {
           <div className="mt-4 space-y-4">
             <div>
               <div className="flex items-center justify-between text-xs text-on-surface-variant">
-                <span>Top anomaly share</span>
+                <label htmlFor="top-anomaly-share">Top anomaly share</label>
                 <span className="tabular-nums text-on-surface">{topPercent}%</span>
               </div>
               <input
+                id="top-anomaly-share"
                 type="range"
                 min={system?.manual_alert_top_percent_min ?? MANUAL_ALERT_TOP_PERCENT_MIN}
                 max={system?.manual_alert_top_percent_max ?? MANUAL_ALERT_TOP_PERCENT_MAX}
@@ -327,17 +335,17 @@ export default function Settings() {
                 {(simSlow * 100).toFixed(2)}%
               </dd>
             </div>
-            <div className="pt-2">
-              <a
-                href={`${API_BASE_URL}/docs`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-primary hover:underline"
-              >
-                {API_BASE_URL}/docs
-              </a>
-            </div>
           </dl>
+          <div className="relative z-10 pt-4">
+            <a
+              href={`${API_BASE_URL}/docs`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-primary hover:underline"
+            >
+              {API_BASE_URL}/docs
+            </a>
+          </div>
         </section>
 
         <section className={`${sectionClass(true)} lg:col-span-3`}>

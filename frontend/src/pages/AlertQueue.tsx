@@ -1,7 +1,7 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { getAlertDetail, getAlerts, patchAlert } from '../api/client'
+import { errorMessage, getAlertDetail, getAlerts, patchAlert } from '../api/client'
 import type {
   Alert,
   AlertDetail,
@@ -16,9 +16,12 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import MaterialIcon from '../components/MaterialIcon'
 import PeripheralStructuralBadge from '../components/PeripheralStructuralBadge'
 import RingQueue from '../components/RingQueue'
+import ShortcutHint from '../components/ShortcutHint'
 import RiskScorePill from '../components/RiskScorePill'
 import StatusBadge from '../components/StatusBadge'
 import TableSkeleton from '../components/TableSkeleton'
+import { useQueueShortcuts } from '../hooks/useQueueShortcuts'
+import { useToast } from '../hooks/useToast'
 import {
   canTransitionTo,
   datePresetToIso,
@@ -106,6 +109,7 @@ function AlertRowDetail({
   const [notesDirty, setNotesDirty] = useState(false)
   const [savingNotes, setSavingNotes] = useState(false)
   const [notesError, setNotesError] = useState<string | null>(null)
+  const toast = useToast()
 
   const [detailError, setDetailError] = useState<string | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -158,10 +162,11 @@ function AlertRowDetail({
       setDetail(updated)
       setNotesDirty(false)
       onNotesSaved(alert.id, notes)
+      toast('Notes saved')
     } catch (err) {
-      setNotesError(
-        err instanceof Error ? err.message : 'Failed to save notes',
-      )
+      const message = errorMessage(err, 'Failed to save notes')
+      setNotesError(message)
+      toast(message, 'error')
     } finally {
       setSavingNotes(false)
     }
@@ -283,10 +288,11 @@ export default function AlertQueue() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [actionBusyIds, setActionBusyIds] = useState<Set<number>>(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
-  const [actionError, setActionError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'account' | 'ring'>('ring')
   const [ringTotal, setRingTotal] = useState<number | null>(null)
+  const toast = useToast()
+  const tableRef = useRef<HTMLDivElement>(null)
 
   const queryParams = useMemo((): GetAlertsParams => {
     const params: GetAlertsParams = {
@@ -395,12 +401,15 @@ export default function AlertQueue() {
     notes?: string,
   ) => {
     const current = items.find((a) => a.id === alertId)
-    if (!current || !canTransitionTo(current.status, newStatus)) {
+    if (!current) {
+      return
+    }
+    if (!canTransitionTo(current.status, newStatus)) {
+      toast(`This alert is already ${current.status.replace('_', ' ')}`, 'error')
       return
     }
 
     const previousStatus = current.status
-    setActionError(null)
     setActionBusyIds((prev) => new Set(prev).add(alertId))
     updateAlertInList(alertId, { status: newStatus })
 
@@ -415,6 +424,10 @@ export default function AlertQueue() {
         reviewed_by_username: updated.reviewed_by_username,
       })
 
+      toast(
+        `${current.account.account_id} marked ${updated.status.replace('_', ' ')}`,
+      )
+
       if (
         !statusFilter.has('all') &&
         !statusFilter.has(newStatus)
@@ -427,9 +440,7 @@ export default function AlertQueue() {
       }
     } catch (err) {
       updateAlertInList(alertId, { status: previousStatus })
-      setActionError(
-        err instanceof Error ? err.message : 'Failed to update alert status',
-      )
+      toast(errorMessage(err, 'Failed to update alert status'), 'error')
     } finally {
       setActionBusyIds((prev) => {
         const next = new Set(prev)
@@ -448,7 +459,6 @@ export default function AlertQueue() {
     }
 
     setBulkBusy(true)
-    setActionError(null)
 
     const previousStatuses = new Map(
       eligible.map((a) => [a.id, a.status] as const),
@@ -476,8 +486,9 @@ export default function AlertQueue() {
     })
 
     if (failedIds.length > 0) {
-      setActionError(
+      toast(
         `Failed to update ${failedIds.length} alert(s). Changes were rolled back.`,
+        'error',
       )
     }
 
@@ -492,6 +503,11 @@ export default function AlertQueue() {
     ) {
       setItems((prev) => prev.filter((a) => !succeededIds.includes(a.id)))
       setTotal((t) => Math.max(0, t - succeededIds.length))
+    }
+
+    const succeeded = eligible.length - failedIds.length
+    if (succeeded > 0) {
+      toast(`${succeeded} alert(s) marked false positive`)
     }
 
     setSelectedIds(new Set())
@@ -545,6 +561,21 @@ export default function AlertQueue() {
       ).length,
     [items],
   )
+
+  const handleShortcutAction = useCallback(
+    (rowId: string, action: AlertStatus) =>
+      handleStatusChange(Number(rowId), action),
+    // handleStatusChange is redefined every render; the ref-based hook only
+    // needs the latest one at key-press time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, statusFilter, expandedId],
+  )
+
+  const { helpOpen, setHelpOpen } = useQueueShortcuts({
+    containerRef: tableRef,
+    onAction: handleShortcutAction,
+    enabled: viewMode === 'account',
+  })
 
   const visibleItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
@@ -631,6 +662,15 @@ export default function AlertQueue() {
             />
           </div>
 
+          {/* The ring view renders its own, wired to its own key handler. */}
+          {viewMode === 'account' && (
+            <ShortcutHint
+              open={helpOpen}
+              onOpenChange={setHelpOpen}
+              label="Alert queue"
+            />
+          )}
+
           {selectedIds.size > 0 && (
             <button
               type="button"
@@ -714,12 +754,6 @@ export default function AlertQueue() {
         </button>
       </div>
 
-      {actionError && (
-        <p className="rounded border border-red-400/30 bg-red-400/10 px-3 py-2 text-xs text-red-300">
-          {actionError}
-        </p>
-      )}
-
       {error && (
         <ErrorBanner message={error} onRetry={fetchAlerts} />
       )}
@@ -738,7 +772,7 @@ export default function AlertQueue() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" ref={tableRef}>
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead>
                 <tr className="data-table-head">
@@ -790,13 +824,22 @@ export default function AlertQueue() {
                   return (
                     <Fragment key={alert.id}>
                       <tr
-                        role="button"
-                        tabIndex={0}
+                        tabIndex={-1}
+                        data-queue-row
+                        data-queue-id={alert.id}
+                        data-queue-unreviewed={
+                          alert.status === 'new' || alert.status === 'reviewing'
+                        }
                         onClick={() =>
                           setExpandedId(isExpanded ? null : alert.id)
                         }
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
+                          // Only when the row itself holds focus: a link or
+                          // button inside must keep its own Enter/Space.
+                          if (
+                            e.target === e.currentTarget &&
+                            (e.key === 'Enter' || e.key === ' ')
+                          ) {
                             e.preventDefault()
                             setExpandedId(isExpanded ? null : alert.id)
                           }
@@ -823,6 +866,22 @@ export default function AlertQueue() {
 
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setExpandedId(isExpanded ? null : alert.id)
+                              }}
+                              aria-expanded={isExpanded}
+                              aria-controls={`alert-detail-${alert.id}`}
+                              aria-label={`${isExpanded ? 'Hide' : 'Show'} details for alert on ${alert.account.account_id}`}
+                              className="shrink-0 rounded text-on-surface-variant hover:text-primary"
+                            >
+                              <MaterialIcon
+                                name={isExpanded ? 'expand_more' : 'chevron_right'}
+                                size={16}
+                              />
+                            </button>
                             <Link
                               to={`/accounts/${encodeURIComponent(alert.account.account_id)}`}
                               onClick={(e) => e.stopPropagation()}
@@ -895,7 +954,7 @@ export default function AlertQueue() {
                       </tr>
 
                       {isExpanded && (
-                        <tr className="border-b border-primary/5">
+                        <tr className="border-b border-primary/5" id={`alert-detail-${alert.id}`}>
                           <td colSpan={9} className="p-0">
                             <AlertRowDetail
                               alert={alert}

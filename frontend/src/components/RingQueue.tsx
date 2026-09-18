@@ -1,7 +1,7 @@
-import { Fragment, useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { getRingDetail, getRings, patchAlert, patchRing } from '../api/client'
+import { errorMessage, getRingDetail, getRings, patchAlert, patchRing } from '../api/client'
 import type {
   AlertStatus,
   GetRingsParams,
@@ -9,12 +9,16 @@ import type {
   RingListItem,
   RingMember,
 } from '../api/types'
+import { useQueueShortcuts } from '../hooks/useQueueShortcuts'
+import { useToast } from '../hooks/useToast'
 import { canTransitionTo, getQuickActions } from '../utils/alertActions'
 import { formatRelativeTime, isPeripheralStructural } from '../utils/format'
 import ConfidenceBadge from './ConfidenceBadge'
 import ErrorBanner from './ErrorBanner'
 import LoadingSpinner from './LoadingSpinner'
+import MaterialIcon from './MaterialIcon'
 import PeripheralStructuralBadge from './PeripheralStructuralBadge'
+import ShortcutHint from './ShortcutHint'
 import RiskScorePill from './RiskScorePill'
 import StatusBadge from './StatusBadge'
 import TableSkeleton from './TableSkeleton'
@@ -54,8 +58,9 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
   const [busyRingId, setBusyRingId] = useState<string | null>(null)
+  const toast = useToast()
+  const tableRef = useRef<HTMLDivElement>(null)
 
   const page = queryParams.page ?? 1
 
@@ -88,7 +93,6 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
     status: 'confirmed' | 'false_positive' | 'reviewing',
   ) => {
     setBusyRingId(ringId)
-    setActionError(null)
     try {
       const result = await patchRing(ringId, { status })
       setItems((prev) =>
@@ -105,12 +109,26 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
             : item,
         ),
       )
+      toast(
+        `Ring ${ringId.slice(0, 12)}… marked ${status.replace('_', ' ')} (${result.updated_alert_ids.length} alert(s))`,
+      )
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to update ring')
+      toast(errorMessage(err, 'Failed to update ring'), 'error')
     } finally {
       setBusyRingId(null)
     }
   }
+
+  const handleShortcutAction = useCallback(
+    (rowId: string, action: 'confirmed' | 'false_positive') => handleBulk(rowId, action),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items],
+  )
+
+  const { helpOpen, setHelpOpen } = useQueueShortcuts({
+    containerRef: tableRef,
+    onAction: handleShortcutAction,
+  })
 
   if (loading) {
     return <TableSkeleton rows={8} columns={7} />
@@ -134,12 +152,10 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
 
   return (
     <div>
-      {actionError && (
-        <p className="border-b border-red-400/30 bg-red-400/10 px-4 py-2 text-xs text-red-300">
-          {actionError}
-        </p>
-      )}
-      <div className="overflow-x-auto">
+      <div className="flex justify-end px-4 pt-2">
+        <ShortcutHint open={helpOpen} onOpenChange={setHelpOpen} label="Ring queue" />
+      </div>
+      <div className="overflow-x-auto" ref={tableRef}>
         <table className="w-full min-w-[900px] text-left text-sm">
           <thead>
             <tr className="data-table-head">
@@ -160,11 +176,20 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
               return (
                 <Fragment key={ring.ring_id}>
                   <tr
-                    role="button"
-                    tabIndex={0}
+                    tabIndex={-1}
+                    data-queue-row
+                    data-queue-id={ring.ring_id}
+                    data-queue-unreviewed={
+                      ring.status === 'new' || ring.status === 'reviewing'
+                    }
                     onClick={() => setExpandedId(isExpanded ? null : ring.ring_id)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
+                      // Only when the row itself holds focus, so links and
+                      // buttons inside keep their own Enter/Space.
+                      if (
+                        e.target === e.currentTarget &&
+                        (e.key === 'Enter' || e.key === ' ')
+                      ) {
                         e.preventDefault()
                         setExpandedId(isExpanded ? null : ring.ring_id)
                       }
@@ -175,13 +200,31 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
                     ].join(' ')}
                   >
                     <td className="px-6 py-4">
-                      <div className="flex flex-col">
+                      <div className="flex items-start gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setExpandedId(isExpanded ? null : ring.ring_id)
+                          }}
+                          aria-expanded={isExpanded}
+                          aria-controls={`ring-detail-${ring.ring_id}`}
+                          aria-label={`${isExpanded ? 'Hide' : 'Show'} members of ring ${ring.hub_account_id ?? ring.ring_id}`}
+                          className="mt-0.5 shrink-0 rounded text-on-surface-variant hover:text-primary"
+                        >
+                          <MaterialIcon
+                            name={isExpanded ? 'expand_more' : 'chevron_right'}
+                            size={16}
+                          />
+                        </button>
+                        <div className="flex flex-col">
                         <span className="font-medium text-primary">
                           {ring.hub_account_id ?? 'Unknown hub'}
                         </span>
                         <span className="font-mono text-[10px] text-on-surface-variant">
                           {ring.ring_id}
                         </span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-on-surface-variant">
@@ -236,7 +279,7 @@ export default function RingQueue({ queryParams, onTotalChange }: RingQueueProps
                     </td>
                   </tr>
                   {isExpanded && (
-                    <tr className="border-b border-primary/5">
+                    <tr className="border-b border-primary/5" id={`ring-detail-${ring.ring_id}`}>
                       <td colSpan={8} className="p-0">
                         <RingExpanded
                           ringId={ring.ring_id}
@@ -270,6 +313,7 @@ function RingExpanded({
   ringId: string
   onMemberStatusChange: () => void
 }) {
+  const toast = useToast()
   const [detail, setDetail] = useState<RingDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
@@ -304,6 +348,9 @@ function RingExpanded({
       onMemberStatusChange()
       const fresh = await getRingDetail(ringId)
       setDetail(fresh)
+      toast(`${member.account_id} marked ${status.replace('_', ' ')}`)
+    } catch (err) {
+      toast(errorMessage(err, 'Failed to update member'), 'error')
     } finally {
       setBusyId(null)
     }

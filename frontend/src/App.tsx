@@ -6,6 +6,7 @@ import { useAuth } from './auth/useAuth'
 import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import LoadingSpinner from './components/LoadingSpinner'
+import ToastProvider from './components/ToastProvider'
 import Login from './pages/Login'
 
 // Every authenticated page is split out so the first load only ships the
@@ -34,6 +35,7 @@ export default function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
+          <ToastProvider>
           <Suspense fallback={<LoadingSpinner label="Loading workspace…" className="min-h-screen" />}>
             <Routes>
               <Route path="login" element={<Login />} />
@@ -47,6 +49,7 @@ export default function App() {
               </Route>
             </Routes>
           </Suspense>
+          </ToastProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>

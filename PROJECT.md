@@ -49,7 +49,7 @@ source of truth for any figure you intend to cite.
 | Node | **24.20.0** — Active LTS "Krypton" line (pinned in CI) |
 | Backend deps | 22 direct pins in `requirements.txt`; full transitive lock in `requirements.lock` (CI installs from it) |
 | Detection default | single-node hub concentration; co-hub scoring **off**; learned signal **off** |
-| Frontend bundle | initial load 292 KB (95 KB gzip); every authenticated page is lazy-loaded |
+| Frontend bundle | initial load 294 KB (96 KB gzip); every authenticated page is lazy-loaded |
 
 ---
 
@@ -349,8 +349,11 @@ Notable implementation details:
 - Risk colour bands are expressed as fractions of `gdi_max`, so they track the
   knobs file.
 - Every authenticated page is lazy-loaded, so the login screen ships only the
-  292 KB shell (was 753 KB); `recharts` (333 KB) loads with Reports or Account
-  Detail, and the force graph with Live Monitor.
+  294 KB shell (was 753 KB); `recharts` (333 KB) loads with Reports or Account
+  Detail, and the force graph with Live Monitor. Splitting the force graph into
+  its own chunk was measured and rejected: it is used by one page and is that
+  page's main content, so it costs an extra request and +4 KB gzip overall to
+  take 2.6 KB gzip off the initial load.
 - Every WebSocket URL is built by one function, `liveFeedUrl()`, so no socket
   can omit the token. A 401 or a WebSocket close with 1008 both fire the same
   sign-out event.
@@ -363,6 +366,26 @@ Notable implementation details:
   so no fixed score threshold exists.
 - `useAuth` lives in its own module so `AuthContext.tsx` exports only a
   component (keeps Fast Refresh working).
+- **Accessibility.** axe-core 4.10 reports **0 violations** on all six pages
+  (Live Monitor, both Alert Queue views, Account Detail, Reports, Settings);
+  the baseline had 5 distinct violations, including a critical unlabelled
+  slider and `nested-interactive` on every queue row. Queue rows are no longer
+  `role="button"`; each row has a real expand button carrying `aria-expanded`
+  and `aria-controls`, so the table is operable with Tab alone. One global
+  `:focus-visible` ring covers every control. Badge contrast was measured by
+  compositing the translucent layers axe cannot resolve: **5.97-9.24**, all
+  above 4.5, and risk is never colour-only (each pill carries an icon and the
+  numeric score, each badge its text).
+- **Toasts.** `ToastProvider` renders `role="status"` for successes and
+  `role="alert"` for failures, and every review, ring action, notes save and
+  settings write reports through it. `errorMessage()` surfaces the server's
+  own `detail` text, so a rejected transition or a role refusal is shown
+  rather than logged to the console.
+- **Queue shortcuts.** `useQueueShortcuts` binds `j`/`k` (or arrows) to move
+  between rows, `Enter` to expand, `c` to confirm, `x` for false positive and
+  `?` for the legend, and lands on the next still-unreviewed row after a
+  decision. It ignores keys while typing or with a modifier held, so mouse
+  and Tab behaviour is unchanged for anyone who never uses it.
 
 ---
 

@@ -22,6 +22,17 @@
     @apply min-h-screen;
   }
 
+  /* One visible focus ring for every control, including table rows reached
+     with j/k. :focus-visible keeps it off mouse clicks. */
+  :focus-visible {
+    outline: 2px solid theme('colors.primary');
+    outline-offset: 2px;
+  }
+
+  tr:focus-visible {
+    outline-offset: -2px;
+  }
+
   ::selection {
     background-color: rgb(125 211 252 / 0.3);
     color: #7dd3fc;

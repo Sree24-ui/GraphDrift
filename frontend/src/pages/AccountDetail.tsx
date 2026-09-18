@@ -525,7 +525,7 @@ export default function AccountDetail() {
       </section>
         </div>
 
-        <aside className="lg:col-span-4">
+        <aside aria-label="Connected entities" className="lg:col-span-4">
           <section className="glass-panel-elevated flex h-full flex-col rounded-xl">
             <div className="border-b border-primary/10 p-6">
               <h2 className="flex items-center gap-2 font-headline font-semibold text-primary">

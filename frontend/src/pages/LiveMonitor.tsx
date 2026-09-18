@@ -55,7 +55,7 @@ function MetricCard({
         className={`kpi-card-gradient absolute inset-0 bg-gradient-to-br ${gradientClass} to-transparent`}
       />
       <div className="relative z-10 flex items-start justify-between">
-        <h3 className="text-sm font-medium text-on-surface-variant">{label}</h3>
+        <h2 className="text-sm font-medium text-on-surface-variant">{label}</h2>
         <MaterialIcon name={icon} className={iconColor} size={20} />
       </div>
       <div className="relative z-10 mt-2 flex items-baseline gap-2">

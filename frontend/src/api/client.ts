@@ -87,6 +87,20 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+/** Human-readable text for a failed request, for toasts and inline errors. */
+export function errorMessage(err: unknown, fallback = 'Something went wrong'): string {
+  if (axios.isAxiosError(err)) {
+    const detail = (err.response?.data as { detail?: unknown } | undefined)?.detail
+    if (typeof detail === 'string') return detail
+    if (!err.response) return 'Network error: the backend is unreachable'
+    if (err.response.status === 403) {
+      return 'Not allowed: your role cannot perform this action'
+    }
+    return `Request failed (HTTP ${err.response.status})`
+  }
+  return err instanceof Error ? err.message : fallback
+}
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
