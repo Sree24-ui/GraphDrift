@@ -322,3 +322,87 @@ def test_development_still_runs_without_a_secret(monkeypatch):
     monkeypatch.setenv("ENVIRONMENT", "development")
     monkeypatch.delenv("SESSION_SECRET", raising=False)
     assert len(load_runtime_config().session_secret) >= 32
+
+
+def test_logout_revokes_the_token_server_side(auth_env):
+    """Logout must outlive the client: the same token stops working at once."""
+    client, _ = auth_env
+    token = login(client, "analyst")
+    other = login(client, "analyst")
+    assert client.get("/api/auth/me", headers=bearer(token)).status_code == 200
+
+    assert client.post("/api/auth/logout", headers=bearer(token)).status_code == 204
+
+    assert client.get("/api/auth/me", headers=bearer(token)).status_code == 401
+    assert client.get("/api/alerts", headers=bearer(token)).status_code == 401
+    # Only that session: a second login is untouched.
+    assert client.get("/api/auth/me", headers=bearer(other)).status_code == 200
+    # Idempotent, and harmless without a token.
+    assert client.post("/api/auth/logout", headers=bearer(token)).status_code == 204
+    assert client.post("/api/auth/logout").status_code == 204
+
+
+def test_revoked_token_is_refused_by_the_websocket_too(auth_env):
+    client, _ = auth_env
+    token = login(client, "analyst")
+    with client.websocket_connect(f"/ws/live-feed?token={token}") as ws:
+        assert ws is not None
+    client.post("/api/auth/logout", headers=bearer(token))
+    with pytest.raises(WebSocketDisconnect):
+        with client.websocket_connect(f"/ws/live-feed?token={token}"):
+            pass
+
+
+def test_logout_clears_revocations_that_have_already_expired(auth_env):
+    """The table only needs rows for tokens that could still be presented."""
+    from datetime import timedelta
+
+    from app.models import RevokedToken
+
+    client, Session = auth_env
+    with Session() as db:
+        db.add(
+            RevokedToken(
+                jti="stale-entry",
+                user_id=1,
+                expires_at=datetime.now() - timedelta(days=1),
+            )
+        )
+        db.commit()
+
+    client.post("/api/auth/logout", headers=bearer(login(client, "analyst")))
+
+    with Session() as db:
+        assert db.get(RevokedToken, "stale-entry") is None
+        assert db.query(RevokedToken).count() == 1
+
+
+@pytest.mark.parametrize(
+    "environment, expected",
+    [("production", "None None None"), ("development", "/docs /redoc /openapi.json")],
+)
+def test_api_schema_and_docs_are_production_gated(environment, expected):
+    """Checked in a subprocess: the app is built once, at import time."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import app.main as m; print(m.app.docs_url, m.app.redoc_url, m.app.openapi_url)",
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "ENVIRONMENT": environment,
+            "SESSION_SECRET": "s" * 48,
+            "ALLOWED_ORIGINS": "https://app.example.com",
+        },
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == expected

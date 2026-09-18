@@ -129,7 +129,16 @@ async def lifespan(app: FastAPI):
             pass
 
 
-app = FastAPI(title="GraphDrift", lifespan=lifespan)
+# The schema names every route, its payload shape and the auth endpoints, so
+# production serves neither the docs nor the schema they are built from.
+_docs_enabled = load_runtime_config().environment != "production"
+app = FastAPI(
+    title="GraphDrift",
+    lifespan=lifespan,
+    docs_url="/docs" if _docs_enabled else None,
+    redoc_url="/redoc" if _docs_enabled else None,
+    openapi_url="/openapi.json" if _docs_enabled else None,
+)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)

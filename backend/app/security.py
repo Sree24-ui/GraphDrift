@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -42,6 +43,8 @@ def create_access_token(user: User) -> str:
         "role": user.role,
         "iat": now,
         "exp": now + timedelta(seconds=config.session_ttl_seconds),
+        # Identifies this one session so logout can revoke it server-side.
+        "jti": secrets.token_urlsafe(16),
     }
     return jwt.encode(payload, config.session_secret, algorithm=JWT_ALGORITHM)
 

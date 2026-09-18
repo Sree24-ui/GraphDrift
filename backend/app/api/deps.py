@@ -6,7 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
-from app.models import User
+from app.models import RevokedToken, User
 from app.security import decode_access_token
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -40,6 +40,11 @@ def user_from_token(token: str | None, db: Session) -> User | None:
         payload = decode_access_token(token)
         user_id = int(payload.get("sub", ""))
     except (jwt.PyJWTError, TypeError, ValueError):
+        return None
+    jti = payload.get("jti")
+    # Tokens issued before revocation existed carry no jti; they cannot be
+    # revoked individually and simply expire. Rotate SESSION_SECRET to drop all.
+    if jti and db.get(RevokedToken, jti) is not None:
         return None
     return db.get(User, user_id)
 

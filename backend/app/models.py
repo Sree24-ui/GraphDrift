@@ -47,6 +47,24 @@ class User(Base):
     )
 
 
+class RevokedToken(Base):
+    """One row per session put out of use before its own expiry.
+
+    Logout writes the token's ``jti`` here; ``user_from_token`` refuses any
+    token listed. Rows are only useful until the token would expire anyway, so
+    logout clears the expired ones as it goes.
+    """
+
+    __tablename__ = "revoked_tokens"
+
+    jti: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
+    revoked_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+
+
 class Account(Base):
     __tablename__ = "accounts"
 

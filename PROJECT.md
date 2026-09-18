@@ -42,9 +42,9 @@ source of truth for any figure you intend to cite.
 | | |
 |---|---|
 | Repository | https://github.com/Sree24-ui/GraphDrift (branch `main`) |
-| Backend tests | **112 passing** |
-| Frontend | `npm run build`, `tsc --noEmit`, `oxlint` all clean |
-| CI | GitHub Actions — backend (pytest) and frontend (build) jobs |
+| Backend tests | **117 passing** |
+| Frontend | `npm run build`, `tsc --noEmit`, `oxlint` all clean; 8 axe scans green |
+| CI | GitHub Actions — backend (pytest), frontend (build) and accessibility (axe) jobs |
 | Python | **3.14** (pinned in CI to match development) |
 | Node | **24.20.0** — Active LTS "Krypton" line (pinned in CI) |
 | Backend deps | 22 direct pins in `requirements.txt`; full transitive lock in `requirements.lock` (CI installs from it) |
@@ -250,9 +250,13 @@ Settings are **in memory** and reset when the process restarts.
 - **Accounts:** per-user, provisioned with `scripts/create_user.py` (no public
   registration). Roles are `analyst` and `admin`.
 - **Passwords:** Argon2, minimum 12 characters.
-- **Sessions:** HS256 JWTs, 12-hour default lifetime. Logout is stateless —
-  the client discards the token. Rotating `SESSION_SECRET` invalidates all
-  sessions.
+- **Sessions:** HS256 JWTs, 12-hour default lifetime, each carrying a `jti`.
+  Logout revokes that `jti` server-side (`revoked_tokens`), so the token is
+  refused by every endpoint and by the WebSocket handshake from then on, not
+  merely dropped by the client. Rotating `SESSION_SECRET` still invalidates all
+  sessions at once.
+- **API schema:** `/docs`, `/redoc` and `/openapi.json` are served only outside
+  production; a production process 404s all three.
 - **Every endpoint requires a token — reads as well as writes** — except
   `/health`, `POST /api/auth/login` and `POST /api/auth/logout`. Guards are
   applied at router level so new routes are covered automatically.
@@ -299,7 +303,7 @@ All paths except those marked **public** require `Authorization: Bearer <jwt>`.
 |---|---|---|---|
 | GET | `/health` | public | liveness |
 | POST | `/api/auth/login` | public, rate-limited | returns JWT, username, role |
-| POST | `/api/auth/logout` | public | stateless no-op |
+| POST | `/api/auth/logout` | public | revokes the presented token; idempotent |
 | GET | `/api/auth/me` | user | current user |
 | GET | `/api/alerts` | user | paginated, filterable alert list |
 | GET | `/api/alerts/{alert_id}` | user | alert detail with explanation and escalation history |
@@ -467,8 +471,8 @@ graphdrift/
 │   │   ├── constants.py            re-exports detection knobs
 │   │   ├── security.py             Argon2 + JWT
 │   │   ├── settings_store.py       in-memory top-share / calibration state
-│   │   ├── models.py               User, Account, Transaction, Alert,
-│   │   │                           RingReviewAction, AccountScoreHistory
+│   │   ├── models.py               User, RevokedToken, Account, Transaction,
+│   │   │                           Alert, RingReviewAction, AccountScoreHistory
 │   │   ├── api/                    auth, alerts, rings, accounts, graph,
 │   │   │                           reports, settings, websocket, deps, schemas
 │   │   ├── detection/              features, node_anomaly, community, fusion,
@@ -477,7 +481,7 @@ graphdrift/
 │   │   └── simulation/             generator, adversarial_attacks
 │   ├── evaluation/                 benchmarks, eval harnesses, RESULTS.md, data/
 │   ├── scripts/                    create_user, reset_demo_data, measure_alert_volume
-│   ├── tests/                      112 tests
+│   ├── tests/                      117 tests
 │   ├── requirements.txt            exact direct pins
 │   └── requirements.lock           full transitive lock (CI installs this)
 └── frontend/
@@ -562,7 +566,7 @@ npx tsc --noEmit && npm run lint && npm run build
 
 | Test file | Covers |
 |---|---|
-| `test_auth.py` | login, `/me`, expiry, rate limit (and its override), role gates, **read endpoints require auth**, WebSocket token and **expiry close**, **no labels on the wire**, **production config refusals**, review audit |
+| `test_auth.py` | login, `/me`, expiry, rate limit (and its override), role gates, **read endpoints require auth**, WebSocket token and **expiry close**, **logout revokes the token for HTTP and WebSocket**, **docs and schema gated in production**, **no labels on the wire**, **production config refusals**, review audit |
 | `test_scoring.py` | Mahalanobis, GDI ordering, ring risk (hub vs distributed), fusion, multi-scale union, explanation cache, co-hub off-by-default and gate cases, **exact top-k budget**, **cross-process determinism of tie-breaking** |
 | `test_learned_signal.py` | feature parity between live rows and persisted explanations, trivial-baseline comparison, account-grouped folds, cold-start and no-signal refusals, **flag-off fused scores pinned to pre-change values** |
 | `test_eval_tooling.py` | tie diagnostics, `run_eval` patches only its own rows, **every RESULTS.md section still exists** |
@@ -574,10 +578,13 @@ npx tsc --noEmit && npm run lint && npm run build
 | `test_isolation_forest.py` | IF baseline feature parity and degeneracy |
 | `test_ibm_aml_loader.py` | IBM schema, windowing, compression |
 | `test_simulation_seed.py` | seeded reproducibility |
+| `frontend/tests/a11y.spec.ts` | axe-core scan of all six pages plus login and an expanded ring row, against a seeded backend; asserts zero violations |
 
 CI (`.github/workflows/ci.yml`) runs on every push and pull request: Python
 3.14 → `pip install -r requirements.lock` → `pytest -q`; Node 24.20.0 →
-`npm ci` → `npm run build`.
+`npm ci` → `npm run build`; and an accessibility job that seeds a fixture
+database (`scripts/seed_ui_fixture.py`), starts the API, and runs the axe scan
+in `frontend/tests/a11y.spec.ts` against the real pages.
 
 ---
 
@@ -668,20 +675,24 @@ Cost of enabling co-hub scoring, measured:
 
 Measured with `run_detection_cycle(profile=True)`:
 
+Re-measured 2026-09-18 on an idle machine; the figures this table carried
+before were 34-49% slower on an identical workload, and RESULTS.md explains why
+they moved.
+
 | Active accounts (15 min) | Mean cycle | p95 |
 |---|---|---|
-| 372 | 385 ms | 467 ms |
-| 684 | 1,065 ms | 1,433 ms |
-| 1,602 | 3,019 ms | 3,265 ms |
-| 3,162 | **7,971 ms** | 8,825 ms |
+| 372 | 248 ms | 276 ms |
+| 684 | 552 ms | 574 ms |
+| 1,602 | 1,545 ms | 1,559 ms |
+| 3,162 | **4,366 ms** | 4,460 ms |
 
-- Scaling exponent (log-log): **1.39**. Layer 2 (Louvain) is the largest term
-  at 5k (~4.2 s of 8.0 s).
+- Scaling exponent (log-log): **1.32**. Layer 2 (Louvain) is the largest term
+  at 5k (2.3 s of 4.4 s, 52%).
 - Before the explanation-cache fix the exponent was 2.18 and a 5k cycle took
   107 s — the cause was recomputing the population baseline once per alert,
   not SQLite. **Do not cite 2.18 or 107 s** as the architecture's scaling.
-- At 5k, a cycle is well inside the 45-second loop. 10k accounts is untimed.
-- Ingest (write path only): 356 tx/s committing per transaction, 1,061 tx/s
+- At 5k, a cycle uses 10% of the 45-second loop. 10k accounts is untimed.
+- Ingest (write path only): 833 tx/s committing per transaction, 1,874 tx/s
   batched — far above the demo rate, far below national UPI volumes. SQLite is
   a prototype ceiling.
 - Analyst-visible alert delay is interval-dominated: roughly 1 s best case,
@@ -722,8 +733,9 @@ alert was itself a false positive.
 | IF F1 0.249 / 0.244 | best-of-sweep | 0.237 (defaults) |
 | Layer 1 F1 0.251 | pre-rounding-fix | 0.253 |
 | PaySim F1 0.041 / 0.032 | tie-break artifact | "no signal" |
-| slope 2.18, 107 s | pre-fix bug | 1.39, 8.0 s |
+| slope 2.18, 107 s | pre-fix bug | 1.32, 4.4 s |
 | slow-drip 1/1 | n = 1 | 7/33 (60 m), 11/33 (union) |
+| slope 1.39, 8.0 s at 5k | measured beside a leaked worker | 1.32, 4.4 s |
 
 ### 12.10 Analyst-feedback learned signal (off by default)
 
@@ -799,9 +811,13 @@ changed, and a subprocess test pins it.
     the signal cannot be shown to help on anything but oracle labels (§12.10).
     Its training set is also alerted accounts only, while it scores every
     account — a selection bias more labels of the same kind cannot fix.
-13. **Sessions cannot be revoked early.** JWTs are stateless: deleting a user
-    blocks new requests (the user lookup fails), but there is no per-token
-    revocation list, and a WebSocket is only closed at token expiry.
+13. **Session revocation covers logout only.** Logging out records the token's
+    `jti` in `revoked_tokens`, and `user_from_token` - the one validator behind
+    both HTTP and the WebSocket handshake - refuses it from then on. There is
+    still no way for an admin to end *someone else's* session: nothing records
+    which tokens are outstanding, so the lever for that remains rotating
+    `SESSION_SECRET`, which ends every session at once. Tokens issued before
+    this existed carry no `jti` and simply expire.
 
 ---
 
@@ -830,12 +846,15 @@ changed, and a subprocess test pins it.
 
 ## 15. Known tooling issues and follow-ups
 
-- **`bench_perf.py` still emits stale conclusions (open).** It hardcodes
-  pre-fix text ("at 5,000 accounts mean cycle already exceeds the 45s live
-  interval", "79.6 s / 74.3 s") alongside whatever it measures. Fix the
-  generator before re-running the benchmark. The cited performance table was
-  also measured before the top-k rounding fix, so its alert counts may differ
-  by one at population sizes that are multiples of 20; timings are unaffected.
+- **Fixed:** `bench_perf.py` printed conclusions it had not measured ("at
+  5,000 accounts mean cycle already exceeds the 45s live interval" while its
+  own table said 7.1 s; a steady-state pair of "79.6 s / 74.3 s") and rewrote
+  the whole performance section on every run, deleting the hand-written pre-fix
+  analysis. It now owns only the text between `<!-- perf-bench -->` markers,
+  refuses to run if they are missing, and computes every claim - including
+  which phase dominates and whether the cycle fits the live interval - from the
+  run. The benchmark was re-measured on 2026-09-18; see RESULTS.md for the
+  delta and why the older figures were slow.
 - **Fixed:** `run_eval` rebuilt the whole RESULTS.md from stale template prose
   (following RESULTS.md's own reproduce steps would have erased most of it);
   it now patches only its own table rows. `run_ibm_aml_eval` deleted the
@@ -849,9 +868,9 @@ changed, and a subprocess test pins it.
   a misreading of two concatenated `sed` ranges; all three such returns are
   legitimate exits of `_detect_co_hub`.
 - **Fixed:** the PaySim corpus was reloaded with the current schema.
-- **`/docs` and `/openapi.json` are public**, including in production. The API
-  itself is authenticated, but the schema is visible; disable them in
-  production if that matters for your deployment.
+- **Fixed:** `/docs`, `/redoc` and `/openapi.json` are served only when
+  `ENVIRONMENT` is not `production`; a production process returns 404 for all
+  three while `/health` and the API keep working.
 - **`eval_multi_seed` only patches RESULTS.md with
   `--force-patch-results`** — intentional, to protect methodology notes.
 - **GitHub Actions warns** that `actions/checkout@v4` and

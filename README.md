@@ -82,10 +82,16 @@ python scripts/create_user.py --dev-seed
 This creates `local-admin` with password `local-development-only` and refuses
 to run when `ENVIRONMENT=production`.
 
-Sessions are signed JWTs with a 12-hour default lifetime. Logout is stateless:
-the frontend discards its token from `sessionStorage`; no refresh token or
-server-side blacklist is used in this scope. Changing `SESSION_SECRET`
-invalidates all outstanding sessions.
+Sessions are signed JWTs with a 12-hour default lifetime. Each token carries a
+`jti`, and logging out records it in `revoked_tokens`: the token is refused by
+every endpoint and by the WebSocket handshake from then on, so logout does not
+depend on the client discarding it. Expired entries are cleared on the next
+logout. There is no refresh token, and no way to end another user's session
+short of changing `SESSION_SECRET`, which invalidates all of them.
+
+In production (`ENVIRONMENT=production`) the interactive API docs and the
+OpenAPI schema are not served: `/docs`, `/redoc` and `/openapi.json` return 404.
+They remain available in development.
 
 ## Pre-demo reset (recommended)
 
