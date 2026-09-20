@@ -17,7 +17,7 @@ from app.db import Base
 from app.main import app
 from app.models import Account, Alert, RingReviewAction, User
 from app.rate_limit import limiter
-from app.security import hash_password
+from app.security import hash_password, verify_password
 
 PASSWORD = "correct-horse-battery"
 
@@ -406,3 +406,73 @@ def test_api_schema_and_docs_are_production_gated(environment, expected):
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == expected
+
+
+def _provision(tmp_path, password_env_value, *, env_name="ADMIN_PASSWORD"):
+    """Run scripts/create_user.py exactly as render.yaml's startCommand does.
+
+    stdin is closed: if the script ever falls back to prompting on a host with
+    no shell, the deploy hangs instead of booting, so the test must prove it
+    never asks.
+    """
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    env = {
+        **os.environ,
+        "ENVIRONMENT": "production",
+        "SESSION_SECRET": "s" * 48,
+        "ALLOWED_ORIGINS": "https://app.example.com",
+        "DATABASE_URL": f"sqlite:///{tmp_path / 'provision.db'}",
+    }
+    if password_env_value is None:
+        env.pop(env_name, None)
+    else:
+        env[env_name] = password_env_value
+    return subprocess.run(
+        [
+            sys.executable,
+            "scripts/create_user.py",
+            "--username",
+            "admin",
+            "--role",
+            "admin",
+            "--password-env",
+            env_name,
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+        timeout=120,
+        env=env,
+    )
+
+
+def test_admin_can_be_provisioned_without_a_shell(tmp_path):
+    """The deployment's only path to a first login, so it is tested directly."""
+    first = _provision(tmp_path, "first-password-1234")
+    assert first.returncode == 0, first.stderr
+    assert "Created admin user 'admin'" in first.stdout
+
+    # render.yaml runs this on every boot, so a second run must not fail, and
+    # must leave the password usable.
+    second = _provision(tmp_path, "second-password-5678")
+    assert second.returncode == 0, second.stderr
+    assert "Updated admin user 'admin'" in second.stdout
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'provision.db'}")
+    with sessionmaker(bind=engine)() as db:
+        user = db.scalar(select(User).where(User.username == "admin"))
+        assert user is not None and user.role == "admin"
+        assert verify_password("second-password-5678", user.password_hash)
+        assert not verify_password("first-password-1234", user.password_hash)
+
+
+def test_provisioning_fails_loudly_when_the_password_variable_is_missing(tmp_path):
+    """Better a failed deploy than a service booting with no way to log in."""
+    result = _provision(tmp_path, None)
+    assert result.returncode == 2
+    assert "ADMIN_PASSWORD is unset or empty" in result.stderr

@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://render.com/schema/render.yaml.json
+#
+# GraphDrift backend, as a Render Blueprint.
+#
+# Everything Render needs is in this file. Creating a Blueprint Instance from it
+# prompts once for the two values that cannot be known ahead of time
+# (ALLOWED_ORIGINS and ADMIN_PASSWORD) and requires no other dashboard work.
+#
+# Two things about the free plan that this file cannot fix:
+#   * The disk is ephemeral. SQLite is wiped on every deploy and every restart.
+#     The simulator repopulates the graph on boot and startCommand re-provisions
+#     the admin user, so the service recovers on its own, but analyst decisions
+#     and accumulated alerts do not survive a redeploy.
+#   * A free instance sleeps after ~15 minutes without inbound traffic, which
+#     stops the detection loop until the next request wakes it.
+
+services:
+  - type: web
+    name: graphdrift-api
+    runtime: python
+    plan: free
+    region: oregon
+    rootDir: backend
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+
+    # The lock, not requirements.txt: every figure in evaluation/RESULTS.md was
+    # produced with these exact versions, and CI installs the same file.
+    buildCommand: pip install -r requirements.lock
+
+    # The free plan has no shell and no preDeployCommand, so the admin user is
+    # provisioned here. create_user.py is idempotent — it updates the existing
+    # row rather than failing — which is what makes this safe to run on every
+    # boot, including the boots that follow an ephemeral-disk wipe.
+    startCommand: >-
+      python scripts/create_user.py --username "$ADMIN_USERNAME" --role admin --password-env ADMIN_PASSWORD
+      && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+    envVars:
+      # Matches the interpreter that produced requirements.lock. Render's own
+      # default is 3.14.3; CI resolves '3.14' to the latest patch.
+      - key: PYTHON_VERSION
+        value: "3.14.2"
+
+      # Turns on the production checks in app/config.py and closes /docs,
+      # /redoc and /openapi.json in app/main.py.
+      - key: ENVIRONMENT
+        value: production
+
+      # Relative to rootDir, so the file lives in the service's working
+      # directory. See the note above about the disk being ephemeral.
+      - key: DATABASE_URL
+        value: sqlite:///./graphdrift.db
+
+      # A randomized, base64-encoded 256-bit value, generated once by Render and
+      # kept for the life of the service. Long enough for the 32-character
+      # minimum that _check_production_secrets enforces, and never printed into
+      # a repository. Rotating it ends every outstanding session.
+      - key: SESSION_SECRET
+        generateValue: true
+
+      - key: SESSION_TTL_SECONDS
+        value: "43200"
+
+      - key: LOGIN_RATE_LIMIT
+        value: 10/minute
+
+      # The Vercel production origin, prompted once at Blueprint creation.
+      # Production refuses "*" here, because CORS with credentials would then
+      # echo any requesting origin.
+      - key: ALLOWED_ORIGINS
+        sync: false
+
+      - key: ADMIN_USERNAME
+        value: admin
+
+      # Prompted once at Blueprint creation. At least 12 characters, which is
+      # MIN_PASSWORD_LENGTH in app/security.py — a shorter one fails the start
+      # command with a clear message rather than booting an unusable service.
+      # Read from the environment by create_user.py rather than passed on the
+      # command line, so it does not appear in the process table.
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      # Deliberately NOT set: FORWARDED_ALLOW_IPS.
+      # With FORWARDED_ALLOW_IPS=* uvicorn trusts the leftmost X-Forwarded-For
+      # entry, which any client can set, so the 10/minute login limit could be
+      # bypassed by varying one header. Render does not publish fixed proxy IPs
+      # to allow-list instead, so every client shares one rate-limit bucket.

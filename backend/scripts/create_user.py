@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import os
 import sys
 from pathlib import Path
 
@@ -28,6 +29,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--username")
     parser.add_argument("--role", choices=("analyst", "admin"), default="analyst")
     parser.add_argument(
+        "--password-env",
+        metavar="NAME",
+        help="read the password from this environment variable instead of "
+        "prompting. Needed on hosts with no interactive shell, and it keeps "
+        "the password out of the process table.",
+    )
+    parser.add_argument(
         "--dev-seed",
         action="store_true",
         help="create local-admin/local-development-only in non-production only",
@@ -49,11 +57,17 @@ def main() -> int:
         if not username:
             print("--username is required unless --dev-seed is used", file=sys.stderr)
             return 2
-        password = getpass.getpass("Password: ")
-        confirmation = getpass.getpass("Confirm password: ")
-        if password != confirmation:
-            print("Passwords do not match", file=sys.stderr)
-            return 2
+        if args.password_env:
+            password = os.environ.get(args.password_env, "")
+            if not password:
+                print(f"{args.password_env} is unset or empty", file=sys.stderr)
+                return 2
+        else:
+            password = getpass.getpass("Password: ")
+            confirmation = getpass.getpass("Confirm password: ")
+            if password != confirmation:
+                print("Passwords do not match", file=sys.stderr)
+                return 2
 
     try:
         password_hash = hash_password(password)

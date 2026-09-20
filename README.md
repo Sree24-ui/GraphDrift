@@ -149,42 +149,50 @@ warning with the exact copy command above.
 
 ## Deployment
 
+Both services are described by files in this repository. See PROJECT.md §16 for
+the reasoning; this is the short version.
+
 ### Backend (Render)
 
-- **Root directory:** `backend`
-- **Build command:** `pip install -r requirements.lock`
-- **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+`render.yaml` at the repository root is a Blueprint: service, plan, region,
+Python version, build and start commands, health check and every environment
+variable. Create it with **New → Blueprint** and connect this repository.
 
-Required environment variables:
+Render prompts once for the two values that cannot be written down ahead of
+time — `ALLOWED_ORIGINS` (the Vercel origin, which does not exist yet the first
+time) and `ADMIN_PASSWORD` (at least 12 characters). `SESSION_SECRET` uses
+Render's `generateValue`, so it is never typed or committed.
 
-- `ENVIRONMENT=production`
-- `SESSION_SECRET` — at least 32 characters, generated with
-  `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Startup refuses
-  a missing, short, or example secret: anyone who knows the signing secret can
-  forge an admin session.
-- `DATABASE_URL` — persistent storage; the SQLite default is lost on an
-  ephemeral disk.
-- `ALLOWED_ORIGINS` — the live frontend URL (comma-separated for several).
-  `*` is refused in production.
-- `FORWARDED_ALLOW_IPS=*` — Render terminates traffic at its proxy. Without
-  this, uvicorn sees the proxy's IP for every user, so all logins share one
-  rate-limit bucket. Only set it when the app is reachable solely through the
-  proxy.
+The `startCommand` provisions the admin user before starting uvicorn, because
+the free plan has no shell:
 
-Optional: `SESSION_TTL_SECONDS` (default 43200) and `LOGIN_RATE_LIMIT`
-(default `10/minute`). After the first deployment, open a Render shell and run
-`python scripts/create_user.py --username your-admin --role admin`. Startup
-logs warn if CORS is unset or no admin exists.
+```
+python scripts/create_user.py --username "$ADMIN_USERNAME" --role admin --password-env ADMIN_PASSWORD
+```
+
+**Do not set `FORWARDED_ALLOW_IPS=*`.** uvicorn then trusts the leftmost,
+client-written `X-Forwarded-For` entry, which lets anyone reset the login
+rate-limit bucket by changing one header. Measured in PROJECT.md §16. The cost
+of leaving it unset is that all logins share one bucket.
+
+The free plan's disk is ephemeral: SQLite is wiped on every deploy and restart.
+The simulator repopulates the graph on boot and the admin is re-provisioned, but
+analyst decisions do not survive.
 
 ### Frontend (Vercel)
 
-- **Root directory:** `frontend`
-- **Build command:** `npm run build`
-- **Output directory:** `dist`
+`frontend/vercel.json` carries the build settings and the SPA rewrite.
+`frontend/scripts/deploy-vercel.sh` does the rest in one sitting:
 
-Set `VITE_API_BASE_URL` and `VITE_WS_BASE_URL` in the Vercel project dashboard as shown in `frontend/.env.production.example`.
+```bash
+vercel login            # once
+cd frontend && ./scripts/deploy-vercel.sh
+```
 
-After both services are deployed, update `ALLOWED_ORIGINS` on the Render backend to the real Vercel URL and redeploy or restart the backend so CORS allows the live frontend to connect.
+It deploys twice on purpose. `ALLOWED_ORIGINS` needs the Vercel origin and
+`VITE_API_BASE_URL` / `VITE_WS_BASE_URL` are baked into the bundle at build
+time, so each side needs a URL the other only produces once deployed. The
+script pauses between the two for the Render Blueprint step.
 
 ## Closed-loop calibration verification
 

@@ -42,7 +42,7 @@ source of truth for any figure you intend to cite.
 | | |
 |---|---|
 | Repository | https://github.com/Sree24-ui/GraphDrift (branch `main`) |
-| Backend tests | **117 passing** |
+| Backend tests | **119 passing** |
 | Frontend | `npm run build`, `tsc --noEmit`, `oxlint` all clean; 11 Playwright checks green (8 axe scans, 3 reduced-motion) |
 | CI | GitHub Actions — backend (pytest), frontend (build) and accessibility (axe) jobs |
 | Python | **3.14** (pinned in CI to match development) |
@@ -275,9 +275,11 @@ Settings are **in memory** and reset when the process restarts.
 - **No ground truth on the wire:** `is_synthetic_attack` is never sent by the
   REST API or the WebSocket, so analysts reviewing alerts cannot see labels.
 - **Rate limiting:** login is limited per client IP (`LOGIN_RATE_LIMIT`,
-  default `10/minute`). Behind a reverse proxy, set `FORWARDED_ALLOW_IPS` so
-  uvicorn sees real client IPs; otherwise every user shares one bucket and a
-  few failed logins lock out the whole team.
+  default `10/minute`). Behind a reverse proxy the real client IP is only
+  visible through `X-Forwarded-For`, and trusting it with
+  `FORWARDED_ALLOW_IPS=*` makes the limit bypassable rather than accurate
+  (§16). On Render the variable stays unset, so every user shares one bucket
+  and a few failed logins lock out the whole team.
 - **Headers:** `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
   `Referrer-Policy: strict-origin-when-cross-origin`.
 - **Production guards:** with `ENVIRONMENT=production`, startup refuses a
@@ -444,7 +446,7 @@ than local literals.
 | `SESSION_TTL_SECONDS` | 43200 | 12 h; must be > 0 |
 | `ALLOWED_ORIGINS` | *(empty)* | comma-separated CORS origins; `*` refused in production |
 | `LOGIN_RATE_LIMIT` | `10/minute` | per client IP; invalid syntax fails at startup |
-| `FORWARDED_ALLOW_IPS` | `127.0.0.1` | read by uvicorn; set to `*` behind a proxy that is the only way in (e.g. Render) |
+| `FORWARDED_ALLOW_IPS` | `127.0.0.1` | read by uvicorn. **Leave unset on Render** — `*` opens a login rate-limit bypass, see §16 |
 | `LIVE_FEED_WS_URL` | — | used only by `test_ws_client.py` |
 
 ### 8.3 Environment — frontend
@@ -476,6 +478,7 @@ clock in the calibration stress harness — which is what keeps
 ```
 graphdrift/
 ├── .github/workflows/ci.yml        CI: pytest, frontend build, axe scan
+├── render.yaml                     Render Blueprint for the backend service
 ├── PROJECT.md                      this document
 ├── README.md                       setup and deployment quick-start
 ├── shared/
@@ -498,10 +501,12 @@ graphdrift/
 │   ├── evaluation/                 benchmarks, eval harnesses, RESULTS.md, data/
 │   ├── scripts/                    create_user, reset_demo_data,
 │   │                               seed_ui_fixture, measure_alert_volume
-│   ├── tests/                      117 tests
+│   ├── tests/                      119 tests
 │   ├── requirements.txt            exact direct pins
 │   └── requirements.lock           full transitive lock (CI installs this)
 └── frontend/
+    ├── vercel.json                 Vercel build settings + SPA rewrite
+    ├── scripts/deploy-vercel.sh    link, deploy, set VITE_*, redeploy
     ├── playwright.config.ts        browser suite runner (starts Vite itself)
     ├── tests/a11y.spec.ts          axe scan of every page
     ├── tests/reduced-motion.spec.ts  animations off when the OS asks
@@ -911,6 +916,18 @@ changed, and a subprocess test pins it.
   `actions/setup-node@v4` target the deprecated Node 20 runtime.
 - **Dev console shows one WebSocket warning** on load — the browser logs React
   StrictMode's discarded first socket. It does not recur.
+- **Fixed:** this document used to instruct deployers to set
+  `FORWARDED_ALLOW_IPS=*` behind Render's proxy. That opens a login rate-limit
+  bypass — uvicorn trusts the leftmost, client-written `X-Forwarded-For` entry
+  when the value is `*`. Measured and corrected in §16; the variable is
+  deliberately absent from `render.yaml`.
+- **One login rate-limit bucket in production.** The consequence of the above:
+  with `FORWARDED_ALLOW_IPS` unset, every client is reported to slowapi as
+  Render's proxy, so the 10/minute login limit is shared. A few failed logins
+  can lock out everyone until the window rolls. Fixing it properly needs a
+  list of Render's proxy addresses, which Render does not publish; a
+  `X-Forwarded-For`-aware key function that took the **rightmost** hop would
+  be the alternative.
 - **Suggested next work:** persist settings across restarts; expose the
   calibration band/step/clamp in the UI; scale-invariant burst features;
   a fraud-density-varying trace for closed-loop calibration; record each
@@ -920,34 +937,82 @@ changed, and a subprocess test pins it.
 
 ## 16. Deployment
 
-**Backend (Render)** — root `backend`; build `pip install -r
-requirements.lock`; start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
-Then run `python scripts/create_user.py --username <name> --role admin` from a
-Render shell.
+Both sides are described by files in this repository, so neither needs to be
+configured by hand in a dashboard.
 
-| Variable | Required | If missing or wrong |
+| | File | What it covers |
 |---|---|---|
-| `ENVIRONMENT=production` | **yes** | none of the production guards below run; a random per-process secret silently logs everyone out on every restart |
-| `SESSION_SECRET` | **yes** | startup refuses. Must be ≥ 32 chars and not the example value — otherwise anyone can forge an admin token |
-| `DATABASE_URL` | **yes** | defaults to SQLite in the container's working directory; on an ephemeral disk every alert, review and user is lost on redeploy |
-| `ALLOWED_ORIGINS` | yes, for a separate frontend origin | unset: startup warns and the browser blocks every cross-origin API call. `*` is refused |
-| `FORWARDED_ALLOW_IPS=*` | **yes, behind Render's proxy** | every user shares one login rate-limit bucket; a few failed logins lock out the whole team (verified) |
-| `SESSION_TTL_SECONDS` | no (12 h) | must be a positive integer or startup refuses |
-| `LOGIN_RATE_LIMIT` | no (`10/minute`) | invalid syntax: startup refuses |
+| Backend | `render.yaml` | service, plan, region, Python version, build and start commands, health check, every environment variable |
+| Frontend | `frontend/vercel.json` | framework preset, build command, output directory, SPA rewrite |
+| Frontend | `frontend/scripts/deploy-vercel.sh` | link, deploy, set `VITE_*`, redeploy |
 
-Only set `FORWARDED_ALLOW_IPS=*` when the app can be reached solely through the
-proxy, as on Render; otherwise clients could spoof their IP.
+Render creates the service from `render.yaml` and prompts once for the only two
+values that cannot be written down in advance: `ALLOWED_ORIGINS`, which is not
+known until the frontend exists, and `ADMIN_PASSWORD`. `SESSION_SECRET` uses
+Render's `generateValue`, so it is never typed, never committed, and never
+printed. Rotating it ends every outstanding session.
+
+**The two services need each other's URL**, which is why the deploy script
+deploys the frontend, pauses for the Render Blueprint, then deploys again:
+`ALLOWED_ORIGINS` must name the Vercel origin, and `VITE_API_BASE_URL` /
+`VITE_WS_BASE_URL` (`wss://`) are baked into the bundle at build time, so a
+missing value makes the app call its own origin and every request fails.
+
+### The admin user
+
+The free plan has no shell and no `preDeployCommand`, so the Blueprint's
+`startCommand` provisions the admin before starting uvicorn:
+
+```
+python scripts/create_user.py --username "$ADMIN_USERNAME" --role admin --password-env ADMIN_PASSWORD
+```
+
+`--password-env` reads the password from the environment instead of prompting,
+which keeps it out of the process table and means the script never blocks on a
+host with no terminal. `create_user.py` updates an existing row rather than
+failing, so running it on every boot is safe — and necessary, because the free
+plan's disk is ephemeral: SQLite, and with it every alert, review and user, is
+wiped on each deploy and restart. The simulator repopulates the graph on boot;
+analyst decisions do not come back. A free instance also sleeps after ~15
+minutes without traffic, which stops the detection loop until the next request.
+
+Two tests in `test_auth.py` cover this path with stdin closed, so a regression
+that reintroduced a prompt would fail the suite rather than hang a deploy.
+
+### `FORWARDED_ALLOW_IPS` must stay unset
+
+Earlier revisions of this section told deployers to set `FORWARDED_ALLOW_IPS=*`
+behind Render's proxy, on the reasoning that the proxy is the only way in. That
+is wrong. uvicorn's `ProxyHeadersMiddleware` treats `*` as `always_trust` and
+returns `x_forwarded_for_hosts[0]` — the **leftmost** entry, which the client
+writes. Render appends the real address to whatever the client already sent, so
+`X-Forwarded-For: 203.0.113.9` arrives as `203.0.113.9, <real>` and uvicorn
+reports the attacker's value.
+
+Measured against a production-mode server at `LOGIN_RATE_LIMIT=3/minute`, four
+failed logins from one claimed address, then a fifth with the address changed:
+
+| | 4th attempt | 5th, different claimed IP |
+|---|---|---|
+| `FORWARDED_ALLOW_IPS=*` | 429 | **401 — limit bypassed** |
+| unset (peer not trusted, as on Render) | 429 | 429 — limit holds |
+
+Allow-listing the proxy instead would be correct, and uvicorn handles that case
+properly by scanning the header from the right, but Render does not publish
+fixed proxy addresses. So the variable stays unset and every client shares one
+login bucket: a few failed logins can lock out everyone, which is the lesser
+problem of the two and is recorded in §15.
+
+### Checks worth running after a deploy
+
+```bash
+curl -i https://<backend>/health          # 200 {"status":"ok"}
+curl -i https://<backend>/openapi.json    # 404 — the schema is not served in production
+```
 
 With `ENVIRONMENT=production` the interactive docs and the schema behind them
 (`/docs`, `/redoc`, `/openapi.json`) are not served at all, and logout revokes
 the presented token server-side rather than trusting the client to drop it.
-
-**Frontend (Vercel)** — root `frontend`; build `npm run build`; output
-`dist`. Set `VITE_API_BASE_URL` and `VITE_WS_BASE_URL` (`wss://`); both are baked
-in at build time, so a missing value makes the app call its own origin and
-every request fails. After both
-are live, set the backend's `ALLOWED_ORIGINS` to the real Vercel URL and
-restart it.
 
 ---
 
