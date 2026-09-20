@@ -181,12 +181,16 @@ analyst decisions do not survive.
 
 ### Frontend (Vercel)
 
-`frontend/vercel.json` carries the build settings and the SPA rewrite.
-`frontend/scripts/deploy-vercel.sh` does the rest in one sitting:
+`vercel.json` at the **repository root** carries the build settings and the SPA
+rewrite. It deploys from the repo root (Vercel Root Directory `./`, build
+`cd frontend && npm run build`, output `frontend/dist`) so that
+`shared/detection_knobs.json` — imported by the frontend from above `frontend/` —
+is in the upload; deploying `frontend/` alone fails with a `TS2307` missing-module
+error. `frontend/scripts/deploy-vercel.sh` does the rest in one sitting:
 
 ```bash
-vercel login            # once
-cd frontend && ./scripts/deploy-vercel.sh
+vercel login                          # once
+./frontend/scripts/deploy-vercel.sh   # from the repo root
 ```
 
 It deploys twice on purpose. `ALLOWED_ORIGINS` needs the Vercel origin and

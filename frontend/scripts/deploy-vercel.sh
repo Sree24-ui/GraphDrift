@@ -2,9 +2,16 @@
 #
 # Deploy the GraphDrift frontend to Vercel, start to finish, in one sitting.
 #
-#   cd frontend && ./scripts/deploy-vercel.sh
+#   ./frontend/scripts/deploy-vercel.sh        # run from the repository root
 #
 # Run `vercel login` once beforehand; this script refuses to start otherwise.
+#
+# It deploys from the REPOSITORY ROOT, not from frontend/, on purpose. The
+# frontend imports shared/detection_knobs.json from one level above frontend/,
+# and the Vercel CLI only uploads the directory it deploys from. Deploying
+# frontend/ alone left shared/ out and the build failed with TS2307. Root
+# vercel.json builds with `cd frontend && npm run build` and output
+# frontend/dist, so shared/ is in the upload.
 #
 # Why it deploys twice: the two services need each other's URL. The backend's
 # ALLOWED_ORIGINS must name the Vercel origin or the browser blocks every API
@@ -19,10 +26,10 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 if [ ! -f vercel.json ]; then
-  echo "Run this from the repository: frontend/vercel.json is missing." >&2
+  echo "Run from the repository: vercel.json is missing at the repo root." >&2
   exit 1
 fi
 
@@ -40,7 +47,7 @@ echo "==> Vercel CLI $(vercel --version 2>&1 | tail -1), logged in as $(vercel w
 
 # ---------------------------------------------------------------- 1. link ----
 echo
-echo "==> Step 1/4: linking this directory to a Vercel project"
+echo "==> Step 1/4: linking the repository root to a Vercel project (leave Root Directory at ./)"
 vercel link
 
 # ------------------------------------------------- 2. first production run ----

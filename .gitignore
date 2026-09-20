@@ -17,4 +17,4 @@ frontend/.env.development
 .DS_Store
 
 # Vercel CLI project link (contains project + org ids, not secrets)
-frontend/.vercel/
+.vercel/

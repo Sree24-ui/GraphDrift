@@ -479,6 +479,7 @@ clock in the calibration stress harness — which is what keeps
 graphdrift/
 ├── .github/workflows/ci.yml        CI: pytest, frontend build, axe scan
 ├── render.yaml                     Render Blueprint for the backend service
+├── vercel.json                     Vercel build (repo-root context so shared/ is uploaded)
 ├── PROJECT.md                      this document
 ├── README.md                       setup and deployment quick-start
 ├── shared/
@@ -505,7 +506,6 @@ graphdrift/
 │   ├── requirements.txt            exact direct pins
 │   └── requirements.lock           full transitive lock (CI installs this)
 └── frontend/
-    ├── vercel.json                 Vercel build settings + SPA rewrite
     ├── scripts/deploy-vercel.sh    link, deploy, set VITE_*, redeploy
     ├── playwright.config.ts        browser suite runner (starts Vite itself)
     ├── tests/a11y.spec.ts          axe scan of every page
@@ -943,8 +943,19 @@ configured by hand in a dashboard.
 | | File | What it covers |
 |---|---|---|
 | Backend | `render.yaml` | service, plan, region, Python version, build and start commands, health check, every environment variable |
-| Frontend | `frontend/vercel.json` | framework preset, build command, output directory, SPA rewrite |
+| Frontend | `vercel.json` (repo root) | framework preset, build command, output directory, SPA rewrite |
 | Frontend | `frontend/scripts/deploy-vercel.sh` | link, deploy, set `VITE_*`, redeploy |
+
+`vercel.json` lives at the repository root, not in `frontend/`, and the project's
+Vercel **Root Directory stays at `./`**. The reason is `shared/`: the frontend
+imports `shared/detection_knobs.json` — the same single-source-of-truth file the
+backend reads — from one level above `frontend/`, and the Vercel CLI only uploads
+the directory it deploys from. Deploying `frontend/` alone left `shared/` out and
+the build failed with `TS2307: Cannot find module '../../shared/detection_knobs.json'`.
+So the build runs from the root (`installCommand`/`buildCommand` both `cd frontend`,
+`outputDirectory` `frontend/dist`) and `shared/` is in the upload. The backend has
+no equivalent issue because Render clones the whole repository rather than a subtree,
+and `constants.py` resolves the file relative to its own path.
 
 Render creates the service from `render.yaml` and prompts once for the only two
 values that cannot be written down in advance: `ALLOWED_ORIGINS`, which is not
