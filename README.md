@@ -198,6 +198,13 @@ It deploys twice on purpose. `ALLOWED_ORIGINS` needs the Vercel origin and
 time, so each side needs a URL the other only produces once deployed. The
 script pauses between the two for the Render Blueprint step.
 
+The script also creates the Vercel project (`vercel project add`) before
+linking to it. Deploying from the repo root means `vercel link` scans the root
+and finds `render.yaml`, so a fresh link would prompt to set up the detected
+`graphdrift-api` service on Vercel — which is Render's job, not Vercel's.
+Linking to a project that already exists skips that prompt; `vercel.json` only
+ever builds the frontend, so the backend is never a Vercel service.
+
 ## Closed-loop calibration verification
 
 The full real-pipeline harness uses the seeded simulator, detector, actual

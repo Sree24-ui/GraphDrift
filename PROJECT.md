@@ -969,6 +969,15 @@ deploys the frontend, pauses for the Render Blueprint, then deploys again:
 `VITE_WS_BASE_URL` (`wss://`) are baked into the bundle at build time, so a
 missing value makes the app call its own origin and every request fails.
 
+Because the build runs from the repo root (so it can reach `shared/`),
+`vercel link` scans the root, finds `render.yaml`, and — on CLI 59.23+ — offers
+to set up the `graphdrift-api` service it detects there. That prompt only
+appears when a link *creates* a project; linking to one that already exists
+takes an earlier code path and skips it. So the deploy script runs
+`vercel project add` first and then links by name. The backend is never a
+Vercel service — `vercel.json` builds only the frontend (`cd frontend`), and
+the FastAPI backend runs solely on Render.
+
 ### The admin user
 
 The free plan has no shell and no `preDeployCommand`, so the Blueprint's

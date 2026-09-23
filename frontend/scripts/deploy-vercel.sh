@@ -13,6 +13,14 @@
 # vercel.json builds with `cd frontend && npm run build` and output
 # frontend/dist, so shared/ is in the upload.
 #
+# Deploying from the root has one side effect: `vercel link` scans the root,
+# finds render.yaml, and (CLI >= 59.23) asks how to set up the "graphdrift-api"
+# service it detected there. None of its choices are right — they would deploy
+# the FastAPI backend on Vercel, which is Render's job. That prompt only fires
+# when linking CREATES a project; linking to an EXISTING one skips it. So this
+# script creates the project first, then links to it by name. The backend is
+# never a Vercel service: vercel.json only builds the frontend.
+#
 # Why it deploys twice: the two services need each other's URL. The backend's
 # ALLOWED_ORIGINS must name the Vercel origin or the browser blocks every API
 # call, and VITE_API_BASE_URL is baked into the bundle at build time, so it
@@ -46,9 +54,28 @@ fi
 echo "==> Vercel CLI $(vercel --version 2>&1 | tail -1), logged in as $(vercel whoami 2>/dev/null)"
 
 # ---------------------------------------------------------------- 1. link ----
+# Project name: override with VERCEL_PROJECT if you like. Lowercase, digits,
+# dashes — Vercel rejects other characters.
+project="${VERCEL_PROJECT:-graphdrift-web}"
+
 echo
-echo "==> Step 1/4: linking the repository root to a Vercel project (leave Root Directory at ./)"
-vercel link
+echo "==> Step 1/4: linking the repository root to Vercel project '$project'"
+if [ -f .vercel/project.json ]; then
+  echo "    Already linked (.vercel/project.json present); reusing it."
+else
+  # Create the project first so the link below is an EXISTING-project link,
+  # which is what skips the render.yaml service-detection prompt. Harmless if
+  # it already exists on Vercel.
+  vercel project add "$project" 2>/dev/null || true
+  # --project <name> is the non-interactive existing-project link; with the
+  # project already created it never enters the new-project setup flow.
+  vercel link --yes --project "$project"
+fi
+
+# The Vercel project's Root Directory must stay at the repo root (./) so the
+# build command below can reach shared/. `vercel project add` defaults to that;
+# this is only a guard for a project linked some other way.
+echo "    (If asked later, the Root Directory is the repo root: ./)"
 
 # ------------------------------------------------- 2. first production run ----
 echo
