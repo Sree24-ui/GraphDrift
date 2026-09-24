@@ -1,4 +1,4 @@
-# GraphDrift
+# FraudGraph
 
 Real-time UPI fraud detection system.
 

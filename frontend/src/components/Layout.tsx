@@ -36,7 +36,7 @@ export default function Layout() {
           </div>
           <div>
             <h1 className="font-headline text-xl font-semibold tracking-tight text-primary">
-              GraphDrift
+              FraudGraph
             </h1>
             <p className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">
               Fraud Detection
@@ -98,7 +98,7 @@ export default function Layout() {
           <div className="flex items-center gap-2">
             <MaterialIcon name="hub" className="text-primary" size={22} />
             <span className="font-headline text-lg font-bold text-primary">
-              GraphDrift
+              FraudGraph
             </span>
           </div>
           <div className="flex items-center gap-2 text-on-surface-variant">

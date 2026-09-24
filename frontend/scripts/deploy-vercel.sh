@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Deploy the GraphDrift frontend to Vercel, start to finish, in one sitting.
+# Deploy the FraudGraph frontend to Vercel, start to finish, in one sitting.
 #
 #   ./frontend/scripts/deploy-vercel.sh        # run from the repository root
 #

@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://render.com/schema/render.yaml.json
 #
-# GraphDrift backend, as a Render Blueprint.
+# FraudGraph backend, as a Render Blueprint.
 #
 # Everything Render needs is in this file. Creating a Blueprint Instance from it
 # prompts once for the two values that cannot be known ahead of time

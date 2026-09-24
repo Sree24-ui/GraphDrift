@@ -133,7 +133,7 @@ async def lifespan(app: FastAPI):
 # production serves neither the docs nor the schema they are built from.
 _docs_enabled = load_runtime_config().environment != "production"
 app = FastAPI(
-    title="GraphDrift",
+    title="FraudGraph",
     lifespan=lifespan,
     docs_url="/docs" if _docs_enabled else None,
     redoc_url="/redoc" if _docs_enabled else None,

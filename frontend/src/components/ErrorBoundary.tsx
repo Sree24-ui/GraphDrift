@@ -14,7 +14,7 @@ export default class ErrorBoundary extends Component<{ children: ReactNode }, St
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('GraphDrift render failure', error, info)
+    console.error('FraudGraph render failure', error, info)
   }
 
   render() {

@@ -41,7 +41,7 @@ export default function Login() {
             <MaterialIcon name="shield_lock" size={25} />
           </div>
           <div>
-            <h1 className="font-headline text-2xl font-semibold text-primary">GraphDrift</h1>
+            <h1 className="font-headline text-2xl font-semibold text-primary">FraudGraph</h1>
             <p className="text-sm text-on-surface-variant">Secure fraud operations</p>
           </div>
         </div>

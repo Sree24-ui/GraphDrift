@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Provision or update a GraphDrift user without exposing registration."""
+"""Provision or update a FraudGraph user without exposing registration."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ DEV_PASSWORD = "local-development-only"
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Provision a GraphDrift user")
+    parser = argparse.ArgumentParser(description="Provision a FraudGraph user")
     parser.add_argument("--username")
     parser.add_argument("--role", choices=("analyst", "admin"), default="analyst")
     parser.add_argument(

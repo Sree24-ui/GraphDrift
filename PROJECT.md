@@ -1,6 +1,6 @@
-# GraphDrift — Project Reference
+# FraudGraph — Project Reference
 
-GraphDrift (also called FraudGuard) is a real-time detection system for
+FraudGraph (formerly GraphDrift; also called FraudGuard) is a real-time detection system for
 **UPI money-mule fraud**. It watches a stream of payments, scores every account
 on two independent layers — how anomalous its own behaviour is, and whether it
 sits at the centre of a hub-and-spoke ring — fuses those scores, and hands the
@@ -655,7 +655,7 @@ unique.
 | IF on the 8 Layer-1 features | 0.223 ± 0.031 | GDI 0.253 |
 | IF on Layer-1 + structural features | 0.237 ± 0.061 | fusion 0.284 |
 
-GraphDrift is ahead on every configuration of a sensitivity sweep
+FraudGraph is ahead on every configuration of a sensitivity sweep
 (IF-L1 0.216–0.223, IF-all 0.237–0.244). The margin is modest — about one
 standard deviation — but GDI never loses a seed to IF-L1 (wins 3, ties 2).
 These comparison numbers are now read from `multiseed_eval.json` rather than
@@ -898,7 +898,7 @@ changed, and a subprocess test pins it.
   (following RESULTS.md's own reproduce steps would have erased most of it);
   it now patches only its own table rows. `run_ibm_aml_eval` deleted the
   Layer-2 section; it now owns a marked block and refuses to run without the
-  marker. The Isolation Forest scripts hardcoded GraphDrift's comparison
+  marker. The Isolation Forest scripts hardcoded FraudGraph's comparison
   figures; they now read `multiseed_eval.json`. `test_eval_tooling.py` fails CI
   if any RESULTS.md section disappears.
 - **Fixed:** `community.py` maintained `_PARTITION_SNAPSHOTS`, a list nothing

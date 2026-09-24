@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Reset GraphDrift demo data to a clean slate.
+Reset FraudGraph demo data to a clean slate.
 
 Deletes all rows from Transaction, Alert, AccountScoreHistory, and Account.
 Intended to run before a live demo or recording so the simulator builds a
